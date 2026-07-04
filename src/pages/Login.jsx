@@ -1,133 +1,130 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-import { Button } from "../components/ui/button";
-import { Label } from "../components/ui/label";
-
 import {
   Mail,
   Lock,
   Eye,
-  EyeOff,
-  Loader2
+  EyeOff
 } from "lucide-react";
-
-import AuthLayout from "../components/AuthLayout";
 
 export default function Login() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [showPassword,setShowPassword]=useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit=(e)=>{
     e.preventDefault();
-
-    setLoading(true);
-
-    setTimeout(() => {
-      setLoading(false);
-      navigate("/");
-    }, 1000);
+    navigate("/");
   };
 
-  return (
-    <AuthLayout
-      title="Welcome Back"
-      subtitle="Login to continue"
-      footer={
-        <>
-          Don't have an account?{" "}
-          <Link
-            to="/register"
-            className="text-primary"
-          >
-            Register
-          </Link>
-        </>
-      }
-    >
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4"
-      >
+  const handleGoogleLogin=()=>{
+    // Replace later with Firebase/Auth provider
+    alert("Google Login coming soon");
+  };
 
-        <div>
-          <Label>Email</Label>
+  return(
+    <div className="min-h-screen flex justify-center items-center bg-[#0b1025] relative overflow-hidden">
+
+      {/* Background glow */}
+      <div className="absolute w-[500px] h-[500px] bg-purple-600 opacity-20 blur-[120px]" />
+
+      <div className="w-[380px] bg-[#11152c]/90 backdrop-blur-xl border border-[#4f46e520] rounded-3xl p-8 text-white relative shadow-2xl">
+
+        <h1 className="text-3xl font-bold text-center mb-2">
+          Welcome Back
+        </h1>
+
+        <p className="text-center text-gray-400 mb-6">
+          Login to continue
+        </p>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
 
           <div className="relative">
 
-            <Mail className="absolute left-3 top-4 w-4 h-4" />
+            <Mail className="absolute left-3 top-4 w-4 h-4 text-gray-400"/>
 
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              className="w-full h-10 border rounded-md pl-10 pr-3"
+              onChange={(e)=>setEmail(e.target.value)}
+              placeholder="Your e-mail address"
+              className="w-full bg-[#1d2240] h-12 rounded-xl pl-10 pr-4 outline-none border border-gray-700"
             />
 
           </div>
-        </div>
-
-        <div>
-
-          <Label>Password</Label>
 
           <div className="relative">
 
-            <Lock className="absolute left-3 top-4 w-4 h-4" />
+            <Lock className="absolute left-3 top-4 w-4 h-4 text-gray-400"/>
 
             <input
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? "text":"password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full h-10 border rounded-md pl-10 pr-10"
+              onChange={(e)=>setPassword(e.target.value)}
+              placeholder="Password"
+              className="w-full bg-[#1d2240] h-12 rounded-xl pl-10 pr-10 outline-none border border-gray-700"
             />
 
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={()=>setShowPassword(!showPassword)}
               className="absolute right-3 top-4"
             >
-              {showPassword
-                ? <EyeOff size={16} />
-                : <Eye size={16} />
+              {showPassword ?
+                <EyeOff size={16}/> :
+                <Eye size={16}/>
               }
             </button>
 
           </div>
-        </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Signing in...
-            </>
-          ) : (
-            "Login"
-          )}
-        </Button>
-
-        <div className="text-center">
-          <Link
-            to="/forgot-password"
-            className="text-sm text-primary"
+          <button
+            type="submit"
+            className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition font-semibold"
           >
-            Forgot Password?
-          </Link>
+            Login
+          </button>
+
+        </form>
+
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-[1px] bg-gray-700"/>
+          <span className="text-gray-500 text-sm">OR</span>
+          <div className="flex-1 h-[1px] bg-gray-700"/>
         </div>
 
-      </form>
-    </AuthLayout>
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full h-12 rounded-xl border border-gray-700 flex items-center justify-center gap-3 hover:bg-[#1d2240]"
+        >
+          <img
+            src="https://www.google.com/favicon.ico"
+            width="20"
+          />
+          Continue with Google
+        </button>
+
+        <div className="mt-6 text-center text-sm text-gray-400">
+
+          Don't have an account?{" "}
+
+          <Link
+            to="/register"
+            className="text-indigo-400"
+          >
+            Register
+          </Link>
+
+        </div>
+
+      </div>
+
+    </div>
   );
 }
