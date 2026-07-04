@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Search, ArrowLeft } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Input } from '../components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import CoinLogo from '../components/CoinLogo';
-import { fetchLivePrices } from '@/lib/livePrices';
+import { fetchLivePrices } from '../lib/livePrices';
 
 const coinList = [
   { symbol: 'BTC',  name: 'Bitcoin',            fallback: 63638.00 },
