@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { X, Upload, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 export default function KYCModal({ open, onClose }) {
