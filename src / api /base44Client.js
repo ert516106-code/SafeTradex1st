@@ -1,18 +1,36 @@
-import { createClient } from "@base44/sdk";
-import { appParams } from "./app-params";
+function CountryPromptModal({ onSaved }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center"
+      }}
+    >
+      <div
+        style={{
+          background: "white",
+          padding: "20px",
+          borderRadius: "10px"
+        }}
+      >
+        <h2>Select Country</h2>
 
-const {
-  appId,
-  token,
-  functionsVersion,
-  appBaseUrl
-} = appParams;
+        <button
+          onClick={onSaved}
+          style={{
+            padding: "10px",
+            marginTop: "10px"
+          }}
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+  );
+}
 
-export const base44 = createClient({
-  appId,
-  token,
-  functionsVersion,
-  serverUrl: "",
-  requiresAuth: false,
-  appBaseUrl
-});
+export default CountryPromptModal;
