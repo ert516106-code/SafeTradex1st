@@ -1,6 +1,3 @@
-function CountryPromptModal({ onSaved }) {
-  return (
-    <div
       style={{
         position: "fixed",
         inset: 0,
