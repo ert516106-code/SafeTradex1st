@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 
 import {
@@ -18,23 +17,23 @@ import AuthLayout from "../components/AuthLayout";
 export default function Login() {
   const navigate = useNavigate();
 
-  const [email,setEmail]=useState("");
-  const [password,setPassword]=useState("");
-  const [showPassword,setShowPassword]=useState(false);
-  const [loading,setLoading]=useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit=(e)=>{
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     setLoading(true);
 
-    setTimeout(()=>{
+    setTimeout(() => {
       setLoading(false);
       navigate("/");
-    },1000);
+    }, 1000);
   };
 
-  return(
+  return (
     <AuthLayout
       title="Welcome Back"
       subtitle="Login to continue"
@@ -50,7 +49,6 @@ export default function Login() {
         </>
       }
     >
-
       <form
         onSubmit={handleSubmit}
         className="space-y-4"
@@ -61,15 +59,15 @@ export default function Login() {
 
           <div className="relative">
 
-            <Mail className="absolute left-3 top-4 w-4 h-4"/>
+            <Mail className="absolute left-3 top-4 w-4 h-4" />
 
-            <Input
+            <input
               type="email"
               value={email}
-              onChange={(e)=>setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="pl-10"
               required
+              className="w-full h-10 border rounded-md pl-10 pr-3"
             />
 
           </div>
@@ -81,24 +79,25 @@ export default function Login() {
 
           <div className="relative">
 
-            <Lock className="absolute left-3 top-4 w-4 h-4"/>
+            <Lock className="absolute left-3 top-4 w-4 h-4" />
 
-            <Input
-              type={showPassword ? "text":"password"}
+            <input
+              type={showPassword ? "text" : "password"}
               value={password}
-              onChange={(e)=>setPassword(e.target.value)}
-              className="pl-10 pr-10"
+              onChange={(e) => setPassword(e.target.value)}
               required
+              className="w-full h-10 border rounded-md pl-10 pr-10"
             />
 
             <button
               type="button"
-              onClick={()=>setShowPassword(!showPassword)}
+              onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-4"
             >
               {showPassword
-              ? <EyeOff size={16}/>
-              : <Eye size={16}/>}
+                ? <EyeOff size={16} />
+                : <Eye size={16} />
+              }
             </button>
 
           </div>
@@ -111,7 +110,7 @@ export default function Login() {
         >
           {loading ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Signing in...
             </>
           ) : (
@@ -129,7 +128,6 @@ export default function Login() {
         </div>
 
       </form>
-
     </AuthLayout>
   );
 }
