@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronDown, AlertCircle, ArrowUpFromLine, Check, ArrowLeft, Clock } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 const COINS = [
