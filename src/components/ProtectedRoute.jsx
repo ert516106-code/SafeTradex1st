@@ -1,29 +1,50 @@
-import { Outlet } from 'react-router-dom';
-import { useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { Outlet, Navigate } from "react-router-dom";
+import { useAuth } from "../lib/AuthContext";
+import UserNotRegisteredError from "./UserNotRegisteredError";
 
 const DefaultFallback = () => (
-  <div className="fixed inset-0 flex items-center justify-center">
-    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100vh"
+    }}
+  >
+    Loading...
   </div>
 );
 
-export default function ProtectedRoute({ fallback = <DefaultFallback />, unauthenticatedElement }) {
-  const { isAuthenticated, isLoadingAuth, authError } = useAuth();
+export default function ProtectedRoute({
+  fallback = <DefaultFallback />,
+  unauthenticatedElement
+}) {
+  const {
+    isAuthenticated,
+    isLoadingAuth,
+    authError
+  } = useAuth();
 
   if (isLoadingAuth) {
     return fallback;
   }
 
   if (authError) {
-    if (authError.type === 'user_not_registered') {
+    if (authError.type === "user_not_registered") {
       return <UserNotRegisteredError />;
     }
-    return unauthenticatedElement;
+
+    return (
+      unauthenticatedElement ||
+      <Navigate to="/login" replace />
+    );
   }
 
   if (!isAuthenticated) {
-    return unauthenticatedElement;
+    return (
+      unauthenticatedElement ||
+      <Navigate to="/login" replace />
+    );
   }
 
   return <Outlet />;
