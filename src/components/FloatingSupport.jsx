@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
 const SUPPORT_URL = 'https://omni-chubby-assist-flow.base44.app';
 
