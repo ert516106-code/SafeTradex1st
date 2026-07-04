@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronRight, Copy, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { base44 } from '@/api/base44Client';
 
 const COIN_META = {
   USDT: { name: 'Tether',    color: 'bg-emerald-500', text: '₮' },
