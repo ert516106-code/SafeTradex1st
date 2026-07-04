@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { TrendingUp, TrendingDown, Download, Upload, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 const typeConfig = {
