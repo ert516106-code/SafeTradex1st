@@ -306,25 +306,5 @@ onClose={onClose}
 }
 
 export function AccountBindingModal({open,onClose}){
-
-if(!open)return null
-
-return(
-<ModalShell
-title="Account Binding"
-onClose={onClose}
->
-<p>Account binding settings</p>
-</ModalShell>
-)
-
-}
-
-export {
-FundPasswordModal,
-LoginPasswordModal,
-LanguageModal,
-NotificationsModal,
-SecurityModal,
 AccountBindingModal
 };
