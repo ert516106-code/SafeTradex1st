@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { X, Lock } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import CoinLogo from './CoinLogo';
 
 export default function StakeModal({ open, coin, available, apr, lockDays, minAmount, onClose, onSuccess, userEmail }) {
