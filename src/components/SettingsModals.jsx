@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Eye, EyeOff, Bell, Shield, Link, Globe } from 'lucide-react';
 import { toast } from 'sonner';
-import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 
 function ModalShell({ title, onClose, children }) {
