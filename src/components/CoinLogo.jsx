@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { COIN_LOGOS, getFallbackColor } from '@/lib/coinLogos';
+import { COIN_LOGOS } from "../lib/coinLogos";
 
 export default function CoinLogo({ symbol, size = 'md' }) {
   const [imgError, setImgError] = useState(false);
