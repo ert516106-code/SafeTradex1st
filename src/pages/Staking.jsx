@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, TrendingUp, Lock, Unlock, RefreshCw, ArrowLeftRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
 import CoinLogo from '../components/CoinLogo';
 import StakeModal from '../components/StakeModal';
 import TransferToStakingModal from '../components/TransferToStakingModal';
