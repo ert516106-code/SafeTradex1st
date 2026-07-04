@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { RefreshCw, Check, X, Clock } from 'lucide-react';
 
