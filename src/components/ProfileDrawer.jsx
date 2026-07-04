@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronRight, Copy, LogOut } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import TermsModal from './TermsModal';
 import KYCModal from './KYCModal';
