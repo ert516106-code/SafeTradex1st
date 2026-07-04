@@ -19,7 +19,6 @@ import Coins from "./pages/Coins";
 import Trading from "./pages/Trading";
 import Financial from "./pages/Financial";
 import Assets from "./pages/Assets";
-import AdminDashboard from "./pages/AdminDashboard";
 import Staking from "./pages/Staking";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -47,12 +46,14 @@ function AuthenticatedApp() {
 
   if (isLoadingAuth) {
     return (
-      <div style={{
-        display:"flex",
-        justifyContent:"center",
-        alignItems:"center",
-        height:"100vh"
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh"
+        }}
+      >
         Loading...
       </div>
     );
@@ -73,13 +74,13 @@ function AuthenticatedApp() {
     <div className="max-w-lg mx-auto relative">
       <Routes>
 
-        {/* Public routes */}
+        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Protected routes */}
+        {/* Protected Routes */}
         <Route
           element={
             <ProtectedRoute
@@ -95,7 +96,6 @@ function AuthenticatedApp() {
           <Route path="/trade" element={<Trading />} />
           <Route path="/financial" element={<Financial />} />
           <Route path="/assets" element={<Assets />} />
-          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/staking" element={<Staking />} />
         </Route>
 
