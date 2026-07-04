@@ -1,21 +1,13 @@
 import React from "react";
 
-export function Button({
-  children,
+export const Input = ({
   className = "",
-  variant = "default",
   ...props
-}) {
+}) => {
   return (
-    <button
-      className={`px-4 py-2 rounded-md font-medium ${
-        variant === "outline"
-          ? "border border-gray-300"
-          : "bg-blue-600 text-white"
-      } ${className}`}
+    <input
       {...props}
-    >
-      {children}
-    </button>
+      className={`w-full h-10 border rounded-md px-3 outline-none ${className}`}
+    />
   );
-}
+};
