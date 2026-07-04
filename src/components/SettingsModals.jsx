@@ -1,63 +1,66 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { useLanguage } from '../lib/LanguageContext';
 
-const translations = {
-  'English': { dir: 'ltr', t: {} },
-  'Chinese (简体)': { dir: 'ltr', t: { 'Account balance': '账户余额' } },
-  'Chinese (繁體)': { dir: 'ltr', t: { 'Account balance': '帳戶餘額' } },
-  'Japanese': { dir: 'ltr', t: { 'Account balance': '口座残高' } },
-  'Korean': { dir: 'ltr', t: { 'Account balance': '계정 잔액' } },
-  'Spanish': { dir: 'ltr', t: { 'Account balance': 'Saldo de cuenta' } },
-  'French': { dir: 'ltr', t: { 'Account balance': 'Solde du compte' } },
-  'German': { dir: 'ltr', t: { 'Account balance': 'Kontostand' } },
-  'Arabic': { dir: 'rtl', t: { 'Account balance': 'رصيد الحساب' } },
-  'Russian': { dir: 'ltr', t: { 'Account balance': 'Баланс счёта' } },
-  'Portuguese': { dir: 'ltr', t: { 'Account balance': 'Saldo da conta' } },
-  'Vietnamese': { dir: 'ltr', t: { 'Account balance': 'Số dư tài khoản' } },
-  'Thai': { dir: 'ltr', t: { 'Account balance': 'ยอดเงินในบัญชี' } },
-};
-
-const LanguageContext = createContext({
-  language: 'English',
-  t: (k) => k,
-  dir: 'ltr',
-  setLanguage: () => {}
-});
-
-export function LanguageProvider({ children }) {
-  const [language, setLanguageState] = useState(
-    localStorage.getItem('app_language') || 'English'
-  );
-
-  useEffect(() => {
-    const dir = translations[language]?.dir || 'ltr';
-    document.documentElement.dir = dir;
-    localStorage.setItem('app_language', language);
-  }, [language]);
-
-  const setLanguage = (lang) => {
-    setLanguageState(lang);
-  };
-
-  const t = (key) =>
-    translations[language]?.t[key] || key;
-
-  const dir =
-    translations[language]?.dir || 'ltr';
+export function FundPasswordModal({ open }) {
+  if (!open) return null;
 
   return (
-    <LanguageContext.Provider
-      value={{
-        language,
-        t,
-        dir,
-        setLanguage
-      }}
-    >
-      <div dir={dir}>
-        {children}
-      </div>
-    </LanguageContext.Provider>
+    <div>
+      <h2>Fund Password</h2>
+    </div>
   );
 }
 
-export const useLanguage = () => useContext(LanguageContext);
+export function LoginPasswordModal({ open }) {
+  if (!open) return null;
+
+  return (
+    <div>
+      <h2>Login Password</h2>
+    </div>
+  );
+}
+
+export function LanguageModal({ open }) {
+  const { language } = useLanguage();
+
+  if (!open) return null;
+
+  return (
+    <div>
+      <h2>Language</h2>
+      <p>{language}</p>
+    </div>
+  );
+}
+
+export function NotificationsModal({ open }) {
+  if (!open) return null;
+
+  return (
+    <div>
+      <h2>Notifications</h2>
+    </div>
+  );
+}
+
+export function SecurityModal({ open }) {
+  if (!open) return null;
+
+  return (
+    <div>
+      <h2>Security Center</h2>
+    </div>
+  );
+}
+
+export function AccountBindingModal({ open }) {
+  if (!open) return null;
+
+  return (
+    <div>
+      <h2>Account Binding</h2>
+    </div>
+  );
+}
