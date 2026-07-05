@@ -1,0 +1,20 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user"
+    },
+    "country": {
+      "type": "string"
+    },
+    "uid": {
+      "type": "number"
+    }
+  }
+}
