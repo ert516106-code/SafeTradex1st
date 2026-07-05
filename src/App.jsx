@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
   BrowserRouter as Router,
@@ -23,13 +23,15 @@ import Trading from "./pages/Trading";
 import Financial from "./pages/Financial";
 import Assets from "./pages/Assets";
 import Staking from "./pages/Staking";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+
 import PageNotFound from "./lib/PageNotFound";
 
-function AuthenticatedApp() {
+function AppRoutes() {
   const { isAuthenticated } = useAuth();
 
   return (
@@ -37,13 +39,13 @@ function AuthenticatedApp() {
 
       <Routes>
 
-        {/* Public */}
+        {/* PUBLIC ROUTES */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Root redirect */}
+        {/* ROOT REDIRECT FIX */}
         <Route
           path="/"
           element={
@@ -53,7 +55,7 @@ function AuthenticatedApp() {
           }
         />
 
-        {/* Protected */}
+        {/* PROTECTED ROUTES */}
         <Route element={<ProtectedRoute />}>
           <Route path="/home" element={<Home />} />
           <Route path="/markets" element={<Markets />} />
@@ -69,6 +71,7 @@ function AuthenticatedApp() {
 
       </Routes>
 
+      {/* Bottom nav ONLY when logged in */}
       {isAuthenticated && <BottomNav />}
 
     </div>
@@ -96,7 +99,7 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <LanguageProvider>
           <Router>
-            <AuthenticatedApp />
+            <AppRoutes />
           </Router>
         </LanguageProvider>
       </QueryClientProvider>
