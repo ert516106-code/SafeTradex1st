@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate
+} from "react-router-dom";
 
 import { queryClientInstance } from "./lib/query-client";
 import { LanguageProvider } from "./lib/LanguageContext";
@@ -72,25 +77,44 @@ function AuthenticatedApp() {
 
   return (
     <div className="max-w-lg mx-auto relative">
+
       <Routes>
 
         {/* Public Routes */}
+
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
+        />
+        <Route
+          path="/reset-password"
+          element={<ResetPassword />}
+        />
+
+        {/* Redirect "/" to Login */}
+
+        <Route
+          path="/"
+          element={<Navigate to="/login" replace />}
+        />
 
         {/* Protected Routes */}
+
         <Route
           element={
             <ProtectedRoute
               unauthenticatedElement={
-                <Navigate to="/login" replace />
+                <Navigate
+                  to="/login"
+                  replace
+                />
               }
             />
           }
         >
-          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/markets" element={<Markets />} />
           <Route path="/coins" element={<Coins />} />
           <Route path="/trade" element={<Trading />} />
@@ -99,14 +123,20 @@ function AuthenticatedApp() {
           <Route path="/staking" element={<Staking />} />
         </Route>
 
-        <Route path="*" element={<PageNotFound />} />
+        <Route
+          path="*"
+          element={<PageNotFound />}
+        />
+
       </Routes>
 
       <BottomNav />
 
       {needsCountry && (
         <CountryPromptModal
-          onSaved={() => setNeedsCountry(false)}
+          onSaved={() =>
+            setNeedsCountry(false)
+          }
         />
       )}
     </div>
