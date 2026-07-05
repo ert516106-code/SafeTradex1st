@@ -1,0 +1,89 @@
+{
+  "name": "StakingRecord",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "coin": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "apr": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed"
+      ],
+      "default": "active"
+    },
+    "start_date": {
+      "type": "string"
+    },
+    "end_date": {
+      "type": "string"
+    },
+    "rewards_earned": {
+      "type": "number",
+      "default": 0
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "user_email",
+    "coin",
+    "amount",
+    "apr"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
