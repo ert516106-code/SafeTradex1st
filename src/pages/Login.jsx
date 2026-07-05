@@ -13,21 +13,55 @@ export default function Login() {
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [showPassword,setShowPassword]=useState(false);
+  const [loading,setLoading]=useState(false);
 
   const handleSubmit=(e)=>{
     e.preventDefault();
-    navigate("/");
+
+    if(!email || !password){
+      alert("Please enter email and password");
+      return;
+    }
+
+    setLoading(true);
+
+    setTimeout(()=>{
+
+      // Temporary login session
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          email:email,
+          loggedIn:true
+        })
+      );
+
+      setLoading(false);
+
+      // Change "/" if your dashboard route is different
+      navigate("/");
+
+    },1000);
+
   };
 
   const handleGoogleLogin=()=>{
-    // Replace later with Firebase/Auth provider
-    alert("Google Login coming soon");
+
+    // Temporary Google login simulation
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
+        email:"googleuser@gmail.com",
+        loggedIn:true
+      })
+    );
+
+    navigate("/");
   };
 
   return(
     <div className="min-h-screen flex justify-center items-center bg-[#0b1025] relative overflow-hidden">
 
-      {/* Background glow */}
       <div className="absolute w-[500px] h-[500px] bg-purple-600 opacity-20 blur-[120px]" />
 
       <div className="w-[380px] bg-[#11152c]/90 backdrop-blur-xl border border-[#4f46e520] rounded-3xl p-8 text-white relative shadow-2xl">
@@ -86,9 +120,12 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition font-semibold"
+            disabled={loading}
+            className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition font-semibold disabled:opacity-50"
           >
-            Login
+
+            {loading ? "Signing in..." : "Login"}
+
           </button>
 
         </form>
@@ -106,8 +143,11 @@ export default function Login() {
           <img
             src="https://www.google.com/favicon.ico"
             width="20"
+            alt=""
           />
+
           Continue with Google
+
         </button>
 
         <div className="mt-6 text-center text-sm text-gray-400">
