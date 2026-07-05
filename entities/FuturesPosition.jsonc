@@ -1,0 +1,103 @@
+{
+  "name": "FuturesPosition",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "pair": {
+      "type": "string"
+    },
+    "side": {
+      "type": "string",
+      "enum": [
+        "long",
+        "short"
+      ]
+    },
+    "leverage": {
+      "type": "number",
+      "default": 3
+    },
+    "margin": {
+      "type": "number"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "entry_price": {
+      "type": "number"
+    },
+    "close_price": {
+      "type": "number"
+    },
+    "pnl": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "default": "open"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "user_email",
+    "pair",
+    "side",
+    "leverage",
+    "margin",
+    "amount",
+    "entry_price"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
