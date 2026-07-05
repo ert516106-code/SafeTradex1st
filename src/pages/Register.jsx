@@ -1,260 +1,258 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-
+import { Link } from "react-router-dom";
 import {
-  UserPlus,
-  Mail,
-  Lock,
-  Loader2,
-  Eye,
-  EyeOff
+Mail,
+Lock,
+Eye,
+EyeOff
 } from "lucide-react";
 
-import AuthLayout from "../components/AuthLayout";
-
 export default function Register() {
-  const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+const [step,setStep]=useState(1);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+const [country,setCountry]=useState("");
+const [accepted,setAccepted]=useState(false);
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+const [email,setEmail]=useState("");
+const [password,setPassword]=useState("");
+const [confirmPassword,setConfirmPassword]=useState("");
 
-  const getPasswordStrength = (pw) => {
-    let score = 0;
+const [showPassword,setShowPassword]=useState(false);
+const [showConfirmPassword,setShowConfirmPassword]=useState(false);
 
-    if (pw.length >= 8) score++;
-    if (/[A-Z]/.test(pw)) score++;
-    if (/[a-z]/.test(pw)) score++;
-    if (/[0-9]/.test(pw)) score++;
-    if (/[^A-Za-z0-9]/.test(pw)) score++;
+return(
 
-    if (score <= 2) {
-      return {
-        label: "Weak",
-        color: "bg-red-500",
-        width: "33%"
-      };
-    }
+<div className="min-h-screen bg-white flex justify-center px-5 py-10">
 
-    if (score <= 4) {
-      return {
-        label: "Medium",
-        color: "bg-yellow-500",
-        width: "66%"
-      };
-    }
+<div className="w-full max-w-md">
 
-    return {
-      label: "Strong",
-      color: "bg-green-500",
-      width: "100%"
-    };
-  };
+{step===1 && (
 
-  const passwordStrength = password
-    ? getPasswordStrength(password)
-    : null;
+<>
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+<h1 className="text-4xl font-bold text-center">
+Where do you live?
+</h1>
 
-    setError("");
+<p className="text-center text-gray-500 mt-3 mb-10">
+Your response will be used to set up your account and verify your identity.
+</p>
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
+<div className="border rounded-3xl p-8 shadow-sm">
 
-    setLoading(true);
+<label className="font-semibold">
+Country / Region
+</label>
 
-    setTimeout(() => {
-      setLoading(false);
-      navigate("/login");
-    }, 1500);
-  };
+<select
+className="w-full mt-3 border rounded-xl h-12 px-4"
+value={country}
+onChange={(e)=>setCountry(e.target.value)}
+>
 
-  return (
-    <AuthLayout
-      icon={UserPlus}
-      title="Create Account"
-      subtitle="Sign up to continue"
-      footer={
-        <>
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="text-primary"
-          >
-            Login
-          </Link>
-        </>
-      }
-    >
+<option value="">
+Select Country
+</option>
 
-      {error && (
-        <div className="p-3 mb-4 rounded bg-red-100 text-red-600 text-sm">
-          {error}
-        </div>
-      )}
+<option>United States</option>
+<option>Canada</option>
+<option>Philippines</option>
+<option>United Kingdom</option>
+<option>Australia</option>
 
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4"
-      >
+</select>
 
-        <div>
-          <Label>Email</Label>
+<div className="flex mt-6 items-start gap-3">
 
-          <div className="relative">
-            <Mail className="absolute left-3 top-4 w-4 h-4" />
+<input
+type="checkbox"
+checked={accepted}
+onChange={()=>setAccepted(!accepted)}
+/>
 
-            <Input
-              type="email"
-              placeholder="you@example.com"
-              className="pl-10"
-              value={email}
-              onChange={(e)=>
-                setEmail(e.target.value)
-              }
-              required
-            />
-          </div>
-        </div>
+<p className="text-sm text-gray-500">
+By creating an account I agree to the Terms and Privacy Policy
+</p>
 
-        <div>
-          <Label>Password</Label>
+</div>
 
-          <div className="relative">
+<button
+onClick={()=>setStep(2)}
+disabled={!country || !accepted}
+className="w-full h-12 mt-8 rounded-xl bg-blue-600 text-white disabled:bg-gray-300"
+>
 
-            <Lock className="absolute left-3 top-4 w-4 h-4"/>
+Create account
 
-            <Input
-              type={
-                showPassword
-                ? "text"
-                : "password"
-              }
-              className="pl-10 pr-10"
-              value={password}
-              onChange={(e)=>
-                setPassword(e.target.value)
-              }
-              required
-            />
+</button>
 
-            <button
-              type="button"
-              className="absolute right-3 top-4"
-              onClick={()=>
-                setShowPassword(
-                  !showPassword
-                )
-              }
-            >
-              {showPassword
-                ? <EyeOff size={16}/>
-                : <Eye size={16}/>
-              }
-            </button>
+</div>
 
-          </div>
+<div className="text-center mt-8">
+Already have an account?{" "}
+<Link
+to="/login"
+className="text-blue-600"
+>
+Log in
+</Link>
+</div>
 
-          {passwordStrength && (
-            <div className="mt-2">
+</>
 
-              <div className="w-full h-2 bg-gray-200 rounded">
+)}
 
-                <div
-                  className={`h-2 ${passwordStrength.color}`}
-                  style={{
-                    width:passwordStrength.width
-                  }}
-                />
+{step===2 && (
 
-              </div>
+<>
 
-              <p className="text-xs mt-1">
-                {passwordStrength.label}
-              </p>
+<h1 className="text-4xl font-bold text-center">
+Create Account
+</h1>
 
-            </div>
-          )}
+<p className="text-center text-gray-500 mt-3 mb-10">
+Sign up to get started
+</p>
 
-        </div>
+<div className="border rounded-3xl p-8 shadow-sm">
 
-        <div>
+<button
+className="w-full h-12 border rounded-xl font-medium"
+>
 
-          <Label>Confirm Password</Label>
+Continue with Google
 
-          <div className="relative">
+</button>
 
-            <Lock className="absolute left-3 top-4 w-4 h-4"/>
+<div className="flex items-center my-6">
 
-            <Input
-              type={
-                showConfirmPassword
-                ? "text"
-                : "password"
-              }
-              className="pl-10 pr-10"
-              value={confirmPassword}
-              onChange={(e)=>
-                setConfirmPassword(
-                  e.target.value
-                )
-              }
-              required
-            />
+<div className="flex-1 border-t"/>
 
-            <button
-              type="button"
-              className="absolute right-3 top-4"
-              onClick={()=>
-                setShowConfirmPassword(
-                  !showConfirmPassword
-                )
-              }
-            >
-              {showConfirmPassword
-                ? <EyeOff size={16}/>
-                : <Eye size={16}/>
-              }
-            </button>
+<span className="px-3 text-gray-500">
+OR
+</span>
 
-          </div>
+<div className="flex-1 border-t"/>
 
-        </div>
+</div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading}
-        >
+<div>
 
-          {loading
-            ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
-                Creating...
-              </>
-            )
-            : "Create Account"
-          }
+<label>Email</label>
 
-        </Button>
+<div className="relative mt-2">
 
-      </form>
+<Mail className="absolute left-3 top-4 w-4"/>
 
-    </AuthLayout>
-  );
+<input
+className="w-full border h-12 rounded-xl pl-10"
+placeholder="you@example.com"
+value={email}
+onChange={(e)=>setEmail(e.target.value)}
+/>
+
+</div>
+
+</div>
+
+<div className="mt-5">
+
+<label>Password</label>
+
+<div className="relative mt-2">
+
+<Lock className="absolute left-3 top-4 w-4"/>
+
+<input
+type={showPassword ? "text":"password"}
+className="w-full border h-12 rounded-xl pl-10 pr-10"
+value={password}
+onChange={(e)=>setPassword(e.target.value)}
+/>
+
+<button
+type="button"
+className="absolute right-3 top-4"
+onClick={()=>setShowPassword(!showPassword)}
+>
+
+{showPassword ?
+<EyeOff size={18}/>
+:
+<Eye size={18}/>
+}
+
+</button>
+
+</div>
+
+</div>
+
+<div className="mt-5">
+
+<label>Confirm Password</label>
+
+<div className="relative mt-2">
+
+<Lock className="absolute left-3 top-4 w-4"/>
+
+<input
+type={showConfirmPassword ? "text":"password"}
+className="w-full border h-12 rounded-xl pl-10 pr-10"
+value={confirmPassword}
+onChange={(e)=>setConfirmPassword(e.target.value)}
+/>
+
+<button
+type="button"
+className="absolute right-3 top-4"
+onClick={()=>setShowConfirmPassword(!showConfirmPassword)}
+>
+
+{showConfirmPassword ?
+<EyeOff size={18}/>
+:
+<Eye size={18}/>
+}
+
+</button>
+
+</div>
+
+</div>
+
+<button
+className="w-full h-12 mt-8 rounded-xl bg-blue-600 text-white"
+>
+
+Create Account
+
+</button>
+
+</div>
+
+<div className="text-center mt-8">
+
+Already have an account?{" "}
+
+<Link
+to="/login"
+className="text-blue-600"
+>
+Log in
+</Link>
+
+</div>
+
+</>
+
+)}
+
+</div>
+
+</div>
+
+);
+
 }
