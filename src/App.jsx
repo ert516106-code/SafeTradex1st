@@ -4,7 +4,7 @@ import {
   BrowserRouter as Router,
   Route,
   Routes,
-  Navigate
+  Navigate,
 } from "react-router-dom";
 
 import { queryClientInstance } from "./lib/query-client";
@@ -23,6 +23,7 @@ import Trading from "./pages/Trading";
 import Financial from "./pages/Financial";
 import Assets from "./pages/Assets";
 import Staking from "./pages/Staking";
+import Profile from "./pages/Profile";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -36,16 +37,15 @@ function AppRoutes() {
 
   return (
     <div className="max-w-lg mx-auto relative">
-
       <Routes>
 
-        {/* PUBLIC ROUTES */}
+        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* ROOT REDIRECT FIX */}
+        {/* Redirect */}
         <Route
           path="/"
           element={
@@ -55,7 +55,7 @@ function AppRoutes() {
           }
         />
 
-        {/* PROTECTED ROUTES */}
+        {/* Protected Pages */}
         <Route element={<ProtectedRoute />}>
           <Route path="/home" element={<Home />} />
           <Route path="/markets" element={<Markets />} />
@@ -64,6 +64,7 @@ function AppRoutes() {
           <Route path="/financial" element={<Financial />} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/staking" element={<Staking />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         {/* 404 */}
@@ -71,9 +72,7 @@ function AppRoutes() {
 
       </Routes>
 
-      {/* Bottom nav ONLY when logged in */}
       {isAuthenticated && <BottomNav />}
-
     </div>
   );
 }
