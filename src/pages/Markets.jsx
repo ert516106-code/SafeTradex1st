@@ -1,113 +1,137 @@
-import { useState } from "react";
-import { Search, ArrowLeft, CandlestickChart } from "lucide-react";
-import CoinLogo from "../components/CoinLogo";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 
-const coins = [
-  { symbol: "BTC", name: "Bitcoin", price: "$63,638", change: "+2.35%", up: true },
-  { symbol: "ETH", name: "Ethereum", price: "$1,673", change: "+1.87%", up: true },
-  { symbol: "XRP", name: "XRP", price: "$0.51", change: "+0.92%", up: true },
-  { symbol: "LTC", name: "Litecoin", price: "$82.30", change: "-1.14%", up: false },
-  { symbol: "BNB", name: "BNB", price: "$605", change: "-0.54%", up: false },
-];
+import { COINS } from "../data/coins";
+import { fetchLivePrices } from "../lib/livePrices";
+
+import CoinCard from "../components/market/CoinCard";
+import CoinDetailsModal from "../components/market/CoinDetailsModal";
 
 export default function Markets() {
-  const navigate = useNavigate();
-  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
+  const [prices, setPrices] = useState({});
+  const [selectedCoin, setSelectedCoin] = useState(null);
 
-  const filtered = coins.filter(
-    (coin) =>
-      coin.name.toLowerCase().includes(query.toLowerCase()) ||
-      coin.symbol.toLowerCase().includes(query.toLowerCase())
-  );
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPrices() {
+      const data = await fetchLivePrices(
+        COINS.map((coin) => coin.symbol)
+      );
+
+      if (mounted) {
+        setPrices(data);
+      }
+    }
+
+    loadPrices();
+
+    const interval = setInterval(loadPrices, 30000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const filteredCoins = useMemo(() => {
+    return COINS.filter((coin) => {
+      const keyword = search.toLowerCase();
+
+      return (
+        coin.name.toLowerCase().includes(keyword) ||
+        coin.symbol.toLowerCase().includes(keyword)
+      );
+    });
+  }, [search]);
 
   return (
-    <div style={{ padding: "20px" }}>
-      
-      <div style={{
-        display:"flex",
-        alignItems:"center",
-        gap:"10px",
-        marginBottom:"20px"
-      }}>
-        <button onClick={() => navigate("/")}>
-          <ArrowLeft size={20}/>
-        </button>
+    <>
+      <div className="min-h-screen bg-background pb-24">
 
-        <h1>Markets</h1>
-      </div>
+        {/* Header */}
+        <div className="sticky top-0 z-20 bg-background border-b border-border">
 
-      <div style={{
-        display:"flex",
-        alignItems:"center",
-        border:"1px solid #ccc",
-        padding:"10px",
-        marginBottom:"20px"
-      }}>
-        <Search size={18}/>
-        
-        <input
-          type="text"
-          placeholder="Search coin..."
-          value={query}
-          onChange={(e)=>setQuery(e.target.value)}
-          style={{
-            border:"none",
-            outline:"none",
-            marginLeft:"10px",
-            width:"100%"
-          }}
-        />
-      </div>
+          <div className="px-5 pt-6 pb-5">
 
-      {filtered.map((coin)=>(
-        <div
-          key={coin.symbol}
-          style={{
-            display:"flex",
-            justifyContent:"space-between",
-            padding:"15px",
-            borderBottom:"1px solid #ddd"
-          }}
-        >
-          <div style={{
-            display:"flex",
-            alignItems:"center",
-            gap:"10px"
-          }}>
-            <CoinLogo symbol={coin.symbol}/>
-            
-            <div>
-              <div>{coin.name}</div>
-              <small>{coin.symbol}</small>
+            <h1 className="text-2xl font-bold">
+              Markets
+            </h1>
+
+            <p className="text-sm text-muted-foreground mt-1">
+              Explore live cryptocurrency prices.
+            </p>
+
+            {/* Search */}
+            <div className="mt-5 flex items-center gap-3 rounded-2xl border border-border bg-secondary px-4 py-3">
+
+              <Search
+                size={18}
+                className="text-muted-foreground"
+              />
+
+              <input
+                type="text"
+                placeholder="Search Bitcoin, Ethereum..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 bg-transparent outline-none text-sm"
+              />
+
             </div>
+
           </div>
 
-          <div>
-            <div>{coin.price}</div>
-
-            <small
-              style={{
-                color: coin.up ? "green" : "red"
-              }}
-            >
-              {coin.change}
-            </small>
-          </div>
         </div>
-      ))}
 
-      <div style={{
-        marginTop:"20px",
-        display:"flex",
-        justifyContent:"center",
-        alignItems:"center",
-        gap:"5px"
-      }}>
-        <CandlestickChart size={18}/>
-        <span>Charts powered by TradingView</span>
+        {/* Coin List */}
+
+        <div className="px-5 py-5 space-y-3">
+
+          {filteredCoins.length === 0 && (
+
+            <div className="text-center py-12">
+
+              <h2 className="text-lg font-semibold">
+                No coins found
+              </h2>
+
+              <p className="text-muted-foreground mt-2">
+                Try searching another cryptocurrency.
+              </p>
+
+            </div>
+
+          )}
+
+          {filteredCoins.map((coin) => {
+
+            const live = prices[coin.symbol];
+
+            return (
+
+              <CoinCard
+                key={coin.symbol}
+                coin={coin}
+                price={live?.price ?? 0}
+                change={live?.change ?? 0}
+                onClick={setSelectedCoin}
+              />
+
+            );
+
+          })}
+
+        </div>
+
       </div>
 
-    </div>
+      <CoinDetailsModal
+        open={!!selectedCoin}
+        coin={selectedCoin}
+        onClose={() => setSelectedCoin(null)}
+      />
+    </>
   );
 }
