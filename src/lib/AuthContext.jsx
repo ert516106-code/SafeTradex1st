@@ -1,53 +1,113 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
-const AuthContext = createContext();
+import {
+  getCurrentSession,
+  getCurrentUser,
+  getProfile,
+  logoutUser,
+} from "./authService";
 
-export const AuthProvider = ({ children }) => {
+import { supabase } from "./supabase";
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [authError, setAuthError] = useState(null);
+
+  const loadUser = async () => {
+    try {
+      setIsLoadingAuth(true);
+      setAuthError(null);
+
+      const session = await getCurrentSession();
+
+      if (!session) {
+        setUser(null);
+        setProfile(null);
+        setIsAuthenticated(false);
+        return;
+      }
+
+      const currentUser = await getCurrentUser();
+
+      if (!currentUser) {
+        setUser(null);
+        setProfile(null);
+        setIsAuthenticated(false);
+        return;
+      }
+
+      const currentProfile = await getProfile(currentUser.id);
+
+      setUser(currentUser);
+      setProfile(currentProfile);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error(error);
+
+      setUser(null);
+      setProfile(null);
+      setIsAuthenticated(false);
+
+      setAuthError({
+        type: "user_not_registered",
+        message: error.message,
+      });
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    loadUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      loadUser();
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const isAuthenticated = !!user;
+  const logout = async () => {
+    await logoutUser();
 
-  const login = (userData) => {
-    localStorage.setItem("user", JSON.stringify(userData));
-    setUser(userData);
-  };
-
-  const register = (userData) => {
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    users.push(userData);
-    localStorage.setItem("users", JSON.stringify(users));
-  };
-
-  const logout = () => {
-    localStorage.removeItem("user");
     setUser(null);
-  };
-
-  const navigateToLogin = () => {
-    window.location.href = "/login";
+    setProfile(null);
+    setIsAuthenticated(false);
+    setAuthError(null);
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        profile,
+
         isAuthenticated,
-        login,
-        register,
+        isLoadingAuth,
+        authError,
+
+        refreshProfile: loadUser,
         logout,
-        navigateToLogin
       }}
     >
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}
