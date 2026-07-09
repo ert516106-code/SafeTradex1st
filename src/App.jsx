@@ -36,43 +36,51 @@ function AppRoutes() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="max-w-lg mx-auto relative">
-      <Routes>
+    <div className="w-full min-h-screen bg-[#07111F]">
 
-        {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 relative">
 
-        {/* Redirect */}
-        <Route
-          path="/"
-          element={
-            isAuthenticated
-              ? <Navigate to="/home" replace />
-              : <Navigate to="/login" replace />
-          }
-        />
+        <Routes>
 
-        {/* Protected Pages */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/home" element={<Home />} />
-          <Route path="/markets" element={<Markets />} />
-          <Route path="/coins" element={<Coins />} />
-          <Route path="/trade" element={<Trading />} />
-          <Route path="/financial" element={<Financial />} />
-          <Route path="/assets" element={<Assets />} />
-          <Route path="/staking" element={<Staking />} />
-          <Route path="/profile" element={<Profile />} />
-        </Route>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* 404 */}
-        <Route path="*" element={<PageNotFound />} />
+          {/* Redirect */}
+          <Route
+            path="/"
+            element={
+              isAuthenticated
+                ? <Navigate to="/home" replace />
+                : <Navigate to="/login" replace />
+            }
+          />
 
-      </Routes>
+          {/* Protected Pages */}
+          <Route element={<ProtectedRoute />}>
 
-      {isAuthenticated && <BottomNav />}
+            <Route path="/home" element={<Home />} />
+            <Route path="/markets" element={<Markets />} />
+            <Route path="/coins" element={<Coins />} />
+            <Route path="/trade" element={<Trading />} />
+            <Route path="/financial" element={<Financial />} />
+            <Route path="/assets" element={<Assets />} />
+            <Route path="/staking" element={<Staking />} />
+            <Route path="/profile" element={<Profile />} />
+
+          </Route>
+
+          {/* 404 */}
+          <Route path="*" element={<PageNotFound />} />
+
+        </Routes>
+
+        {isAuthenticated && <BottomNav />}
+
+      </div>
+
     </div>
   );
 }
