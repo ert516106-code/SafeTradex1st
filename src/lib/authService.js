@@ -1,18 +1,45 @@
 import { supabase } from "./supabase";
 
 /**
- * Register a new user
+ * Register a new SafeTradex user
  */
 export async function registerUser({
+  fullName,
+  username,
+  country,
   email,
   password,
 }) {
+  // Create Supabase Auth account
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
   });
 
   if (error) throw error;
+
+  const user = data.user;
+
+  if (!user) {
+    throw new Error("Unable to create account.");
+  }
+
+  // Create profile
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .insert({
+      id: user.id,
+      full_name: fullName,
+      username,
+      email,
+      country,
+      role: "user",
+      status: "Pending",
+    });
+
+  if (profileError) {
+    throw profileError;
+  }
 
   return data;
 }
@@ -21,10 +48,11 @@ export async function registerUser({
  * Login
  */
 export async function loginUser(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  const { data, error } =
+    await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
   if (error) throw error;
 
@@ -78,26 +106,30 @@ export async function getProfile(userId) {
 }
 
 /**
- * Update Last Login
+ * Mark user online
  */
 export async function updateLastLogin(userId) {
-  await supabase
+  const { error } = await supabase
     .from("profiles")
     .update({
       last_login: new Date().toISOString(),
       is_online: true,
     })
     .eq("id", userId);
+
+  if (error) throw error;
 }
 
 /**
- * User Offline
+ * Mark user offline
  */
 export async function setOffline(userId) {
-  await supabase
+  const { error } = await supabase
     .from("profiles")
     .update({
       is_online: false,
     })
     .eq("id", userId);
+
+  if (error) throw error;
 }
