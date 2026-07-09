@@ -1,124 +1,224 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { useAuth } from "../lib/AuthContext"; // IMPORTANT
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+
+import { loginUser, getProfile } from "../lib/authService";
+import { useAuth } from "../lib/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth(); // IMPORTANT
+  const { refreshProfile } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!email || !password) {
-      alert("Please enter email and password");
+    setError("");
+
+    if (!email.trim()) {
+      setError("Please enter your email.");
       return;
     }
 
-    setLoading(true);
+    if (!password.trim()) {
+      setError("Please enter your password.");
+      return;
+    }
 
-    setTimeout(() => {
-      const userData = {
+    try {
+      setLoading(true);
+
+      const result = await loginUser(
         email,
-        loggedIn: true,
-        role: "user"
-      };
+        password
+      );
 
-      // ✅ THIS is the important fix
-      login(userData);
+      const user = result.user;
 
-      // optional backup persistence
-      localStorage.setItem("user", JSON.stringify(userData));
+      if (!user) {
+        throw new Error(
+          "Unable to sign in."
+        );
+      }
 
+      const profile = await getProfile(
+        user.id
+      );
+
+      await refreshProfile();
+
+      if (profile.role === "admin") {
+        navigate("/admin");
+        return;
+      }
+
+      if (
+        profile.status === "Pending"
+      ) {
+        navigate(
+          "/pending-approval"
+        );
+        return;
+      }
+
+      navigate("/home");
+
+    } catch (err) {
+      setError(
+        err.message ||
+        "Login failed."
+      );
+    } finally {
       setLoading(false);
-
-      // ✅ go to HOME page (NOT "/")
-      navigate("/home", { replace: true });
-    }, 800);
-  };
-
-  const handleGoogleLogin = () => {
-    const userData = {
-      email: "googleuser@gmail.com",
-      loggedIn: true,
-      role: "user"
-    };
-
-    login(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-
-    navigate("/home", { replace: true });
+    }
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-white">
-      <div className="w-[380px] bg-white border rounded-2xl p-8 shadow-lg">
+    <div className="min-h-screen bg-[#07111F] text-white flex justify-center items-center px-6">
 
-        <h1 className="text-2xl font-bold text-center mb-2">
-          Welcome Back
-        </h1>
+      <div className="w-full max-w-md">
 
-        <p className="text-center text-gray-500 mb-6">
-          Login to continue
-        </p>
+        <div className="mb-8 text-center">
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          <h1 className="text-4xl font-bold">
+            Welcome Back
+          </h1>
 
-          <div className="relative">
-            <Mail className="absolute left-3 top-4 w-4 h-4 text-gray-400" />
+          <p className="text-slate-400 mt-3">
+            Sign in to your SafeTradex account.
+          </p>
 
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              className="w-full border h-12 rounded-xl pl-10 pr-4"
-            />
+        </div>
+
+        <form
+          onSubmit={handleLogin}
+          className="rounded-3xl bg-[#0C1828] border border-slate-800 p-6 space-y-5"
+        >
+
+          <div>
+
+            <label>Email</label>
+
+            <div className="relative mt-2">
+
+              <Mail
+                className="absolute left-4 top-4 text-slate-400"
+                size={18}
+              />
+
+              <input
+                type="email"
+                value={email}
+                onChange={(e)=>
+                  setEmail(e.target.value)
+                }
+                placeholder="you@example.com"
+                className="w-full h-12 rounded-xl bg-[#101E31] border border-slate-700 pl-12 pr-4"
+              />
+
+            </div>
+
           </div>
 
-          <div className="relative">
-            <Lock className="absolute left-3 top-4 w-4 h-4 text-gray-400" />
+          <div>
 
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="w-full border h-12 rounded-xl pl-10 pr-10"
-            />
+            <label>Password</label>
 
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-4"
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+            <div className="relative mt-2">
+
+              <Lock
+                className="absolute left-4 top-4 text-slate-400"
+                size={18}
+              />
+
+              <input
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
+                value={password}
+                onChange={(e)=>
+                  setPassword(
+                    e.target.value
+                  )
+                }
+                className="w-full h-12 rounded-xl bg-[#101E31] border border-slate-700 pl-12 pr-12"
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword(
+                    !showPassword
+                  )
+                }
+                className="absolute right-4 top-3"
+              >
+                {showPassword
+                  ? <EyeOff size={18}/>
+                  : <Eye size={18}/>}
+              </button>
+
+            </div>
+
           </div>
+                    {error && (
+            <div className="rounded-xl border border-red-500 bg-red-500/10 p-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 rounded-xl bg-black text-white"
+            className="w-full h-12 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 font-semibold transition disabled:opacity-50"
           >
-            {loading ? "Signing in..." : "Login"}
+            {loading ? "Signing In..." : "Sign In"}
           </button>
+
+          <div className="text-right">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-sky-400 hover:text-sky-300"
+            >
+              Forgot Password?
+            </Link>
+          </div>
 
         </form>
 
-        <div className="mt-5 text-center text-sm">
-          Don’t have an account?{" "}
-          <Link to="/register" className="text-blue-500">
-            Register
+        <div className="mt-8 text-center text-slate-400">
+
+          Don't have an account?
+
+          <Link
+            to="/register"
+            className="ml-2 text-sky-400 hover:text-sky-300 font-medium"
+          >
+            Create one
           </Link>
+
         </div>
 
       </div>
+
     </div>
   );
 }
