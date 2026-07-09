@@ -1,4 +1,231 @@
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  Globe,
+  Users,
+} from "lucide-react";
+
+import { registerUser } from "../lib/authService";
+
+export default function Register() {
+  const navigate = useNavigate();
+
+  const [step, setStep] = useState(1);
+
+  const [country, setCountry] = useState("");
+  const [accepted, setAccepted] = useState(false);
+
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [referralCode, setReferralCode] = useState("");
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] =
+    useState("");
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [showConfirmPassword,
+    setShowConfirmPassword] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const handleRegister = async () => {
+    setError("");
+
+    if (!fullName.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+
+    if (!username.trim()) {
+      setError("Please choose a username.");
+      return;
+    }
+
+    if (!email.trim()) {
+      setError("Email is required.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError(
+        "Password must contain at least 6 characters."
+      );
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await registerUser({
+        fullName,
+        username,
+        country,
+        email,
+        password,
+        referralCode,
+      });
+
+      navigate("/pending-approval");
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#07111F] text-white flex justify-center px-6 py-10">
+
+      <div className="w-full max-w-md">
+
+        {step === 1 && (
+          <>
+
             <div className="mb-8">
+
+              <h1 className="text-4xl font-bold">
+                Create your account
+              </h1>
+
+              <p className="text-slate-400 mt-3">
+                Select your country to continue.
+              </p>
+
+            </div>
+
+            <div className="rounded-3xl bg-[#0C1828] border border-slate-800 p-6">
+
+              <label className="font-medium">
+                Country / Region
+              </label>
+
+              <div className="relative mt-3">
+
+                <Globe
+                  className="absolute left-4 top-4 text-slate-400"
+                  size={18}
+                />
+
+                <select
+                  value={country}
+                  onChange={(e) =>
+                    setCountry(e.target.value)
+                  }
+                  className="w-full h-12 rounded-xl bg-[#101E31] border border-slate-700 pl-12 pr-4"
+                >
+                  <option value="">
+                    Select Country
+                  </option>
+
+                  <option>
+                    Philippines
+                  </option>
+
+                  <option>
+                    Singapore
+                  </option>
+
+                  <option>
+                    Malaysia
+                  </option>
+
+                  <option>
+                    Indonesia
+                  </option>
+
+                  <option>
+                    Thailand
+                  </option>
+
+                  <option>
+                    Vietnam
+                  </option>
+
+                  <option>
+                    United States
+                  </option>
+
+                  <option>
+                    United Kingdom
+                  </option>
+
+                  <option>
+                    Canada
+                  </option>
+
+                  <option>
+                    Australia
+                  </option>
+
+                </select>
+
+              </div>
+
+              <div className="flex gap-3 mt-6">
+
+                <input
+                  type="checkbox"
+                  checked={accepted}
+                  onChange={() =>
+                    setAccepted(!accepted)
+                  }
+                />
+
+                <p className="text-sm text-slate-400">
+                  I agree to the Terms of Service
+                  and Privacy Policy.
+                </p>
+
+              </div>
+
+              <button
+                disabled={!country || !accepted}
+                onClick={() => setStep(2)}
+                className="w-full h-12 rounded-xl mt-8 bg-gradient-to-r from-sky-500 to-blue-600 disabled:opacity-40 font-semibold"
+              >
+                Continue
+              </button>
+
+            </div>
+
+            <div className="text-center mt-8 text-slate-400">
+
+              Already have an account?
+
+              <Link
+                to="/login"
+                className="ml-2 text-sky-400"
+              >
+                Log In
+              </Link>
+
+            </div>
+
+          </>
+        )}
+
+        {step === 2 && (
+          <>            <div className="mb-8">
 
               <button
                 onClick={() => setStep(1)}
