@@ -1,258 +1,203 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import {
-Mail,
-Lock,
-Eye,
-EyeOff
-} from "lucide-react";
+            <div className="mb-8">
 
-export default function Register() {
+              <button
+                onClick={() => setStep(1)}
+                className="text-sky-400 text-sm mb-6"
+              >
+                ← Back
+              </button>
 
-const [step,setStep]=useState(1);
+              <h1 className="text-4xl font-bold">
+                Create Account
+              </h1>
 
-const [country,setCountry]=useState("");
-const [accepted,setAccepted]=useState(false);
+              <p className="text-slate-400 mt-3">
+                Join SafeTradex and start your trading journey.
+              </p>
 
-const [email,setEmail]=useState("");
-const [password,setPassword]=useState("");
-const [confirmPassword,setConfirmPassword]=useState("");
+            </div>
 
-const [showPassword,setShowPassword]=useState(false);
-const [showConfirmPassword,setShowConfirmPassword]=useState(false);
+            <div className="rounded-3xl bg-[#0C1828] border border-slate-800 p-6 space-y-5">
 
-return(
+              <div>
 
-<div className="min-h-screen bg-white flex justify-center px-5 py-10">
+                <label>Full Name</label>
 
-<div className="w-full max-w-md">
+                <div className="relative mt-2">
 
-{step===1 && (
+                  <User
+                    className="absolute left-4 top-4 text-slate-400"
+                    size={18}
+                  />
 
-<>
+                  <input
+                    value={fullName}
+                    onChange={(e)=>setFullName(e.target.value)}
+                    placeholder="John Doe"
+                    className="w-full h-12 rounded-xl bg-[#101E31] border border-slate-700 pl-12 pr-4"
+                  />
 
-<h1 className="text-4xl font-bold text-center">
-Where do you live?
-</h1>
+                </div>
 
-<p className="text-center text-gray-500 mt-3 mb-10">
-Your response will be used to set up your account and verify your identity.
-</p>
+              </div>
 
-<div className="border rounded-3xl p-8 shadow-sm">
+              <div>
 
-<label className="font-semibold">
-Country / Region
-</label>
+                <label>Username</label>
 
-<select
-className="w-full mt-3 border rounded-xl h-12 px-4"
-value={country}
-onChange={(e)=>setCountry(e.target.value)}
->
+                <div className="relative mt-2">
 
-<option value="">
-Select Country
-</option>
+                  <Users
+                    className="absolute left-4 top-4 text-slate-400"
+                    size={18}
+                  />
 
-<option>United States</option>
-<option>Canada</option>
-<option>Philippines</option>
-<option>United Kingdom</option>
-<option>Australia</option>
+                  <input
+                    value={username}
+                    onChange={(e)=>setUsername(e.target.value)}
+                    placeholder="johndoe"
+                    className="w-full h-12 rounded-xl bg-[#101E31] border border-slate-700 pl-12 pr-4"
+                  />
 
-</select>
+                </div>
 
-<div className="flex mt-6 items-start gap-3">
+              </div>
 
-<input
-type="checkbox"
-checked={accepted}
-onChange={()=>setAccepted(!accepted)}
-/>
+              <div>
 
-<p className="text-sm text-gray-500">
-By creating an account I agree to the Terms and Privacy Policy
-</p>
+                <label>Email</label>
 
-</div>
+                <div className="relative mt-2">
 
-<button
-onClick={()=>setStep(2)}
-disabled={!country || !accepted}
-className="w-full h-12 mt-8 rounded-xl bg-blue-600 text-white disabled:bg-gray-300"
->
+                  <Mail
+                    className="absolute left-4 top-4 text-slate-400"
+                    size={18}
+                  />
 
-Create account
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e)=>setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full h-12 rounded-xl bg-[#101E31] border border-slate-700 pl-12 pr-4"
+                  />
 
-</button>
+                </div>
 
-</div>
+              </div>
 
-<div className="text-center mt-8">
-Already have an account?{" "}
-<Link
-to="/login"
-className="text-blue-600"
->
-Log in
-</Link>
-</div>
+              <div>
 
-</>
+                <label>Password</label>
 
-)}
+                <div className="relative mt-2">
 
-{step===2 && (
+                  <Lock
+                    className="absolute left-4 top-4 text-slate-400"
+                    size={18}
+                  />
 
-<>
-
-<h1 className="text-4xl font-bold text-center">
-Create Account
-</h1>
-
-<p className="text-center text-gray-500 mt-3 mb-10">
-Sign up to get started
-</p>
-
-<div className="border rounded-3xl p-8 shadow-sm">
-
-<button
-className="w-full h-12 border rounded-xl font-medium"
->
-
-Continue with Google
-
-</button>
-
-<div className="flex items-center my-6">
-
-<div className="flex-1 border-t"/>
-
-<span className="px-3 text-gray-500">
-OR
-</span>
-
-<div className="flex-1 border-t"/>
-
-</div>
-
-<div>
-
-<label>Email</label>
-
-<div className="relative mt-2">
-
-<Mail className="absolute left-3 top-4 w-4"/>
-
-<input
-className="w-full border h-12 rounded-xl pl-10"
-placeholder="you@example.com"
-value={email}
-onChange={(e)=>setEmail(e.target.value)}
-/>
-
-</div>
-
-</div>
-
-<div className="mt-5">
-
-<label>Password</label>
-
-<div className="relative mt-2">
-
-<Lock className="absolute left-3 top-4 w-4"/>
-
-<input
-type={showPassword ? "text":"password"}
-className="w-full border h-12 rounded-xl pl-10 pr-10"
-value={password}
-onChange={(e)=>setPassword(e.target.value)}
-/>
-
-<button
-type="button"
-className="absolute right-3 top-4"
-onClick={()=>setShowPassword(!showPassword)}
->
-
-{showPassword ?
-<EyeOff size={18}/>
-:
-<Eye size={18}/>
-}
-
-</button>
-
-</div>
-
-</div>
-
-<div className="mt-5">
-
-<label>Confirm Password</label>
-
-<div className="relative mt-2">
-
-<Lock className="absolute left-3 top-4 w-4"/>
-
-<input
-type={showConfirmPassword ? "text":"password"}
-className="w-full border h-12 rounded-xl pl-10 pr-10"
-value={confirmPassword}
-onChange={(e)=>setConfirmPassword(e.target.value)}
-/>
-
-<button
-type="button"
-className="absolute right-3 top-4"
-onClick={()=>setShowConfirmPassword(!showConfirmPassword)}
->
-
-{showConfirmPassword ?
-<EyeOff size={18}/>
-:
-<Eye size={18}/>
-}
-
-</button>
-
-</div>
-
-</div>
-
-<button
-className="w-full h-12 mt-8 rounded-xl bg-blue-600 text-white"
->
-
-Create Account
-
-</button>
-
-</div>
-
-<div className="text-center mt-8">
-
-Already have an account?{" "}
-
-<Link
-to="/login"
-className="text-blue-600"
->
-Log in
-</Link>
-
-</div>
-
-</>
-
-)}
-
-</div>
-
-</div>
-
-);
-
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e)=>setPassword(e.target.value)}
+                    className="w-full h-12 rounded-xl bg-[#101E31] border border-slate-700 pl-12 pr-12"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={()=>setShowPassword(!showPassword)}
+                    className="absolute right-4 top-3"
+                  >
+                    {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                  </button>
+
+                </div>
+
+              </div>
+
+              <div>
+
+                <label>Confirm Password</label>
+
+                <div className="relative mt-2">
+
+                  <Lock
+                    className="absolute left-4 top-4 text-slate-400"
+                    size={18}
+                  />
+
+                  <input
+                    type={showConfirmPassword ? "text":"password"}
+                    value={confirmPassword}
+                    onChange={(e)=>setConfirmPassword(e.target.value)}
+                    className="w-full h-12 rounded-xl bg-[#101E31] border border-slate-700 pl-12 pr-12"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={()=>setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-3"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                  </button>
+
+                </div>
+
+              </div>
+
+              <div>
+
+                <label>
+                  Referral Code
+                  <span className="text-slate-500 text-sm ml-2">
+                    (Optional)
+                  </span>
+                </label>
+
+                <input
+                  value={referralCode}
+                  onChange={(e)=>setReferralCode(e.target.value)}
+                  placeholder="Referral Code"
+                  className="w-full mt-2 h-12 rounded-xl bg-[#101E31] border border-slate-700 px-4"
+                />
+
+              </div>
+
+              {error && (
+                <div className="rounded-xl bg-red-500/10 border border-red-500 text-red-300 text-sm p-3">
+                  {error}
+                </div>
+              )}
+
+              <button
+                disabled={loading}
+                onClick={handleRegister}
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 font-semibold disabled:opacity-50"
+              >
+                {loading ? "Creating Account..." : "Create Account"}
+              </button>
+
+            </div>
+
+            <div className="text-center mt-8 text-slate-400">
+
+              Already have an account?
+
+              <Link
+                to="/login"
+                className="ml-2 text-sky-400"
+              >
+                Log In
+              </Link>
+
+            </div>
+
+          </>
+        )}
+
+      </div>
+
+    </div>
+  );
 }
