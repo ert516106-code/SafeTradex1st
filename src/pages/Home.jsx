@@ -166,90 +166,63 @@ export default function Home() {
 
       </div>
 
-      <LiveMarketStrip/>
+      <LiveMarketStrip />
 
-      <div className="mx-5 mt-5">
+<div className="mx-5 mt-5">
 
-        <h2 className="font-bold mb-3">
-          Top Assets
-        </h2>
+  <h2 className="font-bold mb-4 text-lg">
+    Quick Actions
+  </h2>
 
-        {topAssets.map(asset => (
+  <div className="grid grid-cols-4 gap-4">
 
-          <div
-            key={asset.symbol}
-            className="flex justify-between py-2"
-          >
+    {quickActions.map((item) => {
 
-            <div className="flex gap-3">
+      const Icon = item.icon;
 
-              <CoinLogo
-                symbol={asset.symbol}
-                size="sm"
-              />
+      return (
 
-              <span>
-                {asset.name}
-              </span>
+        <button
+          key={item.label}
+          onClick={() => {
 
-            </div>
+            if (item.action === "download") {
+              setDownloadOpen(true);
+              return;
+            }
 
-            <span>
+            if (item.label.includes("Convert")) {
+              setConvertOpen(true);
+              return;
+            }
 
-              ${asset.price}
+            if (item.path) {
+              navigate(item.path);
+            }
 
-            </span>
+          }}
+          className="flex flex-col items-center justify-center rounded-2xl bg-slate-900 border border-slate-800 p-4 hover:bg-slate-800 transition"
+        >
+
+          <div className="h-12 w-12 rounded-full bg-sky-500/20 flex items-center justify-center">
+
+            <Icon
+              size={22}
+              className="text-sky-400"
+            />
 
           </div>
 
-        ))}
+          <span className="text-xs text-center mt-3 whitespace-pre-line">
+            {item.label}
+          </span>
 
-      </div>
+        </button>
 
-      <ProfileDrawer
-        open={profileOpen}
-        onClose={() =>
-          setProfileOpen(false)
-        }
-      />
+      );
 
-      <DepositModal
-        open={depositOpen}
-        onClose={() =>
-          setDepositOpen(false)
-        }
-      />
+    })}
 
-      <AddFundsModal
-        open={addFundsOpen}
-        onClose={() =>
-          setAddFundsOpen(false)
-        }
-      />
+  </div>
 
-      <DownloadModal
-        open={downloadOpen}
-        onClose={() =>
-          setDownloadOpen(false)
-        }
-      />
-
-      <WithdrawModal
-        open={withdrawOpen}
-        onClose={() =>
-          setWithdrawOpen(false)
-        }
-      />
-
-      <ConvertModal
-        open={convertOpen}
-        onClose={() =>
-          setConvertOpen(false)
-        }
-      />
-
-      <FloatingSupport />
-
-    </div>
-  );
-}
+</div>
