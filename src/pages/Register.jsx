@@ -85,8 +85,14 @@ export default function Register() {
       });
 
     } catch (err) {
-      setError(err.message);
-    } finally {
+  console.error("Register Error:", err);
+
+  setError(
+    err?.message ||
+    JSON.stringify(err) ||
+    "Registration failed."
+  );
+} finally {
       setLoading(false);
     }
   };
