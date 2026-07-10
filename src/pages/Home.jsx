@@ -172,3 +172,34 @@ export default function Home() {
       <HomeNews
         news={news}
       />
+
+      <ProfileDrawer
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
+
+      <DepositModal
+        open={depositOpen}
+        onClose={() => setDepositOpen(false)}
+      />
+
+      <WithdrawModal
+        open={withdrawOpen}
+        onClose={() => setWithdrawOpen(false)}
+      />
+
+      <ConvertModal
+        open={convertOpen}
+        onClose={() => setConvertOpen(false)}
+      />
+
+      <DownloadModal
+        open={downloadOpen}
+        onClose={() => setDownloadOpen(false)}
+      />
+
+      <FloatingSupport />
+
+    </DashboardLayout>
+  );
+}
