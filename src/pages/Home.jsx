@@ -129,41 +129,84 @@ export default function Home() {
 
       </div>
 
-      <div className="mx-5 bg-slate-900 rounded-xl p-5 text-white">
+     <div className="mx-5 mt-4 rounded-3xl bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-900 p-6 text-white shadow-2xl">
 
-        <div className="flex gap-2">
+  <div className="flex items-center justify-between">
 
-          Account Balance
+    <div>
 
-          <button
-            onClick={() =>
-              setHideBalance(
-                !hideBalance
-              )
-            }
-          >
-            {hideBalance
-              ? <EyeOff size={15}/>
-              : <Eye size={15}/>
-            }
-          </button>
+      <p className="text-sm text-blue-100">
+        Total Portfolio
+      </p>
 
-        </div>
+      <div className="flex items-center gap-2 mt-2">
 
-        <h2 className="text-3xl mt-3">
+        <h2 className="text-4xl font-bold">
 
           {hideBalance
-            ? "******"
-            : `$${balance}`
+            ? "••••••••"
+            : `$${balance.toLocaleString()}`
           }
 
         </h2>
 
-        <p className="mt-2">
-          Today Profit:
-          {todayProfit}
-        </p>
+        <button
+          onClick={() =>
+            setHideBalance(!hideBalance)
+          }
+        >
+          {hideBalance
+            ? <EyeOff size={18}/>
+            : <Eye size={18}/>
+          }
+        </button>
 
+      </div>
+
+    </div>
+
+    <div className="text-right">
+
+      <p className="text-xs text-blue-100">
+        Today's P/L
+      </p>
+
+      <p className="text-2xl font-bold text-green-300">
+        +${todayProfit}
+      </p>
+
+    </div>
+
+  </div>
+
+  <div className="grid grid-cols-3 gap-3 mt-6">
+
+    <Button
+      onClick={() => setDepositOpen(true)}
+      className="rounded-xl"
+    >
+      Deposit
+    </Button>
+
+    <Button
+      onClick={() => setWithdrawOpen(true)}
+      variant="secondary"
+      className="rounded-xl"
+    >
+      Withdraw
+    </Button>
+
+    <Button
+      onClick={() => setConvertOpen(true)}
+      variant="outline"
+      className="rounded-xl"
+    >
+      Convert
+    </Button>
+
+  </div>
+
+</div>
       </div>
 
       <LiveMarketStrip />
