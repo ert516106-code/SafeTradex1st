@@ -64,20 +64,10 @@ export default function Login() {
       await refreshProfile();
 
       if (profile.role === "admin") {
-        navigate("/admin");
-        return;
-      }
-
-      if (
-        profile.status === "Pending"
-      ) {
-        navigate(
-          "/pending-approval"
-        );
-        return;
-      }
-
-      navigate("/home");
+  navigate("/admin", { replace: true });
+} else {
+  navigate("/home", { replace: true });
+}
 
     } catch (err) {
       setError(
