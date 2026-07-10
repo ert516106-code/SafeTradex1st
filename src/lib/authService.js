@@ -5,12 +5,12 @@ import { supabase } from "./supabase";
  */
 export async function registerUser({
   fullName,
-  username,
   country,
   email,
   password,
+  referralCode,
 }) {
-  // Create Supabase Auth account
+  // Create authentication account
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -24,17 +24,23 @@ export async function registerUser({
     throw new Error("Unable to create account.");
   }
 
+  // Generate SafeTradex Account ID
+  const accountId =
+    "STX" +
+    String(Date.now()).slice(-7);
+
   // Create profile
   const { error: profileError } = await supabase
     .from("profiles")
     .insert({
       id: user.id,
+      account_id: accountId,
       full_name: fullName,
-      username,
       email,
       country,
+      referral_code: referralCode || null,
       role: "user",
-      status: "Pending",
+      status: "active",
     });
 
   if (profileError) {
@@ -63,7 +69,8 @@ export async function loginUser(email, password) {
  * Logout
  */
 export async function logoutUser() {
-  const { error } = await supabase.auth.signOut();
+  const { error } =
+    await supabase.auth.signOut();
 
   if (error) throw error;
 }
@@ -94,11 +101,12 @@ export async function getCurrentUser() {
  * Load Profile
  */
 export async function getProfile(userId) {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
+  const { data, error } =
+    await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
 
   if (error) throw error;
 
@@ -106,30 +114,32 @@ export async function getProfile(userId) {
 }
 
 /**
- * Mark user online
+ * Update Last Login
  */
 export async function updateLastLogin(userId) {
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      last_login: new Date().toISOString(),
-      is_online: true,
-    })
-    .eq("id", userId);
+  const { error } =
+    await supabase
+      .from("profiles")
+      .update({
+        last_login: new Date().toISOString(),
+        is_online: true,
+      })
+      .eq("id", userId);
 
   if (error) throw error;
 }
 
 /**
- * Mark user offline
+ * Mark Offline
  */
 export async function setOffline(userId) {
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      is_online: false,
-    })
-    .eq("id", userId);
+  const { error } =
+    await supabase
+      .from("profiles")
+      .update({
+        is_online: false,
+      })
+      .eq("id", userId);
 
   if (error) throw error;
 }
