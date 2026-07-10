@@ -209,7 +209,10 @@ export default function Home() {
 </div>
       </div>
 
-      <LiveMarketStrip />
+...
+</div>   {/* Balance Card */}
+
+<LiveMarketStrip />
 
 <div className="mx-5 mt-5">
 
@@ -248,12 +251,7 @@ export default function Home() {
         >
 
           <div className="h-12 w-12 rounded-full bg-sky-500/20 flex items-center justify-center">
-
-            <Icon
-              size={22}
-              className="text-sky-400"
-            />
-
+            <Icon size={22} className="text-sky-400" />
           </div>
 
           <span className="text-xs text-center mt-3 whitespace-pre-line">
@@ -267,5 +265,10 @@ export default function Home() {
     })}
 
   </div>
+
+</div>
+
+<div className="mx-5 mt-5">
+  ...
 
 </div>
