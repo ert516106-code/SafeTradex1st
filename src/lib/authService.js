@@ -12,9 +12,14 @@ export async function registerUser({
 }) {
   // Create authentication account
   const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  email,
+  password,
+});
+
+console.log("Signup result:", data);
+console.log("Signup error:", error);
+
+if (error) throw error;
 
   if (error) throw error;
 
