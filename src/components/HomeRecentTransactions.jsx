@@ -3,31 +3,9 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-const transactions = [
-  {
-    id: 1,
-    type: "Deposit",
-    asset: "USDT",
-    amount: "+500.00",
-    time: "Today",
-  },
-  {
-    id: 2,
-    type: "Trade",
-    asset: "BTC",
-    amount: "-0.0021",
-    time: "Today",
-  },
-  {
-    id: 3,
-    type: "Withdrawal",
-    asset: "USDT",
-    amount: "-100.00",
-    time: "Yesterday",
-  },
-];
-
-export default function HomeRecentTransactions() {
+export default function HomeRecentTransactions({
+  transactions = [],
+}) {
   return (
     <section className="mx-5 mt-6 mb-6">
 
@@ -43,64 +21,76 @@ export default function HomeRecentTransactions() {
 
       </div>
 
-      <div className="space-y-3">
+      {transactions.length === 0 ? (
 
-        {transactions.map((tx) => (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center text-slate-400">
 
-          <div
-            key={tx.id}
-            className="flex items-center justify-between rounded-2xl bg-slate-900 border border-slate-800 p-4"
-          >
+          No recent transactions.
 
-            <div className="flex items-center gap-3">
+        </div>
 
-              <div className="h-11 w-11 rounded-full bg-slate-800 flex items-center justify-center">
+      ) : (
 
-                {tx.type === "Deposit" ? (
-                  <ArrowDownLeft
-                    className="text-green-400"
-                    size={20}
-                  />
-                ) : (
-                  <ArrowUpRight
-                    className="text-red-400"
-                    size={20}
-                  />
-                )}
+        <div className="space-y-3">
+
+          {transactions.map((tx) => (
+
+            <div
+              key={tx.id}
+              className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900 p-4"
+            >
+
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-800">
+
+                  {tx.type === "Deposit" ? (
+                    <ArrowDownLeft
+                      size={20}
+                      className="text-green-400"
+                    />
+                  ) : (
+                    <ArrowUpRight
+                      size={20}
+                      className="text-red-400"
+                    />
+                  )}
+
+                </div>
+
+                <div>
+
+                  <p className="font-semibold text-white">
+                    {tx.type}
+                  </p>
+
+                  <p className="text-sm text-slate-400">
+                    {tx.asset}
+                  </p>
+
+                </div>
 
               </div>
 
-              <div>
+              <div className="text-right">
 
                 <p className="font-semibold text-white">
-                  {tx.type}
+                  {tx.amount}
                 </p>
 
-                <p className="text-sm text-slate-400">
-                  {tx.asset}
+                <p className="text-xs text-slate-500">
+                  {tx.time}
                 </p>
 
               </div>
 
             </div>
 
-            <div className="text-right">
+          ))}
 
-              <p className="font-semibold text-white">
-                {tx.amount}
-              </p>
+        </div>
 
-              <p className="text-xs text-slate-500">
-                {tx.time}
-              </p>
-
-            </div>
-
-          </div>
-
-        ))}
-
-      </div>
+      )}
 
     </section>
   );
