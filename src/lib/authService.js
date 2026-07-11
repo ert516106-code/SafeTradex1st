@@ -10,47 +10,60 @@ export async function registerUser({
   password,
   referralCode,
 }) {
-  // Create authentication account
+  console.log("========== REGISTER START ==========");
+
+  // STEP 1 - Create Supabase Auth account
   const { data, error } = await supabase.auth.signUp({
-  email,
-  password,
-});
+    email,
+    password,
+  });
 
-console.log("Signup result:", data);
-console.log("Signup error:", error);
+  console.log("Signup Data:", data);
+  console.log("Signup Error:", error);
 
-if (error) throw error;
+  if (error) {
+    throw new Error(error.message);
+  }
 
-  if (error) throw error;
-
-  const user = data.user;
+  const user = data?.user;
 
   if (!user) {
-    throw new Error("Unable to create account.");
+    throw new Error("Supabase did not return a user.");
   }
 
-  // Generate SafeTradex Account ID
-  const accountId =
-    "STX" +
-    String(Date.now()).slice(-7);
+  // STEP 2 - Generate SafeTradex Account ID
+  const accountId = "STX" + String(Date.now()).slice(-7);
 
-  // Create profile
-  const { error: profileError } = await supabase
+  console.log("Creating profile...");
+
+  // STEP 3 - Create Profile
+  const {
+    data: profileData,
+    error: profileError,
+  } = await supabase
     .from("profiles")
-    .insert({
-      id: user.id,
-      account_id: accountId,
-      full_name: fullName,
-      email,
-      country,
-      referral_code: referralCode || null,
-      role: "user",
-      status: "active",
-    });
+    .insert([
+      {
+        id: user.id,
+        account_id: accountId,
+        full_name: fullName,
+        email,
+        country,
+        referral_code: referralCode || null,
+        role: "user",
+        status: "active",
+      },
+    ])
+    .select();
+
+  console.log("Profile Data:", profileData);
+  console.log("Profile Error:", profileError);
 
   if (profileError) {
-    throw profileError;
+    throw new Error(profileError.message);
   }
+
+  console.log("========== REGISTER SUCCESS ==========");
 
   return data;
 }
@@ -65,7 +78,9 @@ export async function loginUser(email, password) {
       password,
     });
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message);
+  }
 
   return data;
 }
@@ -77,7 +92,9 @@ export async function logoutUser() {
   const { error } =
     await supabase.auth.signOut();
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
@@ -86,7 +103,12 @@ export async function logoutUser() {
 export async function getCurrentSession() {
   const {
     data: { session },
+    error,
   } = await supabase.auth.getSession();
+
+  if (error) {
+    throw new Error(error.message);
+  }
 
   return session;
 }
@@ -97,7 +119,12 @@ export async function getCurrentSession() {
 export async function getCurrentUser() {
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
+
+  if (error) {
+    throw new Error(error.message);
+  }
 
   return user;
 }
@@ -113,7 +140,9 @@ export async function getProfile(userId) {
       .eq("id", userId)
       .single();
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message);
+  }
 
   return data;
 }
@@ -131,7 +160,9 @@ export async function updateLastLogin(userId) {
       })
       .eq("id", userId);
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 /**
@@ -146,5 +177,7 @@ export async function setOffline(userId) {
       })
       .eq("id", userId);
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message);
+  }
 }
