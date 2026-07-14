@@ -1,0 +1,30 @@
+
+@import "tailwindcss";
+
+:root{
+  color-scheme: dark;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+html,
+body,
+#root{
+  width:100%;
+  min-height:100%;
+  background:#050816;
+  color:white;
+  font-family:Inter,system-ui,sans-serif;
+}
+
+body{
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at top,#102850 0%,#050816 55%);
+}.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
