@@ -1,322 +1,203 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-
-import Logo from "../components/ui/Logo";
-import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
 import PasswordInput from "../components/ui/PasswordInput";
-import PasswordStrength from "../components/ui/PasswordStrength";
 import CountrySelect from "../components/ui/CountrySelect";
 import Button from "../components/ui/Button";
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import Card from "../components/ui/Card";
+import Logo from "../components/ui/Logo";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register, login } = useAuth();
+  const { register } = useAuth();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
-
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [country, setCountry] = useState("");
-
-  const [acceptTerms, setAcceptTerms] =
-    useState(false);
-
-  const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const emailValid = EMAIL_REGEX.test(email);
-
-  const passwordStrength = (() => {
-    let score = 0;
-
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-
-    if (score <= 2) return "Weak";
-    if (score === 3 || score === 4)
-      return "Medium";
-
-    return "Strong";
-  })();
-
-  const passwordsMatch =
-    password === confirmPassword &&
-    confirmPassword.length > 0;
-
-  const canRegister =
-    fullName.trim() !== "" &&
-    emailValid &&
-    passwordStrength === "Strong" &&
-    passwordsMatch &&
-    country &&
-    acceptTerms;
+  const passwordsMatch = confirmPassword.length === 0 || password === confirmPassword;
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setError("");
 
-    console.log("Register button clicked");
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (!country) {
+      setError("Please select your country.");
+      return;
+    }
+    if (!agreed) {
+      setError("Please agree to the Terms of Service.");
+      return;
+    }
 
-    if (!canRegister) return;
-
+    setLoading(true);
     try {
-      setLoading(true);
-      setError("");
-
-      await register({
-        fullName,
-        email,
-        password,
-      });
-
-      await login(email, password);
-
-      navigate("/home", {
-        replace: true,
-      });
-
+      await register({ email, password, fullName, country });
+      navigate("/home");
     } catch (err) {
-      setError(
-        err.message ||
-          "Unable to create account."
-      );
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top,#18254b 0%,#050816 70%)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "24px",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "460px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginBottom: "30px",
-          }}
-        >
-          <Logo />
-        </div>
+    <div style={styles.page}>
+      <div style={styles.header}>
+        <Logo size={48} showText={true} />
+        <div style={styles.tagline}>Secure Crypto Exchange</div>
+      </div>
 
-        <Card>
+      <Card>
+        <h1 style={styles.title}>Create Account</h1>
+        <p style={styles.subtitle}>Join SafeTrade today</p>
 
-          <h2
-            style={{
-              color: "#fff",
-              textAlign: "center",
-              marginTop: 0,
-            }}
-          >
-            Create Account
-          </h2>
+        <form onSubmit={handleSubmit}>
+          <Input
+            type="text"
+            placeholder="Full Name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
 
-          <p
-            style={{
-              color: "#94a3b8",
-              textAlign: "center",
-              marginBottom: "30px",
-            }}
-          >
-            Join SafeTrade today
-          </p>
+          <Input
+            type="email"
+            placeholder="Email Address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-          <form onSubmit={handleSubmit}>
+          <PasswordInput
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-            <Input
-              placeholder="Full Name"
-              value={fullName}
-              onChange={(e) =>
-                setFullName(e.target.value)
-              }
-            />
-
-            <Input
-              type="email"
-              placeholder="Email Address"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-            />
-
-            {!emailValid &&
-              email.length > 0 && (
-                <p
-                  style={{
-                    color: "#ef4444",
-                    fontSize: "13px",
-                    marginTop: "-10px",
-                    marginBottom: "18px",
-                  }}
-                >
-                  Please enter a valid email.
-                </p>
-              )}
-
-            <PasswordInput
-              placeholder="Password"
-              value={password}
-              onChange={(e) =>
-                setPassword(
-                  e.target.value
-                )
-              }
-            />
-                        <PasswordStrength
-              password={password}
-            />
-
+          <div>
             <PasswordInput
               placeholder="Confirm Password"
               value={confirmPassword}
-              onChange={(e) =>
-                setConfirmPassword(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setConfirmPassword(e.target.value)}
             />
-
-            {confirmPassword.length > 0 &&
-              !passwordsMatch && (
-                <p
-                  style={{
-                    color: "#ef4444",
-                    fontSize: "13px",
-                    marginTop: "-10px",
-                    marginBottom: "18px",
-                  }}
-                >
-                  Passwords do not match.
-                </p>
-              )}
-
-            <CountrySelect
-              value={country}
-              onChange={(value) =>
-                setCountry(value)
-              }
-            />
-
-            <label
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "12px",
-                color: "#cbd5e1",
-                fontSize: "14px",
-                marginTop: "18px",
-                marginBottom: "24px",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={acceptTerms}
-                onChange={(e) =>
-                  setAcceptTerms(
-                    e.target.checked
-                  )
-                }
-                style={{
-                  marginTop: "3px",
-                }}
-              />
-
-              <span>
-                I agree to the
-                {" "}
-                <Link
-                  to="/terms"
-                  style={{
-                    color: "#6d5dff",
-                    textDecoration: "none",
-                    fontWeight: "600",
-                  }}
-                >
-                  Terms of Service
-                </Link>
-              </span>
-            </label>
-
-            {error && (
-              <div
-                style={{
-                  background: "#2b0d14",
-                  color: "#ff6b6b",
-                  padding: "14px",
-                  borderRadius: "12px",
-                  marginBottom: "20px",
-                  fontSize: "14px",
-                }}
-              >
-                {error}
-              </div>
+            {!passwordsMatch && (
+              <div style={styles.mismatch}>Passwords do not match.</div>
             )}
-
-            <Button
-              type="submit"
-              fullWidth
-              disabled={
-                !canRegister ||
-                loading
-              }
-            >
-              {loading
-                ? "Creating Account..."
-                : "Create Account"}
-            </Button>
-                      </form>
-
-          <div
-            style={{
-              marginTop: "24px",
-              textAlign: "center",
-              color: "#94a3b8",
-              fontSize: "15px",
-            }}
-          >
-            Already have an account?{" "}
-
-            <Link
-              to="/login"
-              style={{
-                color: "#6d5dff",
-                textDecoration: "none",
-                fontWeight: "700",
-              }}
-            >
-              Login
-            </Link>
           </div>
 
-        </Card>
-      </div>
+          <CountrySelect value={country} onChange={(e) => setCountry(e.target.value)} />
+
+          <label style={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              style={styles.checkbox}
+            />
+            <span style={styles.checkboxLabel}>
+              I agree to the <a href="/terms" style={styles.link}>Terms of Service</a>
+            </span>
+          </label>
+
+          {error && <div style={styles.errorText}>{error}</div>}
+
+          <Button type="submit" fullWidth loading={loading}>
+            Create Account
+          </Button>
+        </form>
+
+        <p style={styles.loginPrompt}>
+          Already have an account?{" "}
+          <Link to="/login" style={styles.link}>
+            Login
+          </Link>
+        </p>
+      </Card>
     </div>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "linear-gradient(180deg, #0a0e1a 0%, #131b2e 100%)",
+    padding: "40px 20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  header: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  tagline: {
+    color: "#8b93a7",
+    fontSize: 14,
+    marginTop: 6,
+  },
+  title: {
+    color: "#e5e7eb",
+    fontSize: 24,
+    fontWeight: 700,
+    textAlign: "center",
+    margin: 0,
+  },
+  subtitle: {
+    color: "#8b93a7",
+    fontSize: 15,
+    textAlign: "center",
+    marginTop: 6,
+    marginBottom: 24,
+  },
+  mismatch: {
+    color: "#ff4d4f",
+    fontSize: 13,
+    marginTop: -8,
+    marginBottom: 16,
+  },
+  checkboxRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 20,
+    marginTop: 4,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    accentColor: "#6c5ce7",
+  },
+  checkboxLabel: {
+    color: "#c5c9d6",
+    fontSize: 14,
+  },
+  link: {
+    color: "#7c6cf5",
+    fontWeight: 600,
+    textDecoration: "none",
+  },
+  errorText: {
+    color: "#ff4d4f",
+    fontSize: 14,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  loginPrompt: {
+    color: "#8b93a7",
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 20,
+  },
+};
