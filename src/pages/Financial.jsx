@@ -1,43 +1,204 @@
-import { useEffect, useRef } from "react";
-import { Wallet, TrendingUp, Shield, Gift } from "lucide-react";
-import FinancialCard from "../components/financial/FinancialCard";
+import { useEffect, useRef, useState } from "react";
+import {
+  Wallet,
+  TrendingUp,
+  Shield,
+  Gift,
+  Newspaper,
+  ExternalLink,
+  RefreshCw,
+} from "lucide-react";
 
-function CryptoNewsWidget() {
-  const containerRef = useRef(null);
+import FinancialCard from "../components/financial/FinancialCard";
+import BottomNavigation from "../components/navigation/BottomNavigation";
+
+const REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
+const NEWS_ENDPOINT = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
+
+function timeAgo(unixSeconds) {
+  const diffMs = Date.now() - unixSeconds * 1000;
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function CryptoNewsFeed() {
+  const [articles, setArticles] = useState([]);
+  const [status, setStatus] = useState("loading");
+  const [lastFetched, setLastFetched] = useState(null);
+  const intervalRef = useRef(null);
+
+  const fetchNews = async () => {
+    try {
+      setStatus((prev) => (prev === "loading" ? "loading" : "refreshing"));
+      const res = await fetch(NEWS_ENDPOINT);
+      if (!res.ok) throw new Error("Request failed");
+      const data = await res.json();
+      const items = (data?.Data || []).slice(0, 6);
+      setArticles(items);
+      setLastFetched(Date.now());
+      setStatus("ready");
+    } catch (err) {
+      setStatus("error");
+    }
+  };
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    containerRef.current.innerHTML = "";
-
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
-    script.type = "text/javascript";
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      feedMode: "market",
-      market: "crypto",
-      isTransparent: true,
-      displayMode: "regular",
-      width: "100%",
-      height: "550",
-      colorTheme: "dark",
-      locale: "en",
-    });
-
-    containerRef.current.appendChild(script);
+    fetchNews();
+    intervalRef.current = setInterval(fetchNews, REFRESH_INTERVAL_MS);
+    return () => clearInterval(intervalRef.current);
   }, []);
 
   return (
     <div
-      ref={containerRef}
       style={{
-        borderRadius: 18,
-        overflow: "hidden",
+        borderRadius: 20,
         border: "1px solid #23304c",
-        background: "#101933",
+        background: "linear-gradient(180deg,#111c3d 0%,#0c1530 100%)",
+        overflow: "hidden",
       }}
     >
-      <div className="tradingview-widget-container__widget" />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "16px 18px",
+          borderBottom: "1px solid #1f2c4d",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: "#22C55E",
+              boxShadow: "0 0 8px rgba(34,197,94,0.8)",
+            }}
+          />
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#E2E8F0" }}>
+            Top Stories
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 11,
+            color: "#64748B",
+          }}
+        >
+          <RefreshCw
+            size={12}
+            style={{
+              animation: status === "refreshing" ? "spin 1s linear infinite" : "none",
+            }}
+          />
+          {lastFetched
+            ? `Updated ${timeAgo(Math.floor(lastFetched / 1000))}`
+            : "Loading..."}
+        </div>
+      </div>
+
+      {status === "loading" && (
+        <div style={{ padding: 26, textAlign: "center", color: "#64748B", fontSize: 13 }}>
+          Fetching the latest headlines...
+        </div>
+      )}
+
+      {status === "error" && (
+        <div style={{ padding: 26, textAlign: "center", color: "#64748B", fontSize: 13 }}>
+          Couldn't load news right now. It will retry automatically.
+        </div>
+      )}
+
+      {status !== "loading" &&
+        articles.map((item, idx) => (
+          <a
+            key={item.id || item.url || idx}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex",
+              gap: 12,
+              padding: "14px 18px",
+              textDecoration: "none",
+              borderBottom:
+                idx !== articles.length - 1 ? "1px solid #1a2540" : "none",
+              transition: "background 0.15s ease",
+            }}
+          >
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                background: "rgba(59,130,246,0.12)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Newspaper size={16} color="#60A5FA" />
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  color: "#F1F5F9",
+                  lineHeight: 1.4,
+                }}
+              >
+                {item.title}
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 11.5,
+                  color: "#64748B",
+                }}
+              >
+                <span>{item.source_info?.name || item.source || "Crypto News"}</span>
+                <span>·</span>
+                <span>{timeAgo(item.published_on)}</span>
+              </div>
+            </div>
+
+            <ExternalLink size={14} color="#475569" style={{ flexShrink: 0, marginTop: 2 }} />
+          </a>
+        ))}
+
+      <div
+        style={{
+          padding: "10px 18px",
+          fontSize: 10.5,
+          color: "#475569",
+          textAlign: "center",
+        }}
+      >
+        Headlines refresh automatically every 12 hours
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -47,20 +208,45 @@ export default function Financial() {
     <div
       style={{
         minHeight: "100vh",
-        background: "radial-gradient(circle at top,#1E3170 0%,#091120 70%)",
+        background:
+          "radial-gradient(circle at top,#1E3170 0%,#091120 70%)",
         color: "#FFFFFF",
         padding: 20,
         paddingBottom: 100,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 30 }}>
+      {/* Header */}
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          marginBottom: 30,
+        }}
+      >
         <div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>Financial Services</div>
-          <div style={{ color: "#8FA4D8", marginTop: 5 }}>
+          <div
+            style={{
+              fontSize: 28,
+              fontWeight: 700,
+            }}
+          >
+            Financial Services
+          </div>
+
+          <div
+            style={{
+              color: "#8FA4D8",
+              marginTop: 5,
+            }}
+          >
             Grow your portfolio with our products
           </div>
         </div>
       </div>
+
+      {/* Products */}
 
       <FinancialCard
         icon={<Wallet size={28} />}
@@ -94,12 +280,36 @@ export default function Financial() {
         color="#22C55E"
       />
 
-      <div style={{ marginTop: 40, marginBottom: 18 }}>
-        <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 6 }}>Crypto News</div>
-        <div style={{ color: "#8FA4D8" }}>Live updates powered by TradingView</div>
+      {/* News */}
+
+      <div
+        style={{
+          marginTop: 40,
+          marginBottom: 18,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 26,
+            fontWeight: 700,
+            marginBottom: 6,
+          }}
+        >
+          Crypto News
+        </div>
+
+        <div
+          style={{
+            color: "#8FA4D8",
+          }}
+        >
+          Live headlines, refreshed every 12 hours
+        </div>
       </div>
 
-      <CryptoNewsWidget />
+      <CryptoNewsFeed />
+
+      <BottomNavigation />
     </div>
   );
 }
