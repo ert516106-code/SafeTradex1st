@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import FinancialCard from "../components/financial/FinancialCard";
-import BottomNavigation from "../components/navigation/BottomNavigation";
+import BottomNavigation from "../components/layout/BottomNavigation";
 
 const REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
 const NEWS_ENDPOINT = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
