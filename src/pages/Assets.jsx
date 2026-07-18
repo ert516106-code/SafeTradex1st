@@ -1,7 +1,7 @@
 import BalanceCard from "../components/assets/BalanceCard";
 import AssetActions from "../components/assets/AssetActions";
 import AssetList from "../components/assets/AssetList";
-import BottomNavigation from "../components/navigation/BottomNavigation";
+import BottomNavigation from "../components/layout/BottomNavigation";
 
 export default function Assets() {
   return (
