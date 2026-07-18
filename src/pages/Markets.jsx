@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Search, TrendingUp, TrendingDown, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMarket } from "../contexts/MarketContext";
+import BottomNavigation from "../components/navigation/BottomNavigation";
 
 export default function Markets() {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export default function Markets() {
         minHeight: "100vh",
         background: "radial-gradient(circle at top,#18254b 0%,#050816 70%)",
         padding: 20,
+        paddingBottom: 110,
         color: "#fff",
       }}
     >
@@ -107,7 +109,7 @@ export default function Markets() {
         onClick={() => window.open("https://www.tradingview.com/", "_blank")}
         style={{
           marginTop: 30,
-          marginBottom: 80,
+          marginBottom: 20,
           textAlign: "center",
           color: "#94A3B8",
           cursor: "pointer",
@@ -116,6 +118,8 @@ export default function Markets() {
       >
         📈 Charts powered by <b>TradingView</b>
       </div>
+
+      <BottomNavigation />
     </div>
   );
 }
