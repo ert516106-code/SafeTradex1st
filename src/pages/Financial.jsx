@@ -1,70 +1,66 @@
-import { ArrowLeft, Wallet, TrendingUp, Shield, Gift } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
+import { useEffect, useRef } from "react";
+import { Wallet, TrendingUp, Shield, Gift } from "lucide-react";
 import FinancialCard from "../components/financial/FinancialCard";
-import NewsList from "../components/financial/NewsList";
+
+function CryptoNewsWidget() {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    containerRef.current.innerHTML = "";
+
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      feedMode: "market",
+      market: "crypto",
+      isTransparent: true,
+      displayMode: "regular",
+      width: "100%",
+      height: "550",
+      colorTheme: "dark",
+      locale: "en",
+    });
+
+    containerRef.current.appendChild(script);
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        borderRadius: 18,
+        overflow: "hidden",
+        border: "1px solid #23304c",
+        background: "#101933",
+      }}
+    >
+      <div className="tradingview-widget-container__widget" />
+    </div>
+  );
+}
 
 export default function Financial() {
-  const navigate = useNavigate();
-
   return (
     <div
       style={{
         minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top,#1E3170 0%,#091120 70%)",
+        background: "radial-gradient(circle at top,#1E3170 0%,#091120 70%)",
         color: "#FFFFFF",
         padding: 20,
         paddingBottom: 100,
       }}
     >
-      {/* Header */}
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          marginBottom: 30,
-        }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 14,
-            border: "1px solid #293B66",
-            background: "#101933",
-            color: "#FFFFFF",
-            cursor: "pointer",
-          }}
-        >
-          <ArrowLeft size={20} />
-        </button>
-
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 30 }}>
         <div>
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 700,
-            }}
-          >
-            Financial Services
-          </div>
-
-          <div
-            style={{
-              color: "#8FA4D8",
-              marginTop: 5,
-            }}
-          >
+          <div style={{ fontSize: 28, fontWeight: 700 }}>Financial Services</div>
+          <div style={{ color: "#8FA4D8", marginTop: 5 }}>
             Grow your portfolio with our products
           </div>
         </div>
       </div>
-
-      {/* Products */}
 
       <FinancialCard
         icon={<Wallet size={28} />}
@@ -98,34 +94,12 @@ export default function Financial() {
         color="#22C55E"
       />
 
-      {/* News */}
-
-      <div
-        style={{
-          marginTop: 40,
-          marginBottom: 18,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 26,
-            fontWeight: 700,
-            marginBottom: 6,
-          }}
-        >
-          Crypto News
-        </div>
-
-        <div
-          style={{
-            color: "#8FA4D8",
-          }}
-        >
-          Latest market stories
-        </div>
+      <div style={{ marginTop: 40, marginBottom: 18 }}>
+        <div style={{ fontSize: 26, fontWeight: 700, marginBottom: 6 }}>Crypto News</div>
+        <div style={{ color: "#8FA4D8" }}>Live updates powered by TradingView</div>
       </div>
 
-      <NewsList />
+      <CryptoNewsWidget />
     </div>
   );
 }
