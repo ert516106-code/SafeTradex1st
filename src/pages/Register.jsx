@@ -8,6 +8,8 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Logo from "../components/ui/Logo";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -23,11 +25,16 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
 
   const passwordsMatch = confirmPassword.length === 0 || password === confirmPassword;
+  const emailValid = email.length === 0 || EMAIL_REGEX.test(email);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
 
+    if (!EMAIL_REGEX.test(email)) {
+      setError("Please enter a valid email address (e.g. name@example.com).");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -71,12 +78,17 @@ export default function Register() {
             onChange={(e) => setFullName(e.target.value)}
           />
 
-          <Input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <div>
+            <Input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            {!emailValid && (
+              <div style={styles.mismatch}>Enter a valid email address.</div>
+            )}
+          </div>
 
           <PasswordInput
             placeholder="Password"
