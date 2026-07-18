@@ -12,6 +12,7 @@ import Deposit from "./pages/Deposit";
 import Transfer from "./pages/Transfer";
 import Financial from "./pages/Financial";
 import Assets from "./pages/Assets";
+import Profile from "./pages/Profile";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { MarketProvider } from "./contexts/MarketContext";
@@ -91,6 +92,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Assets />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />
