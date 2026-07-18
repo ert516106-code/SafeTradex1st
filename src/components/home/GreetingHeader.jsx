@@ -1,9 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Bell, User } from "lucide-react";
 import Logo from "../ui/Logo";
+import ProfileDrawer from "../ProfileDrawer";
 
 export default function GreetingHeader() {
-  const navigate = useNavigate();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   return (
     <div
@@ -45,10 +46,7 @@ export default function GreetingHeader() {
           </button>
 
           <button
-            onClick={() => {
-              alert("PROFILE BUTTON CLICKED");
-              navigate("/profile");
-            }}
+            onClick={() => setIsProfileOpen(true)}
             style={{
               width: 44,
               height: 44,
@@ -69,6 +67,11 @@ export default function GreetingHeader() {
           </button>
         </div>
       </div>
+
+      <ProfileDrawer
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
     </div>
   );
 }
