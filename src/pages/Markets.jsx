@@ -1,19 +1,11 @@
 import { useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  Search,
-  TrendingUp,
-  TrendingDown,
-  Star,
-} from "lucide-react";
+import { Search, TrendingUp, TrendingDown, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMarket } from "../contexts/MarketContext";
 
 export default function Markets() {
   const navigate = useNavigate();
-
   const { coins, loading } = useMarket();
-
   const [search, setSearch] = useState("");
 
   const filteredCoins = useMemo(() => {
@@ -28,69 +20,17 @@ export default function Markets() {
     <div
       style={{
         minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top,#18254b 0%,#050816 70%)",
+        background: "radial-gradient(circle at top,#18254b 0%,#050816 70%)",
         padding: 20,
         color: "#fff",
       }}
     >
-      {/* Header */}
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 22,
-        }}
-      >
-        <button
-          onClick={() => navigate("/home")}
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 14,
-            border: "1px solid #24304d",
-            background: "#101933",
-            color: "#fff",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            cursor: "pointer",
-          }}
-        >
-          <ArrowLeft size={20} />
-        </button>
-
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 28,
-            fontWeight: 700,
-          }}
-        >
-          Markets
-        </h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 22 }}>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>Markets</h1>
       </div>
 
-      {/* Search */}
-
-      <div
-        style={{
-          position: "relative",
-          marginBottom: 20,
-        }}
-      >
-        <Search
-          size={18}
-          style={{
-            position: "absolute",
-            left: 15,
-            top: 16,
-            color: "#94A3B8",
-          }}
-        />
-
+      <div style={{ position: "relative", marginBottom: 20 }}>
+        <Search size={18} style={{ position: "absolute", left: 15, top: 16, color: "#94A3B8" }} />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -108,21 +48,11 @@ export default function Markets() {
         />
       </div>
 
-      {/* Loading */}
-
       {loading && (
-        <div
-          style={{
-            textAlign: "center",
-            color: "#94A3B8",
-            padding: 40,
-          }}
-        >
+        <div style={{ textAlign: "center", color: "#94A3B8", padding: 40 }}>
           Loading markets...
         </div>
       )}
-
-      {/* Coins */}
 
       {!loading &&
         filteredCoins.map((coin) => (
@@ -141,56 +71,18 @@ export default function Markets() {
               cursor: "pointer",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-              }}
-            >
-              <img
-                src={coin.logo}
-                alt={coin.symbol}
-                width={42}
-                height={42}
-              />
-
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <img src={coin.logo} alt={coin.symbol} width={42} height={42} />
               <div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                  }}
-                >
-                  {coin.name}
-                </div>
-
-                <div
-                  style={{
-                    color: "#94A3B8",
-                    fontSize: 13,
-                  }}
-                >
-                  {coin.pair}
-                </div>
+                <div style={{ fontWeight: 700 }}>{coin.name}</div>
+                <div style={{ color: "#94A3B8", fontSize: 13 }}>{coin.pair}</div>
               </div>
             </div>
 
-            <div
-              style={{
-                textAlign: "right",
-              }}
-            >
-              <div
-                style={{
-                  fontWeight: 700,
-                }}
-              >
-                $
-                {coin.price.toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                })}
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontWeight: 700 }}>
+                ${coin.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </div>
-
               <div
                 style={{
                   display: "flex",
@@ -198,39 +90,21 @@ export default function Markets() {
                   alignItems: "center",
                   gap: 4,
                   marginTop: 5,
-                  color:
-                    coin.change >= 0
-                      ? "#22C55E"
-                      : "#EF4444",
+                  color: coin.change >= 0 ? "#22C55E" : "#EF4444",
                   fontSize: 13,
                 }}
               >
-                {coin.change >= 0 ? (
-                  <TrendingUp size={14} />
-                ) : (
-                  <TrendingDown size={14} />
-                )}
-
+                {coin.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                 {coin.change.toFixed(2)}%
               </div>
             </div>
 
-            <Star
-              size={18}
-              color="#64748B"
-            />
+            <Star size={18} color="#64748B" />
           </div>
         ))}
 
-      {/* TradingView */}
-
       <div
-        onClick={() =>
-          window.open(
-            "https://www.tradingview.com/",
-            "_blank"
-          )
-        }
+        onClick={() => window.open("https://www.tradingview.com/", "_blank")}
         style={{
           marginTop: 30,
           marginBottom: 80,
