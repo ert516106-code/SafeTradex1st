@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Search, TrendingUp, TrendingDown, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMarket } from "../contexts/MarketContext";
-import BottomNavigation from "../components/navigation/BottomNavigation";
+import BottomNavigation from "../components/layout/BottomNavigation";
 
 export default function Markets() {
   const navigate = useNavigate();
