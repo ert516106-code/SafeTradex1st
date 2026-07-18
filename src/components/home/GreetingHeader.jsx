@@ -47,3 +47,28 @@ export default function GreetingHeader() {
           <button
             onClick={() => {
               alert("PROFILE BUTTON CLICKED");
+              navigate("/profile");
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              border: "none",
+              background:
+                "linear-gradient(135deg,#6D5DFF,#4F8CFF)",
+              color: "#fff",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              cursor: "pointer",
+              boxShadow:
+                "0 8px 20px rgba(109,93,255,.35)",
+            }}
+          >
+            <User size={20} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
