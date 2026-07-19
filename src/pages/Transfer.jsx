@@ -1,114 +1,220 @@
-import { ArrowLeft, Send } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useMarket } from "../contexts/MarketContext";
-import { useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import TransferHome from "../components/transfer/TransferHome";
+import InternalTransfer from "../components/transfer/InternalTransfer";
+import ExternalTransfer from "../components/transfer/ExternalTransfer";
+import NetworkSelector from "../components/transfer/NetworkSelector";
+import TransferReview from "../components/transfer/TransferReview";
+import TransferSuccess from "../components/transfer/TransferSuccess";
+
+export const COINS = [
+  { symbol: "BTC", name: "Bitcoin", balance: 0.0842, color: "#F7931A" },
+  { symbol: "ETH", name: "Ethereum", balance: 1.2451, color: "#627EEA" },
+  { symbol: "USDT", name: "Tether", balance: 4820.55, color: "#26A17B" },
+  { symbol: "BNB", name: "BNB", balance: 3.114, color: "#F3BA2F" },
+  { symbol: "SOL", name: "Solana", balance: 12.87, color: "#9945FF" },
+  { symbol: "XRP", name: "XRP", balance: 940.2, color: "#00A4E4" },
+];
+
+export const NETWORKS = [
+  { id: "trc20", label: "TRC20", chain: "TRON", fee: 1, feeUnit: "USDT", min: 5, eta: "~2 minutes" },
+  { id: "erc20", label: "ERC20", chain: "Ethereum", fee: 8.5, feeUnit: "USDT", min: 20, eta: "~10 minutes" },
+  { id: "bep20", label: "BEP20", chain: "BNB Smart Chain", fee: 0.5, feeUnit: "USDT", min: 5, eta: "~1 minute" },
+  { id: "polygon", label: "Polygon", chain: "Polygon PoS", fee: 0.4, feeUnit: "USDT", min: 5, eta: "~2 minutes" },
+  { id: "solana", label: "Solana", chain: "Solana", fee: 0.3, feeUnit: "USDT", min: 2, eta: "~30 seconds" },
+];
+
+export function getCoin(symbol) {
+  return COINS.find((c) => c.symbol === symbol) || COINS[0];
+}
+
+export function getNetwork(id) {
+  return NETWORKS.find((n) => n.id === id) || null;
+}
+
+const initialDraft = {
+  type: null,
+  coin: COINS[0].symbol,
+  recipient: "",
+  note: "",
+  amount: "",
+  networkId: null,
+  walletAddress: "",
+};
+
+const TransferContext = createContext(null);
+
+export function useTransfer() {
+  const ctx = useContext(TransferContext);
+  if (!ctx) throw new Error("useTransfer must be used inside the Transfer flow");
+  return ctx;
+}
 
 export default function Transfer() {
-  const navigate = useNavigate();
-  const { id } = useParams();
+  const [draft, setDraft] = useState(initialDraft);
+  const [mounted, setMounted] = useState(false);
 
-  const { coins } = useMarket();
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 20);
+    return () => clearTimeout(t);
+  }, []);
 
-  const coin = coins.find((c) => c.id === id);
-
-  const [address, setAddress] = useState("");
-  const [amount, setAmount] = useState("");
-
-  if (!coin) return null;
+  const updateDraft = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
+  const resetDraft = () => setDraft(initialDraft);
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top,#1E3170 0%,#08111F 70%)",
-        color: "#fff",
-        padding: 20,
-      }}
-    >
-      {/* Header */}
-
+    <TransferContext.Provider value={{ draft, updateDraft, resetDraft }}>
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-          marginBottom: 28,
-        }}
+        className={`fixed inset-0 z-50 overflow-y-auto bg-[#050816] transition-opacity duration-300 ${
+          mounted ? "opacity-100" : "opacity-0"
+        }`}
       >
+        <Routes>
+          <Route index element={<TransferHome />} />
+          <Route path="internal" element={<InternalTransfer />} />
+          <Route path="external" element={<ExternalTransfer />} />
+          <Route path="external/network" element={<NetworkSelector />} />
+          <Route path="review" element={<TransferReview />} />
+          <Route path="success" element={<TransferSuccess />} />
+          <Route path="*" element={<Navigate to="/transfer" replace />} />
+        </Routes>
+      </div>
+    </TransferContext.Provider>
+  );
+}
+
+export function TransferHeader({ title, onBack, onClose, right = null }) {
+  const navigate = useNavigate();
+  return (
+    <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-[#050816]/90 px-4 py-4 backdrop-blur-md sm:px-6">
+      <button
+        onClick={onBack ? onBack : () => navigate(-1)}
+        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
+        aria-label="Back"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      <h1 className="text-[17px] font-bold text-white">{title}</h1>
+
+      {right ? (
+        right
+      ) : onClose ? (
         <button
-          onClick={() => navigate(-1)}
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 14,
-            border: "1px solid #2A3F73",
-            background: "#101933",
-            color: "#fff",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            cursor: "pointer",
-          }}
+          onClick={onClose}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
+          aria-label="Close"
         >
-          <ArrowLeft size={20} />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
         </button>
+      ) : (
+        <div className="h-10 w-10" />
+      )}
+    </div>
+  );
+}
 
-        <div>
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-            }}
+export function GlowCard({ children, className = "" }) {
+  return (
+    <div
+      className={`rounded-2xl border border-[#7C3AED]/15 bg-gradient-to-b from-[#0b0f24] to-[#0a0e20] p-4 shadow-[0_0_30px_-10px_rgba(124,58,237,0.35)] ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function PrimaryButton({ children, onClick, disabled = false, type = "button" }) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-4 text-[15px] font-bold text-white shadow-[0_10px_30px_-8px_rgba(124,58,237,0.6)] transition active:scale-[0.98] ${
+        disabled ? "cursor-not-allowed opacity-40" : "hover:brightness-110"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function FieldLabel({ children }) {
+  return <label className="mb-2 block text-[12.5px] font-medium text-white/50">{children}</label>;
+}
+
+export function CoinSelector({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const selected = getCoin(value);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-left transition active:scale-[0.99]"
+      >
+        <span className="flex items-center gap-3">
+          <span
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold text-white"
+            style={{ background: selected.color }}
           >
-            Transfer {coin.name}
-          </div>
-
-          <div
-            style={{
-              color: "#8EA2D8",
-            }}
-          >
-            {coin.symbol} Network
-          </div>
-        </div>
-      </div>
-
-      {/* Wallet Address */}
-
-      <div style={{ marginBottom: 20 }}>
-        <div
-          style={{
-            marginBottom: 10,
-            color: "#8EA2D8",
-            fontSize: 14,
-          }}
+            {selected.symbol.slice(0, 1)}
+          </span>
+          <span>
+            <span className="block text-[14.5px] font-semibold text-white">{selected.symbol}</span>
+            <span className="block text-[12px] text-white/40">{selected.name}</span>
+          </span>
+        </span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          className={`text-white/50 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         >
-          Recipient Address
+          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#0b0f24] p-2 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.6)]">
+          {COINS.map((c) => (
+            <button
+              key={c.symbol}
+              type="button"
+              onClick={() => {
+                onChange(c.symbol);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5 ${
+                c.symbol === value ? "bg-[#7C3AED]/10" : ""
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <span
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                  style={{ background: c.color }}
+                >
+                  {c.symbol.slice(0, 1)}
+                </span>
+                <span>
+                  <span className="block text-[13.5px] font-semibold text-white">{c.symbol}</span>
+                  <span className="block text-[11.5px] text-white/40">{c.name}</span>
+                </span>
+              </span>
+              <span className="text-[12px] text-white/40">{c.balance}</span>
+            </button>
+          ))}
         </div>
-
-        <input
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="Enter wallet address"
-          style={{
-            width: "100%",
-            height: 56,
-            borderRadius: 16,
-            border: "1px solid #2A3F73",
-            background: "#101933",
-            color: "#fff",
-            padding: "0 18px",
-            outline: "none",
-            boxSizing: "border-box",
-          }}
-        />
-      </div>
-
-      {/* Network */}
-
-      <div style={{ marginBottom: 20 }}>
-        <div
+      )}
+    </div>
+  );
+}        <div
           style={{
             marginBottom: 10,
             color: "#8EA2D8",
