@@ -1,11 +1,20 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { COINS, CoinLogo } from "../../pages/Convert";
 
 export default function CoinSelector({ label, value, onChange, exclude = null }) {
   const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState("");
 
   const selected = COINS.find((c) => c.symbol === value) || COINS[0];
+
+  useEffect(() => {
+    if (open) {
+      const t = setTimeout(() => setVisible(true), 10);
+      return () => clearTimeout(t);
+    }
+    setVisible(false);
+  }, [open]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -18,8 +27,15 @@ export default function CoinSelector({ label, value, onChange, exclude = null })
 
   const handleSelect = (symbol) => {
     onChange(symbol);
-    setOpen(false);
-    setSearch("");
+    closeSheet();
+  };
+
+  const closeSheet = () => {
+    setVisible(false);
+    setTimeout(() => {
+      setOpen(false);
+      setSearch("");
+    }, 200);
   };
 
   return (
@@ -41,12 +57,21 @@ export default function CoinSelector({ label, value, onChange, exclude = null })
 
       {open && (
         <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[60] flex items-end justify-center transition-colors duration-200"
+          style={{ background: visible ? "rgba(0,0,0,0.65)" : "rgba(0,0,0,0)" }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
+            if (e.target === e.currentTarget) closeSheet();
           }}
         >
-          <div className="flex max-h-[75vh] w-full max-w-md flex-col rounded-t-3xl border border-white/10 bg-[#0b0f24] shadow-[0_-20px_60px_-10px_rgba(0,0,0,0.6)] sm:rounded-3xl">
+          <div
+            className="flex w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-white/10 shadow-[0_-20px_60px_-10px_rgba(0,0,0,0.7)]"
+            style={{
+              background: "#0b0f24",
+              height: "min(80vh, 620px)",
+              transform: visible ? "translateY(0)" : "translateY(100%)",
+              transition: "transform 0.28s cubic-bezier(0.16,1,0.3,1)",
+            }}
+          >
             <div className="flex items-center justify-center pt-3">
               <div className="h-1 w-9 rounded-full bg-white/15" />
             </div>
@@ -54,7 +79,7 @@ export default function CoinSelector({ label, value, onChange, exclude = null })
             <div className="flex items-center justify-between px-5 pb-3 pt-3">
               <h2 className="text-[16px] font-bold text-white">{label || "Select Coin"}</h2>
               <button
-                onClick={() => setOpen(false)}
+                onClick={closeSheet}
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-white/60"
                 aria-label="Close"
               >
@@ -66,7 +91,6 @@ export default function CoinSelector({ label, value, onChange, exclude = null })
 
             <div className="px-5 pb-3">
               <input
-                autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search coin"
@@ -82,7 +106,7 @@ export default function CoinSelector({ label, value, onChange, exclude = null })
                 <button
                   key={c.symbol}
                   onClick={() => handleSelect(c.symbol)}
-                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5 ${
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5 active:scale-[0.98] ${
                     c.symbol === value ? "bg-[#7C3AED]/10" : ""
                   }`}
                 >
