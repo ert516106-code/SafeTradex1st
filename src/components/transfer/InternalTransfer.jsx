@@ -18,95 +18,192 @@ export default function InternalTransfer() {
   const [coin, setCoin] = useState(draft.coin);
   const [amount, setAmount] = useState(draft.amount || "");
   const [note, setNote] = useState(draft.note || "");
+  const [focusField, setFocusField] = useState(null);
 
   const selectedCoin = getCoin(coin);
   const numericAmount = parseFloat(amount) || 0;
 
   const isValid = useMemo(() => {
-    return (
-      recipient.trim().length >= 3 &&
-      numericAmount > 0 &&
-      numericAmount <= selectedCoin.balance
-    );
+    return recipient.trim().length >= 3 && numericAmount > 0 && numericAmount <= selectedCoin.balance;
   }, [recipient, numericAmount, selectedCoin]);
 
   const handleContinue = () => {
     if (!isValid) return;
-    updateDraft({
-      type: "internal",
-      recipient: recipient.trim(),
-      coin,
-      amount,
-      note: note.trim(),
-    });
+    updateDraft({ type: "internal", recipient: recipient.trim(), coin, amount, note: note.trim() });
     navigate("/transfer/review");
   };
 
+  const inputStyle = (field) => ({
+    width: "100%",
+    background: "transparent",
+    border: "none",
+    outline: "none",
+    color: "#fff",
+    fontSize: 14.5,
+  });
+
   return (
-    <div className="mx-auto flex min-h-full max-w-lg flex-col">
+    <div style={{ maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", minHeight: "100%" }}>
       <TransferHeader title="Internal Transfer" />
 
-      <div className="flex flex-1 flex-col gap-5 px-4 pb-8 pt-6 sm:px-6">
-        <div>
-          <FieldLabel>Recipient UID or Username</FieldLabel>
-          <input
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            placeholder="e.g. UID123456 or @username"
-            className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-[14.5px] text-white placeholder-white/30 outline-none transition focus:border-[#7C3AED]/60"
-          />
-        </div>
-
-        <div>
-          <FieldLabel>Coin</FieldLabel>
-          <CoinSelector value={coin} onChange={setCoin} />
-        </div>
-
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <FieldLabel>Amount</FieldLabel>
-            <button
-              type="button"
-              onClick={() => setAmount(String(selectedCoin.balance))}
-              className="mb-2 text-[12px] font-semibold text-[#A78BFA]"
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 18, padding: "22px 18px 32px" }}>
+        <GlowCard style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div>
+            <FieldLabel>Recipient</FieldLabel>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                borderRadius: 16,
+                border: `1px solid ${focusField === "recipient" ? "rgba(167,139,250,0.6)" : "rgba(255,255,255,0.1)"}`,
+                background: "rgba(255,255,255,0.04)",
+                padding: "13px 14px",
+                transition: "border-color 0.2s ease",
+              }}
             >
-              Max
-            </button>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: "#A78BFA", flexShrink: 0 }}>
+                <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="2" />
+                <path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <input
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+                onFocus={() => setFocusField("recipient")}
+                onBlur={() => setFocusField(null)}
+                placeholder="UID123456 or @username"
+                style={inputStyle("recipient")}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5">
-            <input
-              type="number"
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="w-full bg-transparent text-[16px] font-semibold text-white outline-none placeholder-white/30"
+
+          <div>
+            <FieldLabel>Coin</FieldLabel>
+            <CoinSelector value={coin} onChange={setCoin} />
+          </div>
+
+          <div>
+            <FieldLabel
+              right={
+                <button
+                  type="button"
+                  onClick={() => setAmount(String(selectedCoin.balance))}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#A78BFA",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  Max
+                </button>
+              }
+            >
+              Amount
+            </FieldLabel>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                borderRadius: 16,
+                border: `1px solid ${focusField === "amount" ? "rgba(167,139,250,0.6)" : "rgba(255,255,255,0.1)"}`,
+                background: "rgba(255,255,255,0.04)",
+                padding: "14px 16px",
+                transition: "border-color 0.2s ease",
+              }}
+            >
+              <input
+                type="number"
+                inputMode="decimal"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                onFocus={() => setFocusField("amount")}
+                onBlur={() => setFocusField(null)}
+                placeholder="0.00"
+                style={{ ...inputStyle("amount"), fontSize: 19, fontWeight: 700 }}
+              />
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#A78BFA",
+                  background: "rgba(124,58,237,0.15)",
+                  borderRadius: 999,
+                  padding: "5px 10px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {coin}
+              </span>
+            </div>
+            <p style={{ margin: "8px 2px 0", fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
+              Available: <span style={{ color: "rgba(255,255,255,0.75)", fontWeight: 600 }}>{selectedCoin.balance} {coin}</span>
+            </p>
+          </div>
+
+          <div>
+            <FieldLabel>Note (optional)</FieldLabel>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onFocus={() => setFocusField("note")}
+              onBlur={() => setFocusField(null)}
+              placeholder="Add a message for the recipient"
+              rows={3}
+              style={{
+                width: "100%",
+                resize: "none",
+                borderRadius: 16,
+                border: `1px solid ${focusField === "note" ? "rgba(167,139,250,0.6)" : "rgba(255,255,255,0.1)"}`,
+                background: "rgba(255,255,255,0.04)",
+                padding: "13px 14px",
+                color: "#fff",
+                fontSize: 13.5,
+                outline: "none",
+                boxSizing: "border-box",
+                transition: "border-color 0.2s ease",
+              }}
             />
-            <span className="text-[13px] font-bold text-white/40">{coin}</span>
           </div>
-          <p className="mt-2 text-[12px] text-white/40">
-            Available Balance: <span className="text-white/70">{selectedCoin.balance} {coin}</span>
-          </p>
-        </div>
-
-        <div>
-          <FieldLabel>Note (optional)</FieldLabel>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Add a message for the recipient"
-            rows={3}
-            className="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-[14px] text-white placeholder-white/30 outline-none transition focus:border-[#7C3AED]/60"
-          />
-        </div>
-
-        <GlowCard className="!bg-transparent !border-white/5 !shadow-none">
-          <p className="text-[12px] leading-relaxed text-white/40">
-            Internal transfers are instant and free. No wallet address or blockchain network is required.
-          </p>
         </GlowCard>
 
-        <div className="mt-auto pt-2">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            borderRadius: 16,
+            background: "rgba(124,58,237,0.06)",
+            border: "1px solid rgba(124,58,237,0.15)",
+            padding: "12px 14px",
+          }}
+        >
+          <span
+            style={{
+              width: 28,
+              height: 28,
+              minWidth: 28,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(124,58,237,0.2)",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#C4B5FD" />
+            </svg>
+          </span>
+          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.45, color: "rgba(255,255,255,0.6)" }}>
+            Instant and free — no wallet address or blockchain network required.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "auto", paddingTop: 4 }}>
           <PrimaryButton onClick={handleContinue} disabled={!isValid}>
             Continue
           </PrimaryButton>
