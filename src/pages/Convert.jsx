@@ -5,13 +5,6 @@ import ConvertReview from "../components/convert/ConvertReview";
 import ConvertLoading from "../components/convert/ConvertLoading";
 import ConvertSuccess from "../components/convert/ConvertSuccess";
 
-/* ------------------------------------------------------------------ */
-/*  Mount this page in your router as:                                 */
-/*    <Route path="/convert/*" element={<Convert />} />                */
-/*  Draft + quote state is centralized here so it can later be POSTed  */
-/*  to an Admin Dashboard / backend with a single call.                 */
-/* ------------------------------------------------------------------ */
-
 export const COINS = [
   { symbol: "BTC", name: "Bitcoin", price: 118250, balance: 0.5842, color: "#F7931A" },
   { symbol: "ETH", name: "Ethereum", price: 4200, balance: 3.221, color: "#627EEA" },
@@ -28,14 +21,29 @@ export const COINS = [
   { symbol: "DOT", name: "Polkadot", price: 8.5, balance: 340, color: "#E6007A" },
   { symbol: "MATIC", name: "Polygon", price: 0.75, balance: 5200, color: "#8247E5" },
   { symbol: "LTC", name: "Litecoin", price: 115, balance: 22, color: "#345D9D" },
+  { symbol: "SHIB", name: "Shiba Inu", price: 0.000025, balance: 500000000, color: "#FFA409" },
+  { symbol: "UNI", name: "Uniswap", price: 9.5, balance: 150, color: "#FF007A" },
+  { symbol: "ATOM", name: "Cosmos", price: 7.8, balance: 220, color: "#5064FB" },
+  { symbol: "NEAR", name: "NEAR Protocol", price: 5.2, balance: 400, color: "#00EC97" },
+  { symbol: "APT", name: "Aptos", price: 9.8, balance: 180, color: "#2DD8A7" },
+  { symbol: "ARB", name: "Arbitrum", price: 0.85, balance: 3000, color: "#28A0F0" },
+  { symbol: "OP", name: "Optimism", price: 2.1, balance: 1200, color: "#FF0420" },
+  { symbol: "FIL", name: "Filecoin", price: 5.4, balance: 300, color: "#0090FF" },
+  { symbol: "ICP", name: "Internet Computer", price: 10.2, balance: 150, color: "#29ABE2" },
+  { symbol: "ETC", name: "Ethereum Classic", price: 26, balance: 90, color: "#328332" },
+  { symbol: "BCH", name: "Bitcoin Cash", price: 480, balance: 12, color: "#8DC351" },
+  { symbol: "ALGO", name: "Algorand", price: 0.18, balance: 8000, color: "#00C2A8" },
+  { symbol: "VET", name: "VeChain", price: 0.045, balance: 40000, color: "#15BDFF" },
+  { symbol: "SAND", name: "The Sandbox", price: 0.42, balance: 6000, color: "#00ADEF" },
+  { symbol: "MANA", name: "Decentraland", price: 0.38, balance: 5000, color: "#FF2D55" },
 ];
 
 export function getCoin(symbol) {
   return COINS.find((c) => c.symbol === symbol) || COINS[0];
 }
 
-const FEE_RATE = 0.001; // 0.1% mock network/platform fee
-const SLIPPAGE = 0.5; // % mock max slippage
+const FEE_RATE = 0.001;
+const SLIPPAGE = 0.5;
 
 export function computeQuote(fromSymbol, toSymbol, amountInput) {
   const from = getCoin(fromSymbol);
@@ -47,7 +55,6 @@ export function computeQuote(fromSymbol, toSymbol, amountInput) {
   const fee = grossReceive * FEE_RATE;
   const netReceive = grossReceive - fee > 0 ? grossReceive - fee : 0;
 
-  // Mock price impact: grows slightly with trade size relative to a notional pool depth.
   const notional = amount * from.price;
   const priceImpact = Math.min(0.35, notional / 4_000_000);
 
@@ -94,17 +101,17 @@ export default function Convert() {
   return (
     <ConvertContext.Provider value={{ draft, updateDraft, resetDraft }}>
       <div
-        className={`fixed inset-0 z-50 overflow-y-auto transition-opacity duration-300 ${
+        className={`fixed inset-0 z-50 overflow-x-hidden overflow-y-auto transition-opacity duration-300 ${
           mounted ? "opacity-100" : "opacity-0"
         }`}
         style={{ background: "radial-gradient(circle at top, #1b2a5e 0%, #0a0f24 55%, #050816 100%)" }}
       >
         <div
-          className="pointer-events-none fixed -left-[12%] -top-[10%] h-[60vmax] w-[60vmax] rounded-full opacity-[0.16] blur-[110px]"
+          className="pointer-events-none absolute -left-[12%] -top-[10%] h-[60vmax] w-[60vmax] rounded-full opacity-[0.16] blur-[110px]"
           style={{ background: "#7C3AED" }}
         />
         <div
-          className="pointer-events-none fixed -right-[12%] -bottom-[15%] h-[55vmax] w-[55vmax] rounded-full opacity-[0.14] blur-[110px]"
+          className="pointer-events-none absolute -right-[12%] -bottom-[15%] h-[55vmax] w-[55vmax] rounded-full opacity-[0.14] blur-[110px]"
           style={{ background: "#2563EB" }}
         />
 
@@ -121,10 +128,6 @@ export default function Convert() {
     </ConvertContext.Provider>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Shared UI primitives                                               */
-/* ------------------------------------------------------------------ */
 
 export function ConvertHeader({ title, onBack, onClose, right = null }) {
   const navigate = useNavigate();
