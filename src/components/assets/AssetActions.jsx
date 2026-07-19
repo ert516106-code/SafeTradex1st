@@ -1,83 +1,57 @@
-import {
-  ArrowDown,
-  ArrowUp,
-  Repeat,
-  Send,
-} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowDown, ArrowUp, Repeat, Send } from "lucide-react";
 
-const actions = [
-  {
-    title: "Deposit",
-    icon: ArrowDown,
-  },
-  {
-    title: "Withdraw",
-    icon: ArrowUp,
-  },
-  {
-    title: "Convert",
-    icon: Repeat,
-  },
-  {
-    title: "Transfer",
-    icon: Send,
-  },
+const ACTIONS = [
+  { key: "deposit", label: "Deposit", icon: ArrowDown, path: "/deposit" },
+  { key: "withdraw", label: "Withdraw", icon: ArrowUp, path: "/withdraw" },
+  { key: "convert", label: "Convert", icon: Repeat, path: "/convert" },
+  { key: "transfer", label: "Transfer", icon: Send, path: "/transfer" },
 ];
 
 export default function AssetActions() {
+  const navigate = useNavigate();
+
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(4,1fr)",
-        gap: 16,
-        marginBottom: 30,
+        gridTemplateColumns: "repeat(4, 1fr)",
+        gap: 12,
+        marginBottom: 28,
       }}
     >
-      {actions.map((item) => {
-        const Icon = item.icon;
-
-        return (
-          <button
-            key={item.title}
+      {ACTIONS.map(({ key, label, icon: Icon, path }) => (
+        <button
+          key={key}
+          onClick={() => navigate(path)}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 10,
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+        >
+          <span
             style={{
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              color: "#FFFFFF",
+              width: 58,
+              height: 58,
+              borderRadius: "50%",
+              background: "rgba(99,102,241,0.12)",
+              border: "1px solid rgba(129,140,248,0.25)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <div
-              style={{
-                width: 62,
-                height: 62,
-                margin: "0 auto",
-                borderRadius: "50%",
-                background: "#1A2548",
-                border: "1px solid #2D437A",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Icon
-                size={24}
-                color="#8EA2FF"
-              />
-            </div>
-
-            <div
-              style={{
-                marginTop: 10,
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {item.title}
-            </div>
-          </button>
-        );
-      })}
+            <Icon size={22} color="#818CF8" />
+          </span>
+          <span style={{ fontSize: 13.5, fontWeight: 600, color: "#fff" }}>{label}</span>
+        </button>
+      ))}
     </div>
   );
 }
