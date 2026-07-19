@@ -4,40 +4,53 @@ import {
   ConvertHeader,
   GlassCard,
   PrimaryButton,
+  CoinLogo,
   getCoin,
   computeQuote,
   useConvert,
   formatAmount,
 } from "../../pages/Convert";
-import CoinSelector from "./CoinSelector";
 import RateInfo from "./RateInfo";
+
+function CoinPill({ coin, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] py-1.5 pl-1.5 pr-2.5 transition active:scale-95"
+    >
+      <CoinLogo coin={coin} size={22} />
+      <span className="text-[13.5px] font-bold text-white">{coin.symbol}</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="text-white/40">
+        <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
 
 export default function ConvertForm() {
   const navigate = useNavigate();
   const { draft, updateDraft } = useConvert();
-
-  const [fromCoin, setFromCoin] = useState(draft.fromCoin);
-  const [toCoin, setToCoin] = useState(draft.toCoin);
-  const [amount, setAmount] = useState(draft.amount || "");
   const [spinning, setSpinning] = useState(false);
 
-  const fromData = getCoin(fromCoin);
-  const toData = getCoin(toCoin);
-  const numericAmount = parseFloat(amount) || 0;
+  const fromData = getCoin(draft.fromCoin);
+  const toData = getCoin(draft.toCoin);
+  const numericAmount = parseFloat(draft.amount) || 0;
 
-  const quote = useMemo(() => computeQuote(fromCoin, toCoin, amount), [fromCoin, toCoin, amount]);
-  const isValid = fromCoin !== toCoin && numericAmount > 0 && numericAmount <= fromData.balance;
+  const quote = useMemo(
+    () => computeQuote(draft.fromCoin, draft.toCoin, draft.amount),
+    [draft.fromCoin, draft.toCoin, draft.amount]
+  );
+  const isValid = draft.fromCoin !== draft.toCoin && numericAmount > 0 && numericAmount <= fromData.balance;
 
   const handleSwap = () => {
     setSpinning(true);
-    setFromCoin(toCoin);
-    setToCoin(fromCoin);
+    updateDraft({ fromCoin: draft.toCoin, toCoin: draft.fromCoin });
     setTimeout(() => setSpinning(false), 420);
   };
 
   const handleContinue = () => {
     if (!isValid) return;
-    updateDraft({ fromCoin, toCoin, amount });
     navigate("/convert/review");
   };
 
@@ -46,30 +59,28 @@ export default function ConvertForm() {
       <ConvertHeader title="Convert" onClose={() => navigate(-1)} />
 
       <div className="flex flex-1 flex-col gap-4 px-4 pb-8 pt-6 sm:px-6">
-        <GlassCard className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
+        <GlassCard className="flex flex-col items-center gap-2 !py-6 text-center">
+          <div className="flex w-full items-center justify-between">
             <span className="text-[13px] font-medium text-white/45">You send</span>
-            <CoinSelector label="Convert From" value={fromCoin} onChange={setFromCoin} exclude={toCoin} />
+            <CoinPill coin={fromData} onClick={() => navigate("/convert/select-from")} />
           </div>
 
           <input
             type="number"
             inputMode="decimal"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-            className="w-full bg-transparent py-1 text-[30px] font-extrabold text-white outline-none placeholder-white/25"
+            value={draft.amount}
+            onChange={(e) => updateDraft({ amount: e.target.value })}
+            placeholder="0"
+            className="w-full bg-transparent py-2 text-center text-[52px] font-extrabold leading-none text-white outline-none placeholder-white/20"
           />
 
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] text-white/40">
-              1 {fromCoin}: ${formatAmount(fromData.price, 2)}
-            </span>
+          <div className="flex w-full items-center justify-between">
+            <span className="text-[12px] text-white/40">1 {draft.fromCoin}: ${formatAmount(fromData.price, 2)}</span>
             <span className="flex items-center gap-2 text-[12px] text-white/40">
-              Balance: {fromData.balance} {fromCoin}
+              Balance: {fromData.balance}
               <button
                 type="button"
-                onClick={() => setAmount(String(fromData.balance))}
+                onClick={() => updateDraft({ amount: String(fromData.balance) })}
                 className="rounded-full bg-[#7C3AED]/15 px-2 py-0.5 text-[10.5px] font-bold text-[#A78BFA] transition active:scale-90"
               >
                 MAX
@@ -98,23 +109,19 @@ export default function ConvertForm() {
           </button>
         </div>
 
-        <GlassCard className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
+        <GlassCard className="flex flex-col items-center gap-2 !py-6 text-center">
+          <div className="flex w-full items-center justify-between">
             <span className="text-[13px] font-medium text-white/45">You receive</span>
-            <CoinSelector label="Convert To" value={toCoin} onChange={setToCoin} exclude={fromCoin} />
+            <CoinPill coin={toData} onClick={() => navigate("/convert/select-to")} />
           </div>
 
-          <div className="w-full py-1 text-[30px] font-extrabold text-[#A78BFA]">
-            {numericAmount > 0 ? formatAmount(quote.netReceive, 6) : "0.00"}
+          <div className="w-full py-2 text-center text-[52px] font-extrabold leading-none text-[#A78BFA]">
+            {numericAmount > 0 ? formatAmount(quote.netReceive, 6) : "0"}
           </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] text-white/40">
-              1 {toCoin}: ${formatAmount(toData.price, 2)}
-            </span>
-            <span className="text-[12px] text-white/40">
-              Balance: {toData.balance} {toCoin}
-            </span>
+          <div className="flex w-full items-center justify-between">
+            <span className="text-[12px] text-white/40">1 {draft.toCoin}: ${formatAmount(toData.price, 2)}</span>
+            <span className="text-[12px] text-white/40">Balance: {toData.balance}</span>
           </div>
         </GlassCard>
 
