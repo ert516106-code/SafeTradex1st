@@ -1,11 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ConvertHeader, GlassCard, PrimaryButton, CoinLogo, computeQuote, useConvert, formatAmount } from "../../pages/Convert";
 
 export default function ConvertReview() {
   const navigate = useNavigate();
   const { draft } = useConvert();
-  const [confirming, setConfirming] = useState(false);
 
   const quote = useMemo(
     () => computeQuote(draft.fromCoin, draft.toCoin, draft.amount),
@@ -15,10 +14,7 @@ export default function ConvertReview() {
   const { from, to, amount, rate, fee, netReceive } = quote;
 
   const handleConfirm = () => {
-    setConfirming(true);
-    setTimeout(() => {
-      navigate("/convert/success");
-    }, 900);
+    navigate("/convert/processing");
   };
 
   if (!draft.amount) {
@@ -66,9 +62,7 @@ export default function ConvertReview() {
         </GlassCard>
 
         <div className="mt-auto pt-2">
-          <PrimaryButton onClick={handleConfirm} disabled={confirming}>
-            {confirming ? "Processing..." : "Confirm Convert"}
-          </PrimaryButton>
+          <PrimaryButton onClick={handleConfirm}>Confirm Convert</PrimaryButton>
         </div>
       </div>
     </div>
