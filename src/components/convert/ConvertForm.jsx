@@ -21,6 +21,7 @@ export default function ConvertForm() {
   const [toCoin, setToCoin] = useState(draft.toCoin);
   const [amount, setAmount] = useState(draft.amount || "");
   const [spinning, setSpinning] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   const fromBalance = getCoin(fromCoin).balance;
   const numericAmount = parseFloat(amount) || 0;
@@ -47,75 +48,83 @@ export default function ConvertForm() {
       <ConvertHeader title="Convert" onClose={() => navigate(-1)} />
 
       <div className="flex flex-1 flex-col gap-5 px-4 pb-8 pt-6 sm:px-6">
-        <GlassCard className="flex flex-col gap-2 !p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] font-semibold text-white/45">From</span>
-            <span className="text-[11.5px] text-white/40">
-              Available: <span className="text-white/70">{fromBalance} {fromCoin}</span>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <CoinSelector label="Convert From" value={fromCoin} onChange={setFromCoin} exclude={toCoin} />
-            <div className="flex flex-1 flex-col items-end">
-              <input
-                type="number"
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full bg-transparent text-right text-[24px] font-extrabold text-white outline-none placeholder-white/25"
-              />
-              <button
-                type="button"
-                onClick={() => setAmount(String(fromBalance))}
-                className="mt-1 rounded-full bg-[#7C3AED]/15 px-2.5 py-1 text-[10.5px] font-bold text-[#A78BFA]"
-              >
-                MAX
-              </button>
+        <GlassCard className="!p-0 overflow-visible">
+          <div className="flex flex-col gap-1 p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-semibold text-white/45">From</span>
+              <span className="text-[11.5px] text-white/40">
+                Available: <span className="text-white/70">{fromBalance} {fromCoin}</span>
+              </span>
             </div>
-          </div>
-        </GlassCard>
 
-        <div className="-my-3 flex justify-center">
-          <button
-            type="button"
-            onClick={handleSwap}
-            aria-label="Swap coins"
-            className="z-10 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-[#7C3AED] to-[#2563EB] shadow-[0_0_20px_rgba(124,58,237,0.55)] transition active:scale-90"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="text-white transition-transform duration-500 ease-out"
-              style={{ transform: spinning ? "rotate(180deg)" : "rotate(0deg)" }}
+            <div
+              className={`mt-1 flex items-center gap-3 rounded-2xl border px-1 py-1 transition-colors ${
+                focused === "amount" ? "border-[#7C3AED]/60" : "border-transparent"
+              }`}
             >
-              <path
-                d="M7 10l-3-3 3-3M4 7h11a4 4 0 014 4M17 14l3 3-3 3M20 17H9a4 4 0 01-4-4"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <GlassCard className="flex flex-col gap-2 !p-4">
-          <span className="text-[12px] font-semibold text-white/45">To</span>
-
-          <div className="flex items-center gap-3">
-            <CoinSelector label="Convert To" value={toCoin} onChange={setToCoin} exclude={fromCoin} />
-            <div className="flex-1 text-right text-[24px] font-extrabold text-[#A78BFA]">
-              {numericAmount > 0 ? formatAmount(quote.netReceive, 6) : "0.00"}
+              <CoinSelector label="Convert From" value={fromCoin} onChange={setFromCoin} exclude={toCoin} />
+              <div className="flex flex-1 flex-col items-end">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  onFocus={() => setFocused("amount")}
+                  onBlur={() => setFocused(null)}
+                  placeholder="0.00"
+                  className="w-full bg-transparent text-right text-[24px] font-extrabold text-white outline-none placeholder-white/25"
+                />
+                <button
+                  type="button"
+                  onClick={() => setAmount(String(fromBalance))}
+                  className="mt-1 rounded-full bg-[#7C3AED]/15 px-2.5 py-1 text-[10.5px] font-bold text-[#A78BFA] transition active:scale-90"
+                >
+                  MAX
+                </button>
+              </div>
             </div>
           </div>
 
-          <p className="text-right text-[11.5px] text-white/40">
-            1 {fromCoin} = {formatAmount(quote.rate, 2)} {toCoin}
-          </p>
+          <div className="relative flex justify-center border-t border-white/5">
+            <button
+              type="button"
+              onClick={handleSwap}
+              aria-label="Swap coins"
+              className="absolute -top-5 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-[#7C3AED] to-[#2563EB] shadow-[0_0_20px_rgba(124,58,237,0.55)] transition active:scale-90"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-white transition-transform duration-500 ease-out"
+                style={{ transform: spinning ? "rotate(180deg)" : "rotate(0deg)" }}
+              >
+                <path
+                  d="M7 10l-3-3 3-3M4 7h11a4 4 0 014 4M17 14l3 3-3 3M20 17H9a4 4 0 01-4-4"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-1 p-4 pt-6">
+            <span className="text-[12px] font-semibold text-white/45">To</span>
+
+            <div className="flex items-center gap-3">
+              <CoinSelector label="Convert To" value={toCoin} onChange={setToCoin} exclude={fromCoin} />
+              <div className="flex-1 text-right text-[24px] font-extrabold text-[#A78BFA]">
+                {numericAmount > 0 ? formatAmount(quote.netReceive, 6) : "0.00"}
+              </div>
+            </div>
+
+            <p className="text-right text-[11.5px] text-white/40">
+              1 {fromCoin} = {formatAmount(quote.rate, 2)} {toCoin}
+            </p>
+          </div>
         </GlassCard>
 
         <RateInfo quote={quote} />
