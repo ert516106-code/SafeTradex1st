@@ -1,9 +1,17 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import ConvertForm from "../components/convert/ConvertForm";
+import SelectCoin from "../components/convert/SelectCoin";
 import ConvertReview from "../components/convert/ConvertReview";
 import ConvertLoading from "../components/convert/ConvertLoading";
 import ConvertSuccess from "../components/convert/ConvertSuccess";
+
+/* ------------------------------------------------------------------ */
+/*  Mount this page in your router as:                                 */
+/*    <Route path="/convert/*" element={<Convert />} />                */
+/*  Draft + quote state is centralized here so it can later be POSTed  */
+/*  to an Admin Dashboard / backend with a single call.                 */
+/* ------------------------------------------------------------------ */
 
 export const COINS = [
   { symbol: "BTC", name: "Bitcoin", price: 118250, balance: 0.5842, color: "#F7931A" },
@@ -42,8 +50,8 @@ export function getCoin(symbol) {
   return COINS.find((c) => c.symbol === symbol) || COINS[0];
 }
 
-const FEE_RATE = 0.001;
-const SLIPPAGE = 0.5;
+const FEE_RATE = 0.001; // 0.1% mock network/platform fee
+const SLIPPAGE = 0.5; // % mock max slippage
 
 export function computeQuote(fromSymbol, toSymbol, amountInput) {
   const from = getCoin(fromSymbol);
@@ -55,6 +63,7 @@ export function computeQuote(fromSymbol, toSymbol, amountInput) {
   const fee = grossReceive * FEE_RATE;
   const netReceive = grossReceive - fee > 0 ? grossReceive - fee : 0;
 
+  // Mock price impact: grows slightly with trade size relative to a notional pool depth.
   const notional = amount * from.price;
   const priceImpact = Math.min(0.35, notional / 4_000_000);
 
@@ -118,6 +127,8 @@ export default function Convert() {
         <div className="relative z-10">
           <Routes>
             <Route index element={<ConvertForm />} />
+            <Route path="select-from" element={<SelectCoin field="from" />} />
+            <Route path="select-to" element={<SelectCoin field="to" />} />
             <Route path="review" element={<ConvertReview />} />
             <Route path="processing" element={<ConvertLoading />} />
             <Route path="success" element={<ConvertSuccess />} />
@@ -128,6 +139,10 @@ export default function Convert() {
     </ConvertContext.Provider>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Shared UI primitives                                               */
+/* ------------------------------------------------------------------ */
 
 export function ConvertHeader({ title, onBack, onClose, right = null }) {
   const navigate = useNavigate();
