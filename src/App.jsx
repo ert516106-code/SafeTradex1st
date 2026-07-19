@@ -69,7 +69,7 @@ export default function App() {
           />
 
           <Route
-            path="/transfer/:id"
+            path="/transfer/*"
             element={
               <ProtectedRoute>
                 <Transfer />
