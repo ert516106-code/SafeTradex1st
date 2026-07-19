@@ -65,19 +65,56 @@ export default function Transfer() {
   return (
     <TransferContext.Provider value={{ draft, updateDraft, resetDraft }}>
       <div
-        className={`fixed inset-0 z-50 overflow-y-auto bg-[#050816] transition-opacity duration-300 ${
-          mounted ? "opacity-100" : "opacity-0"
-        }`}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 50,
+          overflowY: "auto",
+          background: "radial-gradient(circle at top, #1b2a5e 0%, #0a0f24 55%, #050816 100%)",
+          opacity: mounted ? 1 : 0,
+          transition: "opacity 0.3s ease",
+        }}
       >
-        <Routes>
-          <Route index element={<TransferHome />} />
-          <Route path="internal" element={<InternalTransfer />} />
-          <Route path="external" element={<ExternalTransfer />} />
-          <Route path="external/network" element={<NetworkSelector />} />
-          <Route path="review" element={<TransferReview />} />
-          <Route path="success" element={<TransferSuccess />} />
-          <Route path="*" element={<Navigate to="/transfer" replace />} />
-        </Routes>
+        <div
+          style={{
+            position: "fixed",
+            top: "-10%",
+            left: "-12%",
+            width: "60vmax",
+            height: "60vmax",
+            borderRadius: "50%",
+            background: "#7C3AED",
+            opacity: 0.16,
+            filter: "blur(110px)",
+            pointerEvents: "none",
+          }}
+        />
+        <div
+          style={{
+            position: "fixed",
+            bottom: "-15%",
+            right: "-12%",
+            width: "55vmax",
+            height: "55vmax",
+            borderRadius: "50%",
+            background: "#2563EB",
+            opacity: 0.14,
+            filter: "blur(110px)",
+            pointerEvents: "none",
+          }}
+        />
+
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <Routes>
+            <Route index element={<TransferHome />} />
+            <Route path="internal" element={<InternalTransfer />} />
+            <Route path="external" element={<ExternalTransfer />} />
+            <Route path="external/network" element={<NetworkSelector />} />
+            <Route path="review" element={<TransferReview />} />
+            <Route path="success" element={<TransferSuccess />} />
+            <Route path="*" element={<Navigate to="/transfer" replace />} />
+          </Routes>
+        </div>
       </div>
     </TransferContext.Provider>
   );
@@ -86,85 +123,146 @@ export default function Transfer() {
 export function TransferHeader({ title, onBack, onClose, right = null }) {
   const navigate = useNavigate();
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-[#050816]/90 px-4 py-4 backdrop-blur-md sm:px-6">
+    <div
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "16px 18px",
+        background: "rgba(5,8,22,0.55)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        borderBottom: "1px solid rgba(124,58,237,0.14)",
+      }}
+    >
       <button
         onClick={onBack ? onBack : () => navigate(-1)}
-        className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
         aria-label="Back"
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.1)",
+          background: "rgba(255,255,255,0.05)",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
-      <h1 className="text-[17px] font-bold text-white">{title}</h1>
+      <h1 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#fff", letterSpacing: 0.2 }}>{title}</h1>
 
       {right ? (
         right
       ) : onClose ? (
         <button
           onClick={onClose}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
           aria-label="Close"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255,255,255,0.05)",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
             <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
       ) : (
-        <div className="h-10 w-10" />
+        <div style={{ width: 40, height: 40 }} />
       )}
     </div>
   );
 }
 
-export function GlowCard({ children, className = "" }) {
+export function GlowCard({ children, style = {} }) {
   return (
     <div
-      className={`rounded-2xl border border-[#7C3AED]/15 bg-gradient-to-b from-[#0b0f24] to-[#0a0e20] p-4 shadow-[0_0_30px_-10px_rgba(124,58,237,0.35)] ${className}`}
+      style={{
+        position: "relative",
+        borderRadius: 20,
+        border: "1px solid rgba(124,58,237,0.18)",
+        background: "linear-gradient(180deg, rgba(124,58,237,0.06), rgba(11,15,36,0.9))",
+        boxShadow: "0 0 40px -14px rgba(124,58,237,0.35)",
+        padding: 18,
+        ...style,
+      }}
     >
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 18,
+          right: 18,
+          height: 1,
+          background: "linear-gradient(90deg, transparent, rgba(167,139,250,0.5), transparent)",
+        }}
+      />
       {children}
     </div>
   );
 }
 
 export function PrimaryButton({ children, onClick, disabled = false, type = "button" }) {
-  const cls = disabled
-    ? "w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-4 text-[15px] font-bold text-white shadow-[0_10px_30px_-8px_rgba(124,58,237,0.6)] transition active:scale-[0.98] cursor-not-allowed opacity-40"
-    : "w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-4 text-[15px] font-bold text-white shadow-[0_10px_30px_-8px_rgba(124,58,237,0.6)] transition active:scale-[0.98] hover:brightness-110";
-
+  const [pressed, setPressed] = useState(false);
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={cls}>
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => setPressed(false)}
+      style={{
+        width: "100%",
+        padding: "16px 0",
+        borderRadius: 18,
+        border: "none",
+        background: disabled
+          ? "linear-gradient(90deg, #7C3AED, #2563EB)"
+          : "linear-gradient(90deg, #8B5CF6, #3B82F6)",
+        color: "#fff",
+        fontSize: 15.5,
+        fontWeight: 700,
+        letterSpacing: 0.2,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.4 : 1,
+        boxShadow: disabled ? "none" : "0 14px 34px -10px rgba(124,58,237,0.65)",
+        transform: pressed && !disabled ? "scale(0.97)" : "scale(1)",
+        transition: "transform 0.15s ease, opacity 0.2s ease",
+      }}
+    >
       {children}
     </button>
   );
 }
 
-export function FieldLabel({ children }) {
-  return <label className="mb-2 block text-[12.5px] font-medium text-white/50">{children}</label>;
-}
-
-function CoinOptionRow({ coin, isActive, onSelect }) {
-  const cls = isActive
-    ? "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5 bg-[#7C3AED]/10"
-    : "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5";
-
+export function FieldLabel({ children, right = null }) {
   return (
-    <button type="button" onClick={() => onSelect(coin.symbol)} className={cls}>
-      <span className="flex items-center gap-3">
-        <span
-          className="flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white"
-          style={{ background: coin.color }}
-        >
-          {coin.symbol.slice(0, 1)}
-        </span>
-        <span>
-          <span className="block text-[13.5px] font-semibold text-white">{coin.symbol}</span>
-          <span className="block text-[11.5px] text-white/40">{coin.name}</span>
-        </span>
-      </span>
-      <span className="text-[12px] text-white/40">{coin.balance}</span>
-    </button>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+      <label style={{ fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,0.5)", letterSpacing: 0.3 }}>
+        {children}
+      </label>
+      {right}
+    </div>
   );
 }
 
@@ -172,46 +270,125 @@ export function CoinSelector({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const selected = getCoin(value);
 
-  const handleSelect = (symbol) => {
-    onChange(symbol);
-    setOpen(false);
-  };
-
-  const dropdownClass = open
-    ? "absolute left-0 right-0 top-[calc(100%+8px)] z-20 max-h-64 overflow-y-auto rounded-2xl border border-white/10 bg-[#0b0f24] p-2 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.6)]"
-    : "hidden";
-
-  const arrowClass = open
-    ? "text-white/50 transition-transform duration-200 rotate-180"
-    : "text-white/50 transition-transform duration-200";
-
   return (
-    <div className="relative">
+    <div style={{ position: "relative" }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-left transition active:scale-[0.99]"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderRadius: 18,
+          border: "1px solid rgba(255,255,255,0.1)",
+          background: "rgba(255,255,255,0.04)",
+          padding: "14px 16px",
+          cursor: "pointer",
+          textAlign: "left",
+        }}
       >
-        <span className="flex items-center gap-3">
+        <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold text-white"
-            style={{ background: selected.color }}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#fff",
+              background: selected.color,
+              boxShadow: `0 0 16px ${selected.color}66`,
+            }}
           >
             {selected.symbol.slice(0, 1)}
           </span>
           <span>
-            <span className="block text-[14.5px] font-semibold text-white">{selected.symbol}</span>
-            <span className="block text-[12px] text-white/40">{selected.name}</span>
+            <span style={{ display: "block", fontSize: 14.5, fontWeight: 700, color: "#fff" }}>{selected.symbol}</span>
+            <span style={{ display: "block", fontSize: 12, color: "rgba(255,255,255,0.4)" }}>{selected.name}</span>
           </span>
         </span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className={arrowClass}>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          style={{
+            color: "rgba(255,255,255,0.5)",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s ease",
+          }}
+        >
           <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
-      <div className={dropdownClass}>
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: "calc(100% + 8px)",
+          zIndex: 20,
+          maxHeight: open ? 260 : 0,
+          overflowY: "auto",
+          opacity: open ? 1 : 0,
+          transition: "max-height 0.25s ease, opacity 0.2s ease",
+          borderRadius: 18,
+          border: open ? "1px solid rgba(124,58,237,0.25)" : "1px solid transparent",
+          background: "#0b0f24",
+          boxShadow: open ? "0 24px 60px -14px rgba(0,0,0,0.65)" : "none",
+          padding: open ? 8 : 0,
+        }}
+      >
         {COINS.map((c) => (
-          <CoinOptionRow key={c.symbol} coin={c} isActive={c.symbol === value} onSelect={handleSelect} />
+          <button
+            key={c.symbol}
+            type="button"
+            onClick={() => {
+              onChange(c.symbol);
+              setOpen(false);
+            }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderRadius: 14,
+              border: "none",
+              background: c.symbol === value ? "rgba(124,58,237,0.12)" : "transparent",
+              padding: "10px 12px",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: "#fff",
+                  background: c.color,
+                }}
+              >
+                {c.symbol.slice(0, 1)}
+              </span>
+              <span>
+                <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: "#fff" }}>{c.symbol}</span>
+                <span style={{ display: "block", fontSize: 11.5, color: "rgba(255,255,255,0.4)" }}>{c.name}</span>
+              </span>
+            </span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>{c.balance}</span>
+          </button>
         ))}
       </div>
     </div>
