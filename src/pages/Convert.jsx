@@ -196,8 +196,10 @@ export function PrimaryButton({ children, onClick, disabled = false, type = "but
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-4 text-[15px] font-bold text-white shadow-[0_10px_30px_-8px_rgba(124,58,237,0.6)] transition active:scale-[0.98] ${
-        disabled ? "cursor-not-allowed opacity-40" : "hover:brightness-110"
+      className={`w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-5 text-[16.5px] font-bold text-white shadow-[0_12px_32px_-6px_rgba(124,58,237,0.65)] ring-1 ring-white/10 transition-all duration-150 active:scale-[0.97] active:shadow-[0_6px_18px_-4px_rgba(124,58,237,0.5)] ${
+        disabled
+          ? "cursor-not-allowed opacity-40"
+          : "hover:brightness-110 hover:shadow-[0_14px_38px_-4px_rgba(124,58,237,0.8)]"
       }`}
     >
       {children}
@@ -205,13 +207,41 @@ export function PrimaryButton({ children, onClick, disabled = false, type = "but
   );
 }
 
+/* Maps our internal symbols to CoinCap's icon-id slugs where they differ. */
+const ICON_ID_OVERRIDES = {
+  MATIC: "polygon",
+};
+
 export function CoinLogo({ coin, size = 36 }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const iconId = ICON_ID_OVERRIDES[coin.symbol] || coin.symbol.toLowerCase();
+  const iconUrl = `https://assets.coincap.io/assets/icons/${iconId}@2x.png`;
+
+  if (imgFailed) {
+    return (
+      <span
+        className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
+        style={{ width: size, height: size, background: coin.color, fontSize: size * 0.32 }}
+      >
+        {coin.symbol.slice(0, 1)}
+      </span>
+    );
+  }
+
   return (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
-      style={{ width: size, height: size, background: coin.color, fontSize: size * 0.32 }}
+      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/5"
+      style={{ width: size, height: size }}
     >
-      {coin.symbol.slice(0, 1)}
+      <img
+        src={iconUrl}
+        alt={coin.symbol}
+        width={size}
+        height={size}
+        onError={() => setImgFailed(true)}
+        className="h-full w-full object-cover"
+        loading="lazy"
+      />
     </span>
   );
 }
