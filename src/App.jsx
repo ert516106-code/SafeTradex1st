@@ -10,6 +10,7 @@ import Markets from "./pages/Markets";
 import CoinDetails from "./pages/CoinDetails";
 import Deposit from "./pages/Deposit";
 import Transfer from "./pages/Transfer";
+import Convert from "./pages/Convert";
 import Financial from "./pages/Financial";
 import Assets from "./pages/Assets";
 
@@ -73,6 +74,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Transfer />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/convert/*"
+            element={
+              <ProtectedRoute>
+                <Convert />
               </ProtectedRoute>
             }
           />
