@@ -24,7 +24,7 @@ export default function ConvertSuccess() {
   };
 
   return (
-    <div className="mx-auto flex min-h-full max-w-lg flex-col items-center justify-center px-6 pb-10 text-center">
+    <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-6 pb-10 text-center">
       <style>{`
         @keyframes cvSuccessPop {
           0% { transform: scale(0.5); opacity: 0; }
@@ -84,7 +84,7 @@ export default function ConvertSuccess() {
       >
         <button
           onClick={handleDone}
-          className="w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-4 text-[15px] font-bold text-white shadow-[0_10px_30px_-8px_rgba(124,58,237,0.6)] transition active:scale-[0.98]"
+          className="w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-5 text-[17px] font-bold text-white shadow-[0_12px_32px_-6px_rgba(124,58,237,0.65)] ring-1 ring-white/10 transition-all duration-150 hover:brightness-110 hover:shadow-[0_14px_38px_-4px_rgba(124,58,237,0.8)] active:scale-[0.97] active:shadow-[0_6px_18px_-4px_rgba(124,58,237,0.5)]"
         >
           Done
         </button>
