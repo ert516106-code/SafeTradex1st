@@ -4,7 +4,6 @@ import { COINS, CoinLogo } from "../../pages/Convert";
 export default function CoinSelector({ label, value, onChange, exclude = null }) {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [pressed, setPressed] = useState(false);
   const [search, setSearch] = useState("");
 
   const selected = COINS.find((c) => c.symbol === value) || COINS[0];
@@ -17,8 +16,6 @@ export default function CoinSelector({ label, value, onChange, exclude = null })
     setVisible(false);
   }, [open]);
 
-  // Lock the page in place while the sheet is open, so only the sheet's own
-  // list scrolls — this is what was letting rows bleed through the form.
   useEffect(() => {
     if (!open) return;
     const scrollY = window.scrollY;
@@ -64,25 +61,11 @@ export default function CoinSelector({ label, value, onChange, exclude = null })
       <button
         type="button"
         onClick={() => setOpen(true)}
-        onMouseDown={() => setPressed(true)}
-        onMouseUp={() => setPressed(false)}
-        onMouseLeave={() => setPressed(false)}
-        onTouchStart={() => setPressed(true)}
-        onTouchEnd={() => setPressed(false)}
-        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] py-2.5 pl-2.5 pr-4 shadow-[0_10px_24px_-14px_rgba(0,0,0,0.6)] transition"
-        style={{ transform: pressed ? "scale(0.96)" : "scale(1)" }}
+        className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] py-1.5 pl-1.5 pr-2.5 transition active:scale-95"
       >
-        <span
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[15px] font-extrabold text-white"
-          style={{ background: selected.color, boxShadow: `0 0 20px ${selected.color}55` }}
-        >
-          {selected.symbol.slice(0, 1)}
-        </span>
-        <span className="text-left">
-          <span className="block text-[17px] font-extrabold leading-tight text-white">{selected.symbol}</span>
-          <span className="block text-[11.5px] leading-tight text-white/45">{selected.name}</span>
-        </span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="ml-1 shrink-0 text-white/40">
+        <CoinLogo coin={selected} size={22} />
+        <span className="text-[13.5px] font-bold text-white">{selected.symbol}</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="text-white/40">
           <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
@@ -152,12 +135,7 @@ export default function CoinSelector({ label, value, onChange, exclude = null })
                   }`}
                 >
                   <span className="flex items-center gap-3.5">
-                    <span
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[13px] font-extrabold text-white"
-                      style={{ background: c.color, boxShadow: `0 0 14px ${c.color}44` }}
-                    >
-                      {c.symbol.slice(0, 1)}
-                    </span>
+                    <CoinLogo coin={c} size={40} />
                     <span>
                       <span className="block text-[14.5px] font-semibold text-white">{c.name}</span>
                       <span className="block text-[12px] text-white/40">{c.symbol}</span>
