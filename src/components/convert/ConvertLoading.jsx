@@ -36,7 +36,7 @@ export default function ConvertLoading() {
   }, [navigate]);
 
   return (
-    <div className="mx-auto flex min-h-full max-w-lg flex-col items-center justify-center px-6 text-center">
+    <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-6 text-center">
       <style>{`
         @keyframes cvOrbit {
           from { transform: rotate(0deg); }
