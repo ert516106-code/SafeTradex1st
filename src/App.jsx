@@ -61,7 +61,7 @@ export default function App() {
           />
 
           <Route
-            path="/deposit/:id"
+            path="/deposit/*"
             element={
               <ProtectedRoute>
                 <Deposit />
