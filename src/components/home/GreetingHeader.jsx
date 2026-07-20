@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, User } from "lucide-react";
 import Logo from "../ui/Logo";
 import ProfileDrawer from "../ProfileDrawer";
 
-export default function GreetingHeader({ onBellClick, unreadCount = 0 }) {
+export default function GreetingHeader() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div
@@ -30,10 +32,9 @@ export default function GreetingHeader({ onBellClick, unreadCount = 0 }) {
         >
           <button
             type="button"
-            onClick={onBellClick}
+            onClick={() => navigate("/notifications")}
             aria-label="Notifications"
             style={{
-              position: "relative",
               width: 44,
               height: 44,
               borderRadius: 14,
@@ -47,20 +48,6 @@ export default function GreetingHeader({ onBellClick, unreadCount = 0 }) {
             }}
           >
             <Bell size={19} />
-            {unreadCount > 0 && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: 6,
-                  right: 6,
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "#34D399",
-                  border: "2px solid #121B35",
-                }}
-              />
-            )}
           </button>
 
           <button
