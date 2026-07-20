@@ -1,6 +1,5 @@
 import GreetingHeader from "../components/home/GreetingHeader";
 import PortfolioCard from "../components/home/PortfolioCard";
-import QuickActions from "../components/home/QuickActions";
 import MarketOverview from "../components/home/MarketOverview";
 import BottomNavigation from "../components/layout/BottomNavigation";
 
@@ -26,8 +25,6 @@ export default function Home() {
         <GreetingHeader />
 
         <PortfolioCard />
-
-        <QuickActions />
 
         <MarketOverview />
       </div>
