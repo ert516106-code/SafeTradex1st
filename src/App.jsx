@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Markets from "./pages/Markets";
 import CoinDetails from "./pages/CoinDetails";
 import Deposit from "./pages/Deposit";
+import Withdraw from "./pages/Withdraw";
 import Transfer from "./pages/Transfer";
 import Convert from "./pages/Convert";
 import Financial from "./pages/Financial";
@@ -65,6 +66,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Deposit />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/withdraw/*"
+            element={
+              <ProtectedRoute>
+                <Withdraw />
               </ProtectedRoute>
             }
           />
