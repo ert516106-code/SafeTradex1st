@@ -20,29 +20,34 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+function generateUid() {
+  const num = 600000 + Math.floor(Math.random() * 100000); // 600000–699999
+  return `SFT-${num}`;
+}
+
 const menuGroups = [
   {
     title: "Account",
     items: [
-      { key: "security", label: "Security Center", icon: ShieldCheck, desc: "2FA, password, devices" },
-      { key: "personal", label: "Personal Information", icon: UserRound, desc: "Name, email, phone" },
-      { key: "wallets", label: "Wallet Addresses", icon: Wallet, desc: "Manage saved addresses" },
+      { key: "security", label: "Security Center", icon: ShieldCheck, desc: "2FA, password, devices", path: "/security-center" },
+      { key: "personal", label: "Personal Information", icon: UserRound, desc: "Name, email, phone", path: "/personal-information" },
+      { key: "wallets", label: "Wallet Addresses", icon: Wallet, desc: "Manage saved addresses", path: "/wallet-addresses" },
     ],
   },
   {
     title: "Preferences",
     items: [
-      { key: "notifications", label: "Notifications", icon: Bell, desc: "Push, email, SMS" },
-      { key: "language", label: "Language", icon: Globe, desc: "English (US)" },
-      { key: "appearance", label: "Appearance", icon: Palette, desc: "Dark" },
+      { key: "notifications", label: "Notifications", icon: Bell, desc: "Push, email, SMS", path: "/notification-settings" },
+      { key: "language", label: "Language", icon: Globe, desc: "English (US)", path: "/language-settings" },
+      { key: "appearance", label: "Appearance", icon: Palette, desc: "Dark", path: "/appearance-settings" },
     ],
   },
   {
     title: "Support",
     items: [
-      { key: "help", label: "Help Center", icon: LifeBuoy, desc: "FAQs and support" },
-      { key: "terms", label: "Terms & Privacy", icon: FileText, desc: "Legal information" },
-      { key: "about", label: "About SafeTrade", icon: Info, desc: "Version 2.0.0" },
+      { key: "help", label: "Help Center", icon: LifeBuoy, desc: "FAQs and support", path: "/help-center" },
+      { key: "terms", label: "Terms & Privacy", icon: FileText, desc: "Legal information", path: "/terms-privacy" },
+      { key: "about", label: "About SafeTrade", icon: Info, desc: "Version 2.0.0", path: "/about-safetrade" },
     ],
   },
 ];
@@ -50,16 +55,9 @@ const menuGroups = [
 export default function ProfileDrawer({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
-  const [comingSoon, setComingSoon] = useState(false);
+  const [uid] = useState(generateUid);
 
-  const uid = "SFT-8823-4471";
   const username = "alexmorgan";
-  const totalAssets = "128,430.52";
-
-  const showComingSoon = () => {
-    setComingSoon(true);
-    setTimeout(() => setComingSoon(false), 1500);
-  };
 
   const handleCopyUid = () => {
     if (navigator.clipboard) {
@@ -72,6 +70,11 @@ export default function ProfileDrawer({ isOpen, onClose }) {
   const handleLogout = () => {
     onClose();
     navigate("/login");
+  };
+
+  const goTo = (path) => {
+    onClose();
+    navigate(path);
   };
 
   const styles = {
@@ -214,56 +217,6 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       cursor: "pointer",
       padding: 0,
     },
-    assetsCard: {
-      marginTop: "12px",
-      borderRadius: "22px",
-      border: "1px solid rgba(255,255,255,0.1)",
-      background:
-        "linear-gradient(135deg, rgba(37,99,235,0.22), rgba(79,70,229,0.12) 50%, transparent)",
-      backdropFilter: "blur(20px)",
-      padding: "18px",
-      boxShadow: "0 8px 30px rgba(0,0,0,0.45)",
-    },
-    assetsLabel: {
-      fontSize: "11px",
-      color: "#94a3b8",
-      margin: 0,
-      fontWeight: 500,
-    },
-    assetsValue: {
-      fontSize: "26px",
-      fontWeight: 700,
-      color: "#ffffff",
-      margin: "4px 0 0",
-      letterSpacing: "-0.02em",
-    },
-    actionRow: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "10px",
-      marginTop: "14px",
-    },
-    primaryBtn: {
-      borderRadius: "16px",
-      border: "none",
-      background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-      color: "#fff",
-      fontSize: "13px",
-      fontWeight: 600,
-      padding: "11px 0",
-      cursor: "pointer",
-      boxShadow: "0 6px 18px rgba(37,99,235,0.4)",
-    },
-    secondaryBtn: {
-      borderRadius: "16px",
-      border: "1px solid rgba(255,255,255,0.14)",
-      background: "rgba(255,255,255,0.05)",
-      color: "#fff",
-      fontSize: "13px",
-      fontWeight: 600,
-      padding: "11px 0",
-      cursor: "pointer",
-    },
     featureCard: (color) => ({
       marginTop: "12px",
       width: "100%",
@@ -355,11 +308,6 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       color: "#64748b",
       margin: "1px 0 0",
     },
-    soonTag: {
-      fontSize: "10.5px",
-      fontWeight: 600,
-      color: "#64748b",
-    },
     logoutBtn: {
       width: "100%",
       marginTop: "22px",
@@ -382,23 +330,6 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       color: "#475569",
       margin: "16px 0 30px",
     },
-    toast: {
-      position: "fixed",
-      top: "18px",
-      left: "50%",
-      transform: `translateX(-50%) translateY(${comingSoon ? "0" : "-10px"})`,
-      opacity: comingSoon ? 1 : 0,
-      transition: "all 0.25s ease",
-      background: "rgba(15,23,42,0.96)",
-      border: "1px solid rgba(255,255,255,0.1)",
-      borderRadius: "999px",
-      padding: "9px 16px",
-      fontSize: "12px",
-      fontWeight: 500,
-      color: "#e2e8f0",
-      zIndex: 1002,
-      pointerEvents: "none",
-    },
   };
 
   const featureColors = {
@@ -419,7 +350,6 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       <div style={styles.overlay} onClick={onClose} />
       <div style={styles.drawer}>
         <div style={styles.glowTop} />
-        <div style={styles.toast}>Coming Soon</div>
 
         <div style={styles.header}>
           <span style={styles.headerTitle}>Profile</span>
@@ -457,22 +387,9 @@ export default function ProfileDrawer({ isOpen, onClose }) {
             </div>
           </div>
 
-          <div style={styles.assetsCard}>
-            <p style={styles.assetsLabel}>Total Assets (USD)</p>
-            <p style={styles.assetsValue}>${totalAssets}</p>
-            <div style={styles.actionRow}>
-              <button style={styles.primaryBtn} onClick={showComingSoon}>
-                Deposit
-              </button>
-              <button style={styles.secondaryBtn} onClick={showComingSoon}>
-                Withdraw
-              </button>
-            </div>
-          </div>
-
           <button
             style={styles.featureCard(featureColors.rewards)}
-            onClick={showComingSoon}
+            onClick={() => goTo("/rewards-center")}
           >
             <div style={styles.featureLeft}>
               <div style={styles.featureIconWrap(featureColors.rewards)}>
@@ -483,12 +400,12 @@ export default function ProfileDrawer({ isOpen, onClose }) {
                 <p style={styles.featureDesc}>Claim bonuses and vouchers</p>
               </div>
             </div>
-            <span style={styles.soonTag}>Soon</span>
+            <ChevronRight size={16} color="#475569" />
           </button>
 
           <button
             style={styles.featureCard(featureColors.security)}
-            onClick={showComingSoon}
+            onClick={() => goTo("/security-center")}
           >
             <div style={styles.featureLeft}>
               <div style={styles.featureIconWrap(featureColors.security)}>
@@ -499,7 +416,7 @@ export default function ProfileDrawer({ isOpen, onClose }) {
                 <p style={styles.featureDesc}>All protections enabled</p>
               </div>
             </div>
-            <span style={styles.soonTag}>Soon</span>
+            <ChevronRight size={16} color="#475569" />
           </button>
 
           {menuGroups.map((group) => (
@@ -513,7 +430,7 @@ export default function ProfileDrawer({ isOpen, onClose }) {
                     <button
                       key={item.key}
                       style={styles.menuRow(isLast)}
-                      onClick={showComingSoon}
+                      onClick={() => goTo(item.path)}
                     >
                       <div style={styles.featureLeft}>
                         <div style={styles.menuIconWrap}>
@@ -542,4 +459,4 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       </div>
     </>
   );
-      }
+}
