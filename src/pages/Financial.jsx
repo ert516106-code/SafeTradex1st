@@ -11,12 +11,14 @@ import {
 
 import FinancialCard from "../components/financial/FinancialCard";
 import BottomNavigation from "../components/layout/BottomNavigation";
+import { getCryptoNews } from "../services/newsService";
 
 const REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000;
-const NEWS_ENDPOINT = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
 
-function timeAgo(unixSeconds) {
-  const diffMs = Date.now() - unixSeconds * 1000;
+function timeAgo(isoOrUnix) {
+  const ms =
+    typeof isoOrUnix === "number" ? isoOrUnix * 1000 : new Date(isoOrUnix).getTime();
+  const diffMs = Date.now() - ms;
   const minutes = Math.floor(diffMs / 60000);
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes}m ago`;
@@ -33,18 +35,11 @@ function CryptoNewsFeed() {
   const intervalRef = useRef(null);
 
   const fetchNews = async () => {
-    try {
-      setStatus((prev) => (prev === "loading" ? "loading" : "refreshing"));
-      const res = await fetch(NEWS_ENDPOINT);
-      if (!res.ok) throw new Error("Request failed");
-      const data = await res.json();
-      const items = (data?.Data || []).slice(0, 6);
-      setArticles(items);
-      setLastFetched(Date.now());
-      setStatus("ready");
-    } catch (err) {
-      setStatus("error");
-    }
+    setStatus((prev) => (prev === "loading" ? "loading" : "refreshing"));
+    const data = await getCryptoNews();
+    setArticles(Array.isArray(data) ? data.slice(0, 6) : []);
+    setLastFetched(Date.now());
+    setStatus("ready");
   };
 
   useEffect(() => {
@@ -113,9 +108,9 @@ function CryptoNewsFeed() {
         </div>
       )}
 
-      {status === "error" && (
+      {status !== "loading" && articles.length === 0 && (
         <div style={{ padding: 26, textAlign: "center", color: "#64748B", fontSize: 13 }}>
-          Couldn't load news right now. It will retry automatically.
+          No news available right now.
         </div>
       )}
 
@@ -172,9 +167,9 @@ function CryptoNewsFeed() {
                   color: "#64748B",
                 }}
               >
-                <span>{item.source_info?.name || item.source || "Crypto News"}</span>
+                <span>{item.source || "Crypto News"}</span>
                 <span>·</span>
-                <span>{timeAgo(item.published_on)}</span>
+                <span>{timeAgo(item.publishedAt)}</span>
               </div>
             </div>
 
