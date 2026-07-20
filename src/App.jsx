@@ -18,7 +18,6 @@ import Notifications from "./pages/Notifications";
 
 import SecurityCenter from "./pages/SecurityCenter";
 import PersonalInformation from "./pages/PersonalInformation";
-import WalletAddresses from "./pages/WalletAddresses";
 import NotificationSettings from "./pages/NotificationSettings";
 import LanguageSettings from "./pages/LanguageSettings";
 import AppearanceSettings from "./pages/AppearanceSettings";
@@ -53,7 +52,6 @@ export default function App() {
 
           <Route path="/security-center" element={<ProtectedRoute><SecurityCenter /></ProtectedRoute>} />
           <Route path="/personal-information" element={<ProtectedRoute><PersonalInformation /></ProtectedRoute>} />
-          <Route path="/wallet-addresses" element={<ProtectedRoute><WalletAddresses /></ProtectedRoute>} />
           <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
           <Route path="/language-settings" element={<ProtectedRoute><LanguageSettings /></ProtectedRoute>} />
           <Route path="/appearance-settings" element={<ProtectedRoute><AppearanceSettings /></ProtectedRoute>} />
