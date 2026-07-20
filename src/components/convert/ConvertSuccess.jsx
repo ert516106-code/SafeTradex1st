@@ -84,7 +84,8 @@ export default function ConvertSuccess() {
       >
         <button
           onClick={handleDone}
-          className="w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-5 text-[17px] font-bold text-white shadow-[0_12px_32px_-6px_rgba(124,58,237,0.65)] ring-1 ring-white/10 transition-all duration-150 hover:brightness-110 hover:shadow-[0_14px_38px_-4px_rgba(124,58,237,0.8)] active:scale-[0.97] active:shadow-[0_6px_18px_-4px_rgba(124,58,237,0.5)]"
+          className="flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-6 text-[18px] font-extrabold text-white shadow-[0_14px_36px_-6px_rgba(124,58,237,0.65)] ring-1 ring-white/10 transition-all duration-150 hover:brightness-110 hover:shadow-[0_16px_42px_-4px_rgba(124,58,237,0.8)] active:scale-[0.97] active:shadow-[0_6px_18px_-4px_rgba(124,58,237,0.5)]"
+          style={{ height: 64, minHeight: 64 }}
         >
           Done
         </button>
