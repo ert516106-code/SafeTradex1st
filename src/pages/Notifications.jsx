@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCheck } from "lucide-react";
 import NotificationTabs from "../components/notifications/NotificationTabs";
 import NotificationCard from "../components/notifications/NotificationCard";
@@ -11,7 +12,8 @@ import {
   markAllAsRead,
 } from "../services/notificationService";
 
-export default function Notifications({ onBack }) {
+export default function Notifications() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [activeTab, setActiveTab] = useState(NOTIFICATION_CATEGORIES.ALL);
   const [selected, setSelected] = useState(null);
@@ -65,7 +67,7 @@ export default function Notifications({ onBack }) {
       <div className="flex items-center justify-between px-4 py-4 border-b border-white/5 sticky top-0 bg-[#0a0e1a]/95 backdrop-blur z-10">
         <div className="flex items-center gap-3">
           <button
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
           >
             <ArrowLeft size={18} className="text-white" />
