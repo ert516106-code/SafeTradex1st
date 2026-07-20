@@ -6,13 +6,6 @@ import ConvertReview from "../components/convert/ConvertReview";
 import ConvertLoading from "../components/convert/ConvertLoading";
 import ConvertSuccess from "../components/convert/ConvertSuccess";
 
-/* ------------------------------------------------------------------ */
-/*  Mount this page in your router as:                                 */
-/*    <Route path="/convert/*" element={<Convert />} />                */
-/*  Draft + quote state is centralized here so it can later be POSTed  */
-/*  to an Admin Dashboard / backend with a single call.                 */
-/* ------------------------------------------------------------------ */
-
 export const COINS = [
   { symbol: "BTC", name: "Bitcoin", price: 118250, balance: 0.5842, color: "#F7931A" },
   { symbol: "ETH", name: "Ethereum", price: 4200, balance: 3.221, color: "#627EEA" },
@@ -50,8 +43,8 @@ export function getCoin(symbol) {
   return COINS.find((c) => c.symbol === symbol) || COINS[0];
 }
 
-const FEE_RATE = 0.001; // 0.1% mock network/platform fee
-const SLIPPAGE = 0.5; // % mock max slippage
+const FEE_RATE = 0.001;
+const SLIPPAGE = 0.5;
 
 export function computeQuote(fromSymbol, toSymbol, amountInput) {
   const from = getCoin(fromSymbol);
@@ -63,7 +56,6 @@ export function computeQuote(fromSymbol, toSymbol, amountInput) {
   const fee = grossReceive * FEE_RATE;
   const netReceive = grossReceive - fee > 0 ? grossReceive - fee : 0;
 
-  // Mock price impact: grows slightly with trade size relative to a notional pool depth.
   const notional = amount * from.price;
   const priceImpact = Math.min(0.35, notional / 4_000_000);
 
@@ -140,10 +132,6 @@ export default function Convert() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Shared UI primitives                                               */
-/* ------------------------------------------------------------------ */
-
 export function ConvertHeader({ title, onBack, onClose, right = null }) {
   const navigate = useNavigate();
   return (
@@ -190,24 +178,25 @@ export function GlassCard({ children, className = "" }) {
   );
 }
 
+/* Thick, pill-shaped primary button — matches the Transfer button style */
 export function PrimaryButton({ children, onClick, disabled = false, type = "button" }) {
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-2xl bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-5 text-[16.5px] font-bold text-white shadow-[0_12px_32px_-6px_rgba(124,58,237,0.65)] ring-1 ring-white/10 transition-all duration-150 active:scale-[0.97] active:shadow-[0_6px_18px_-4px_rgba(124,58,237,0.5)] ${
+      className={`flex w-full items-center justify-center rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] px-6 text-[18px] font-extrabold text-white shadow-[0_14px_36px_-6px_rgba(124,58,237,0.65)] ring-1 ring-white/10 transition-all duration-150 active:scale-[0.97] active:shadow-[0_6px_18px_-4px_rgba(124,58,237,0.5)] ${
         disabled
           ? "cursor-not-allowed opacity-40"
-          : "hover:brightness-110 hover:shadow-[0_14px_38px_-4px_rgba(124,58,237,0.8)]"
+          : "hover:brightness-110 hover:shadow-[0_16px_42px_-4px_rgba(124,58,237,0.8)]"
       }`}
+      style={{ height: 64, minHeight: 64 }}
     >
       {children}
     </button>
   );
 }
 
-/* Maps our internal symbols to CoinCap's icon-id slugs where they differ. */
 const ICON_ID_OVERRIDES = {
   MATIC: "polygon",
 };
