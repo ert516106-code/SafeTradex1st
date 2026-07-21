@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
@@ -26,8 +26,17 @@ import TermsPrivacy from "./pages/TermsPrivacy";
 import AboutSafeTrade from "./pages/AboutSafeTrade";
 import RewardsCenter from "./pages/RewardsCenter";
 
+import OptionsTrading from "./pages/OptionsTrading";
+
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { MarketProvider } from "./contexts/MarketContext";
+
+// OptionsTrading expects an onBack callback rather than being route-aware,
+// so this thin wrapper hooks it up to the router.
+function TradeRoute() {
+  const navigate = useNavigate();
+  return <OptionsTrading onBack={() => navigate(-1)} />;
+}
 
 export default function App() {
   return (
@@ -49,6 +58,10 @@ export default function App() {
           <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
           <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+
+          {/* Trade tab — also accept /trade/:coinSymbol in case your nav links to a specific coin */}
+          <Route path="/trade" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
+          <Route path="/trade/:coinSymbol" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
 
           <Route path="/security-center" element={<ProtectedRoute><SecurityCenter /></ProtectedRoute>} />
           <Route path="/personal-information" element={<ProtectedRoute><PersonalInformation /></ProtectedRoute>} />
