@@ -114,6 +114,14 @@ export function useDeposit() {
   return ctx;
 }
 
+// ---- Shared design tokens (kept identical in Withdraw.jsx — update both together) ----
+export const FLOW_THEME = {
+  purple: "#8B5CF6",
+  purpleDeep: "#7C3AED",
+  blue: "#3B82F6",
+  blueDeep: "#2563EB",
+};
+
 export default function Deposit() {
   const [selection, setSelection] = useState(initialSelection);
   const [mounted, setMounted] = useState(false);
@@ -135,12 +143,12 @@ export default function Deposit() {
         style={{ background: "radial-gradient(circle at top, #1b2a5e 0%, #0a0f24 55%, #050816 100%)" }}
       >
         <div
-          className="pointer-events-none absolute -left-[12%] -top-[10%] h-[60vmax] w-[60vmax] rounded-full opacity-[0.16] blur-[110px]"
-          style={{ background: "#7C3AED" }}
+          className="pointer-events-none fixed -left-[12%] -top-[10%] h-[60vmax] w-[60vmax] rounded-full opacity-[0.16] blur-[110px]"
+          style={{ background: FLOW_THEME.purpleDeep }}
         />
         <div
-          className="pointer-events-none absolute -right-[12%] -bottom-[15%] h-[55vmax] w-[55vmax] rounded-full opacity-[0.14] blur-[110px]"
-          style={{ background: "#2563EB" }}
+          className="pointer-events-none fixed -right-[12%] -bottom-[15%] h-[55vmax] w-[55vmax] rounded-full opacity-[0.14] blur-[110px]"
+          style={{ background: FLOW_THEME.blueDeep }}
         />
 
         <div className="relative z-10">
@@ -159,39 +167,118 @@ export default function Deposit() {
   );
 }
 
-export function DepositHeader({ title, onBack, right = null, showBack = true }) {
+// Shared pill switcher between Deposit / Withdraw — the signature glow element.
+// Duplicated (not imported) in Withdraw.jsx so each route file has zero cross-deps.
+export function FlowTabs({ active = "deposit" }) {
   const navigate = useNavigate();
+  const isDeposit = active === "deposit";
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-[#050816]/60 px-4 py-4 backdrop-blur-md sm:px-6">
-      {showBack ? (
+    <div className="px-4 pb-4 sm:px-6">
+      <div className="relative flex rounded-full border border-white/10 bg-white/[0.04] p-1 backdrop-blur-md">
+        <div
+          className="absolute inset-y-1 w-[calc(50%-4px)] rounded-full transition-all duration-300 ease-out"
+          style={{
+            left: isDeposit ? 4 : "calc(50% + 0px)",
+            background: isDeposit
+              ? `linear-gradient(135deg, ${FLOW_THEME.purple}, ${FLOW_THEME.purpleDeep})`
+              : `linear-gradient(135deg, ${FLOW_THEME.blue}, ${FLOW_THEME.blueDeep})`,
+            boxShadow: isDeposit
+              ? "0 0 20px rgba(139,92,246,0.55)"
+              : "0 0 20px rgba(59,130,246,0.55)",
+          }}
+        />
         <button
-          onClick={onBack ? onBack : () => navigate(-1)}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
-          aria-label="Back"
+          type="button"
+          onClick={() => navigate("/deposit")}
+          className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors ${
+            isDeposit ? "text-white" : "text-white/50"
+          }`}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          Deposit
         </button>
-      ) : (
-        <div className="h-10 w-10" />
-      )}
-
-      <h1 className="text-[17px] font-bold text-white">{title}</h1>
-
-      {right ? right : <div className="h-10 w-10" />}
+        <button
+          type="button"
+          onClick={() => navigate("/withdraw")}
+          className={`relative z-10 flex-1 rounded-full py-2 text-sm font-semibold transition-colors ${
+            !isDeposit ? "text-white" : "text-white/50"
+          }`}
+        >
+          Withdraw
+        </button>
+      </div>
     </div>
   );
 }
 
-export function GlassCard({ children, className = "" }) {
+export function DepositHeader({
+  title,
+  onBack,
+  right = null,
+  showBack = true,
+  showFlowSwitch = false,
+}) {
+  const navigate = useNavigate();
+  return (
+    <div className="sticky top-0 z-10 border-b border-[#8B5CF6]/[0.14] bg-[#050816]/60 backdrop-blur-md">
+      <div className="flex items-center justify-between px-4 py-4 sm:px-6">
+        {showBack ? (
+          <button
+            onClick={onBack ? onBack : () => navigate(-1)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
+            aria-label="Back"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : (
+          <div className="h-10 w-10" />
+        )}
+
+        <h1 className="text-[17px] font-bold text-white">{title}</h1>
+
+        {right ? right : <div className="h-10 w-10" />}
+      </div>
+
+      {showFlowSwitch && <FlowTabs active="deposit" />}
+    </div>
+  );
+}
+
+export function GlassCard({ children, className = "", accent = "purple" }) {
+  const glow =
+    accent === "blue"
+      ? "shadow-[0_0_36px_-14px_rgba(59,130,246,0.45)]"
+      : "shadow-[0_0_36px_-14px_rgba(139,92,246,0.45)]";
+  const line = accent === "blue" ? "via-[#60A5FA]/50" : "via-[#A78BFA]/50";
+
   return (
     <div
-      className={`relative rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-[0_0_30px_-14px_rgba(124,58,237,0.4)] backdrop-blur-xl ${className}`}
+      className={`relative rounded-[20px] border border-white/10 bg-white/[0.045] p-4 backdrop-blur-xl ${glow} ${className}`}
     >
-      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-[#A78BFA]/50 to-transparent" />
+      <div
+        className={`pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent ${line} to-transparent`}
+      />
       {children}
     </div>
+  );
+}
+
+// Gradient icon square used inside action cards (Deposit crypto / Buy crypto, etc.)
+export function IconBadge({ children, accent = "purple", size = 52 }) {
+  const bg =
+    accent === "blue"
+      ? `linear-gradient(135deg, ${FLOW_THEME.blue}, ${FLOW_THEME.blueDeep})`
+      : `linear-gradient(135deg, ${FLOW_THEME.purple}, ${FLOW_THEME.purpleDeep})`;
+  const shadow = accent === "blue" ? "rgba(59,130,246,0.55)" : "rgba(139,92,246,0.55)";
+
+  return (
+    <span
+      className="flex shrink-0 items-center justify-center rounded-2xl text-white"
+      style={{ width: size, height: size, background: bg, boxShadow: `0 8px 22px -6px ${shadow}` }}
+    >
+      {children}
+    </span>
   );
 }
 
