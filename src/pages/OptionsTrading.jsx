@@ -115,7 +115,7 @@ function formatClockTime(ts) {
 
 const MainChart = React.memo(function MainChart({ price, isUpDay }) {
   const width = 400;
-  const height = 220;
+  const height = 240;
 
   const [points, setPoints] = useState([price]);
   const [sliding, setSliding] = useState(false);
@@ -155,7 +155,7 @@ const MainChart = React.memo(function MainChart({ price, isUpDay }) {
 
     const coords = points.map((p, i) => {
       const x = i * stepX;
-      const y = height - ((p - min) / range) * (height - 24) - 12;
+      const y = height - ((p - min) / range) * (height - 32) - 16;
       return [x, y];
     });
 
@@ -175,21 +175,21 @@ const MainChart = React.memo(function MainChart({ price, isUpDay }) {
     };
   }, [points, stepX]);
 
-  const strokeColor = isUp ? '#a855f7' : '#f43f5e';
+  const strokeColor = isUp ? '#22c55e' : '#f43f5e';
   const groupTransform = `translate(${sliding ? -stepX : 0}, 0)`;
 
   return (
-    <div className="relative w-full h-[220px] rounded-2xl overflow-hidden bg-black/30 border border-white/10">
+    <div className="relative w-full h-[240px] rounded-2xl overflow-hidden bg-[#0a0a12] border border-white/[0.06]">
       <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="w-full h-full">
         <defs>
           <linearGradient id="main-chart-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.4">
-              <animate attributeName="stop-opacity" values="0.4;0.15;0.4" dur="3.4s" repeatCount="indefinite" />
+            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.35">
+              <animate attributeName="stop-opacity" values="0.35;0.12;0.35" dur="3.4s" repeatCount="indefinite" />
             </stop>
             <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
           </linearGradient>
           <filter id="main-glow" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="2.6" result="blur" />
+            <feGaussianBlur stdDeviation="2.4" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -198,10 +198,10 @@ const MainChart = React.memo(function MainChart({ price, isUpDay }) {
         </defs>
 
         {[0.2, 0.4, 0.6, 0.8].map((f) => (
-          <line key={f} x1="0" y1={height * f} x2={width} y2={height * f} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+          <line key={f} x1="0" y1={height * f} x2={width} y2={height * f} stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
         ))}
         {[0.15, 0.3, 0.45, 0.6, 0.75, 0.9].map((f) => (
-          <line key={f} x1={width * f} y1="0" x2={width * f} y2={height} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+          <line key={f} x1={width * f} y1="0" x2={width * f} y2={height} stroke="rgba(255,255,255,0.03)" strokeWidth="1" strokeDasharray="4 4" />
         ))}
 
         <g style={{ transform: groupTransform, transition: sliding ? `transform ${SLIDE_MS}ms linear` : 'none' }}>
@@ -211,7 +211,7 @@ const MainChart = React.memo(function MainChart({ price, isUpDay }) {
               d={path}
               fill="none"
               stroke={strokeColor}
-              strokeWidth="2.2"
+              strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
               filter="url(#main-glow)"
@@ -219,30 +219,31 @@ const MainChart = React.memo(function MainChart({ price, isUpDay }) {
           )}
           {lastPoint && (
             <>
-              <circle cx={lastPoint[0]} cy={lastPoint[1]} r="8" fill={strokeColor} opacity="0.25">
-                <animate attributeName="r" values="8;13;8" dur="1.8s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.25;0.05;0.25" dur="1.8s" repeatCount="indefinite" />
+              <circle cx={lastPoint[0]} cy={lastPoint[1]} r="7" fill={strokeColor} opacity="0.2">
+                <animate attributeName="r" values="7;12;7" dur="1.8s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;0.04;0.2" dur="1.8s" repeatCount="indefinite" />
               </circle>
               <circle
                 cx={lastPoint[0]}
                 cy={lastPoint[1]}
-                r="3.6"
+                r="3.4"
                 fill={strokeColor}
                 filter="url(#main-glow)"
-                stroke="#0d0b18"
+                stroke="#0a0a12"
                 strokeWidth="1.4"
               />
+              <line x1={lastPoint[0]} y1="0" x2={lastPoint[0]} y2={height} stroke={strokeColor} strokeOpacity="0.15" strokeWidth="1" strokeDasharray="3 3" />
             </>
           )}
         </g>
       </svg>
-      <div className="absolute top-3 left-3 flex items-center gap-1 text-[10px] uppercase tracking-wide text-white/40">
+      <div className="absolute top-3 left-3 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/35 font-medium">
         <Activity size={12} />
         Live Chart
       </div>
       <div
-        className={`absolute top-3 right-3 text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full ${
-          isUpDay ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+        className={`absolute top-3 right-3 text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md ${
+          isUpDay ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' : 'bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20'
         }`}
       >
         {isUpDay ? 'Bullish' : 'Bearish'}
@@ -253,12 +254,12 @@ const MainChart = React.memo(function MainChart({ price, isUpDay }) {
 
 const StatCard = React.memo(function StatCard({ icon: Icon, label, value, valueClass }) {
   return (
-    <div className="rounded-xl bg-white/5 border border-white/10 p-3">
-      <div className="flex items-center gap-1.5 text-white/40 text-[10px] uppercase tracking-wide mb-1">
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 hover:bg-white/[0.05] transition-colors">
+      <div className="flex items-center gap-1.5 text-white/35 text-[10px] uppercase tracking-wider mb-1.5 font-medium">
         <Icon size={11} />
         {label}
       </div>
-      <p className={`text-sm font-semibold tabular-nums ${valueClass || 'text-white'}`}>{value}</p>
+      <p className={`text-sm font-bold tabular-nums ${valueClass || 'text-white'}`}>{value}</p>
     </div>
   );
 });
@@ -268,20 +269,20 @@ const OrderBookRow = React.memo(function OrderBookRow({ price, amount, side, dep
   return (
     <div className="relative flex items-center justify-between px-3 py-1 text-xs">
       <div
-        className={`absolute inset-y-0 right-0 ${isSell ? 'bg-rose-500/10' : 'bg-emerald-500/10'}`}
+        className={`absolute inset-y-0 right-0 ${isSell ? 'bg-rose-500/[0.07]' : 'bg-emerald-500/[0.07]'}`}
         style={{ width: `${depthPct}%` }}
       />
-      <span className={`relative z-10 font-medium tabular-nums ${isSell ? 'text-rose-400' : 'text-emerald-400'}`}>
+      <span className={`relative z-10 font-semibold tabular-nums ${isSell ? 'text-rose-400' : 'text-emerald-400'}`}>
         {formatPrice(price)}
       </span>
-      <span className="relative z-10 text-white/40 tabular-nums">{amount.toFixed(4)}</span>
+      <span className="relative z-10 text-white/35 tabular-nums">{amount.toFixed(4)}</span>
     </div>
   );
 });
 
 const RecentTradeRow = React.memo(function RecentTradeRow({ trade }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-white/[0.03] transition-colors">
+    <div className="flex items-center justify-between px-4 py-2.5 text-xs hover:bg-white/[0.02] transition-colors">
       <div className="flex items-center gap-2">
         {trade.win ? (
           <CheckCircle2 size={14} className="text-emerald-400" />
@@ -290,19 +291,19 @@ const RecentTradeRow = React.memo(function RecentTradeRow({ trade }) {
         )}
         <span className="text-white/70 font-medium">{trade.coin}</span>
         <span
-          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-            trade.direction === 'long' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+          className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+            trade.direction === 'long' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
           }`}
         >
           {trade.direction === 'long' ? 'LONG' : 'SHORT'}
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-white/40 tabular-nums">{formatCurrency(trade.amount)}</span>
-        <span className={`font-semibold tabular-nums ${trade.win ? 'text-emerald-400' : 'text-rose-400'}`}>
+        <span className="text-white/35 tabular-nums">{formatCurrency(trade.amount)}</span>
+        <span className={`font-bold tabular-nums ${trade.win ? 'text-emerald-400' : 'text-rose-400'}`}>
           {trade.win ? `+${formatCurrency(trade.profit)}` : `-${formatCurrency(trade.amount)}`}
         </span>
-        <span className="text-white/30">{formatClockTime(trade.timestamp)}</span>
+        <span className="text-white/25">{formatClockTime(trade.timestamp)}</span>
       </div>
     </div>
   );
@@ -385,7 +386,6 @@ export default function OptionsTrading({ onBack }) {
   }, []);
 
   useEffect(() => {
-    // reset engine when coin changes
     marketEngineRef.current = createMarketEngine(selectedCoin.price);
     setCurrentPrice(selectedCoin.price);
     setHigh(selectedCoin.price);
@@ -476,12 +476,12 @@ export default function OptionsTrading({ onBack }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0d0b18] pb-24">
-      <div className="sticky top-0 z-30 backdrop-blur-xl bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-b border-white/10">
+    <div className="min-h-screen bg-[#08070d] pb-24">
+      <div className="sticky top-0 z-30 backdrop-blur-xl bg-[#0d0c15]/80 border-b border-white/[0.06]">
         <div className="flex items-center justify-between px-4 py-3 max-w-2xl mx-auto">
           <button
             onClick={onBack}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors text-white/70 hover:text-white active:scale-90"
+            className="p-2 rounded-full hover:bg-white/[0.06] transition-colors text-white/60 hover:text-white active:scale-90"
           >
             <ChevronLeft size={20} />
           </button>
@@ -489,26 +489,26 @@ export default function OptionsTrading({ onBack }) {
           <div className="relative">
             <button
               onClick={() => setCoinPickerOpen((o) => !o)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] transition-colors"
             >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-[10px] shadow-md shadow-purple-500/30">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-[10px] shadow-md shadow-indigo-500/20">
                 {selectedCoin.symbol.slice(0, 3)}
               </div>
               <span className="text-white font-semibold text-sm">{selectedCoin.symbol}/USDT</span>
-              <ChevronDown size={14} className="text-white/50" />
+              <ChevronDown size={14} className="text-white/40" />
             </button>
 
             {coinPickerOpen && (
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-48 rounded-xl border border-white/10 bg-[#161227]/95 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden z-40">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-48 rounded-xl border border-white/[0.08] bg-[#14121f]/95 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden z-40">
                 {COINS.map((c, i) => (
                   <button
                     key={c.symbol}
                     onClick={() => handleCoinSelect(i)}
-                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-white/10 transition-colors ${
-                      i === selectedCoinIndex ? 'bg-white/5 text-white' : 'text-white/60'
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-white/[0.06] transition-colors ${
+                      i === selectedCoinIndex ? 'bg-white/[0.04] text-white' : 'text-white/55'
                     }`}
                   >
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-[9px]">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-[9px]">
                       {c.symbol.slice(0, 3)}
                     </div>
                     <span className="font-medium">{c.symbol}/USDT</span>
@@ -520,7 +520,7 @@ export default function OptionsTrading({ onBack }) {
 
           <div className="text-right">
             <p className="text-white font-bold text-sm tabular-nums">${formatPrice(currentPrice)}</p>
-            <p className={`text-[10px] font-semibold tabular-nums ${isUpDay ? 'text-emerald-400' : 'text-rose-400'}`}>
+            <p className={`text-[10px] font-bold tabular-nums ${isUpDay ? 'text-emerald-400' : 'text-rose-400'}`}>
               {isUpDay ? '+' : ''}
               {changePct.toFixed(2)}% 24H
             </p>
@@ -528,7 +528,7 @@ export default function OptionsTrading({ onBack }) {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
+      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-3">
         <MainChart price={currentPrice} isUpDay={isUpDay} />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -538,18 +538,18 @@ export default function OptionsTrading({ onBack }) {
           <StatCard icon={Droplet} label="Spread" value={`$${spread.toFixed(2)}`} />
         </div>
 
-        <div className="flex items-center gap-2 px-1">
+        <div className="flex items-center gap-2 px-1 py-1">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-emerald-400 text-xs font-medium">Market Open</span>
-          <span className="text-white/30 text-xs">· Simulated for education only</span>
+          <span className="text-emerald-400 text-xs font-semibold">Market Open</span>
+          <span className="text-white/25 text-xs">· Simulated prices for education only — no real funds</span>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/5 to-white/0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-            <span className="text-white/50 text-xs uppercase tracking-wide font-semibold">Order Book</span>
-            <span className="text-white/30 text-[10px]">{selectedCoin.symbol}/USDT</span>
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+            <span className="text-white/45 text-xs uppercase tracking-wider font-semibold">Order Book</span>
+            <span className="text-white/25 text-[10px]">{selectedCoin.symbol}/USDT</span>
           </div>
-          <div className="flex items-center justify-between px-3 pt-2 text-[10px] text-white/30 uppercase tracking-wide">
+          <div className="flex items-center justify-between px-3 pt-2 text-[10px] text-white/25 uppercase tracking-wider">
             <span>Price</span>
             <span>Amount</span>
           </div>
@@ -564,10 +564,10 @@ export default function OptionsTrading({ onBack }) {
               />
             ))}
           </div>
-          <div className="px-3 py-2 border-y border-white/10 bg-white/5 flex items-center justify-center">
+          <div className="px-3 py-2.5 border-y border-white/[0.06] bg-white/[0.03] flex items-center justify-center">
             <span
               className="text-lg font-bold tabular-nums text-white"
-              style={{ textShadow: '0 0 14px rgba(168,85,247,0.4)' }}
+              style={{ textShadow: '0 0 16px rgba(99,102,241,0.35)' }}
             >
               ${formatPrice(currentPrice)}
             </span>
@@ -585,19 +585,19 @@ export default function OptionsTrading({ onBack }) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-purple-500/10 to-blue-500/10 p-4">
-          <p className="text-white/50 text-xs uppercase tracking-wide font-semibold mb-3">Quick Trading</p>
+        <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-indigo-500/[0.07] to-violet-600/[0.07] p-4">
+          <p className="text-white/45 text-xs uppercase tracking-wider font-semibold mb-3">Quick Trading</p>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <button
               onClick={() => openTradeModal('long')}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30 hover:opacity-90 active:scale-[0.98] transition-all"
+              className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 active:scale-[0.98] transition-all"
             >
               <TrendingUp size={16} />
               Buy Long
             </button>
             <button
               onClick={() => openTradeModal('short')}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/30 hover:opacity-90 active:scale-[0.98] transition-all"
+              className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm bg-rose-500 text-white shadow-lg shadow-rose-500/20 hover:bg-rose-400 active:scale-[0.98] transition-all"
             >
               <TrendingDown size={16} />
               Sell Short
@@ -605,21 +605,21 @@ export default function OptionsTrading({ onBack }) {
           </div>
           <button
             onClick={() => openTradeModal(pendingDirection)}
-            className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/30 hover:opacity-90 active:scale-[0.98] transition-all"
+            className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20 hover:opacity-90 active:scale-[0.98] transition-all"
           >
             Trade
           </button>
-          <p className="text-white/30 text-[10px] mt-2 text-center">
+          <p className="text-white/25 text-[10px] mt-2 text-center">
             Balance: {formatCurrency(balance)}
           </p>
         </div>
 
         {recentTrades.length > 0 && (
-          <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-[#161227]/80 to-[#0d0b18]/80 overflow-hidden">
-            <div className="px-4 py-3 border-b border-white/10">
-              <span className="text-white/50 text-xs uppercase tracking-wide font-semibold">Recent Trades</span>
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/[0.06]">
+              <span className="text-white/45 text-xs uppercase tracking-wider font-semibold">Recent Trades</span>
             </div>
-            <div className="divide-y divide-white/5 max-h-64 overflow-y-auto">
+            <div className="divide-y divide-white/[0.04] max-h-64 overflow-y-auto">
               {recentTrades.map((t) => (
                 <RecentTradeRow key={t.id} trade={t} />
               ))}
