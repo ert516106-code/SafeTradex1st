@@ -55,11 +55,6 @@ function formatClockTime(ts) {
   }
 }
 
-/**
- * Realistic market simulator: alternates between sideways / bullish / bearish
- * phases (held for several seconds), layered with quiet/active volatility
- * cycles, momentum and gentle mean-reverting trend.
- */
 function createMarketEngine(startPrice) {
   return {
     price: startPrice,
@@ -81,14 +76,12 @@ function pickNextPhase(current) {
 }
 
 function stepMarketEngine(engine) {
-  // Phase management — hold trends for several seconds before changing.
   engine.phaseTicksLeft -= 1;
   if (engine.phaseTicksLeft <= 0) {
     engine.phase = pickNextPhase(engine.phase);
-    engine.phaseTicksLeft = 10 + Math.floor(Math.random() * 16); // ~7-20s of ticks
+    engine.phaseTicksLeft = 10 + Math.floor(Math.random() * 16);
   }
 
-  // Volatility cycle — quiet -> active -> quiet.
   engine.volatilityTicksLeft -= 1;
   if (engine.volatilityTicksLeft <= 0) {
     engine.volatility = engine.volatility === 'quiet' ? 'active' : 'quiet';
@@ -99,21 +92,17 @@ function stepMarketEngine(engine) {
 
   const bias = PHASE_BIAS[engine.phase] ?? 0;
 
-  // Trend eases smoothly toward the current phase bias (reduces obvious randomness).
   engine.trend = engine.trend * 0.975 + bias * 0.025 + (Math.random() - 0.5) * 0.008;
   engine.trend = Math.max(-1, Math.min(1, engine.trend));
 
-  // Momentum responds to trend with inertia.
   const momentumPush = (Math.random() - 0.5) * 0.35 + engine.trend * 0.45;
   engine.momentum = engine.momentum * 0.86 + momentumPush * 0.14;
 
-  // Rare small pullback against momentum.
   let pullback = 0;
   if (Math.random() < 0.12) {
     pullback = -engine.momentum * (0.25 + Math.random() * 0.35);
   }
 
-  // Rare small spike with momentum.
   let spike = 0;
   if (Math.random() < 0.07) {
     spike = (engine.momentum >= 0 ? 1 : -1) * (0.12 + Math.random() * 0.28);
@@ -126,7 +115,6 @@ function stepMarketEngine(engine) {
 
   const nextPrice = engine.price * (1 + changePct);
 
-  // Hard clamp on per-tick move so nothing ever "jumps" unrealistically.
   const maxMovePct = 0.0016 * volMult;
   const clampedPrice = Math.max(
     engine.price * (1 - maxMovePct),
@@ -139,7 +127,7 @@ function stepMarketEngine(engine) {
 
 const LiveChart = React.memo(function LiveChart({ price, direction }) {
   const width = 320;
-  const height = 108;
+  const height = 120;
 
   const [points, setPoints] = useState([price]);
   const [sliding, setSliding] = useState(false);
@@ -179,7 +167,7 @@ const LiveChart = React.memo(function LiveChart({ price, direction }) {
 
     const coords = points.map((p, i) => {
       const x = i * stepX;
-      const y = height - ((p - min) / range) * (height - 16) - 8;
+      const y = height - ((p - min) / range) * (height - 18) - 9;
       return [x, y];
     });
 
@@ -199,21 +187,21 @@ const LiveChart = React.memo(function LiveChart({ price, direction }) {
     };
   }, [points, stepX]);
 
-  const strokeColor = direction === 'short' ? '#f43f5e' : isUp ? '#a855f7' : '#f43f5e';
+  const strokeColor = direction === 'short' ? '#f43f5e' : isUp ? '#22c55e' : '#f43f5e';
   const groupTransform = `translate(${sliding ? -stepX : 0}, 0)`;
 
   return (
-    <div className="relative w-full h-[108px] rounded-xl overflow-hidden bg-black/30 border border-white/10">
+    <div className="relative w-full h-[120px] rounded-xl overflow-hidden bg-[#0a0a12] border border-white/[0.06]">
       <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="w-full h-full">
         <defs>
           <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.4">
-              <animate attributeName="stop-opacity" values="0.4;0.18;0.4" dur="3.2s" repeatCount="indefinite" />
+            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.35">
+              <animate attributeName="stop-opacity" values="0.35;0.14;0.35" dur="3.2s" repeatCount="indefinite" />
             </stop>
             <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
           </linearGradient>
           <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="2.2" result="blur" />
+            <feGaussianBlur stdDeviation="2" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -221,7 +209,6 @@ const LiveChart = React.memo(function LiveChart({ price, direction }) {
           </filter>
         </defs>
 
-        {/* horizontal grid lines */}
         {[0.25, 0.5, 0.75].map((f) => (
           <line
             key={f}
@@ -229,11 +216,11 @@ const LiveChart = React.memo(function LiveChart({ price, direction }) {
             y1={height * f}
             x2={width}
             y2={height * f}
-            stroke="rgba(255,255,255,0.06)"
+            stroke="rgba(255,255,255,0.05)"
             strokeWidth="1"
+            strokeDasharray="4 4"
           />
         ))}
-        {/* vertical time guides */}
         {[0.2, 0.4, 0.6, 0.8].map((f) => (
           <line
             key={f}
@@ -241,8 +228,9 @@ const LiveChart = React.memo(function LiveChart({ price, direction }) {
             y1="0"
             x2={width * f}
             y2={height}
-            stroke="rgba(255,255,255,0.05)"
+            stroke="rgba(255,255,255,0.03)"
             strokeWidth="1"
+            strokeDasharray="4 4"
           />
         ))}
 
@@ -261,24 +249,24 @@ const LiveChart = React.memo(function LiveChart({ price, direction }) {
           )}
           {lastPoint && (
             <>
-              <circle cx={lastPoint[0]} cy={lastPoint[1]} r="7" fill={strokeColor} opacity="0.25">
-                <animate attributeName="r" values="7;11;7" dur="1.8s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.25;0.05;0.25" dur="1.8s" repeatCount="indefinite" />
+              <circle cx={lastPoint[0]} cy={lastPoint[1]} r="6.5" fill={strokeColor} opacity="0.2">
+                <animate attributeName="r" values="6.5;10.5;6.5" dur="1.8s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;0.04;0.2" dur="1.8s" repeatCount="indefinite" />
               </circle>
               <circle
                 cx={lastPoint[0]}
                 cy={lastPoint[1]}
-                r="3.2"
+                r="3"
                 fill={strokeColor}
                 filter="url(#glow)"
-                stroke="#0d0b18"
+                stroke="#0a0a12"
                 strokeWidth="1.2"
               />
             </>
           )}
         </g>
       </svg>
-      <div className="absolute top-2 left-2 flex items-center gap-1 text-[10px] uppercase tracking-wide text-white/40">
+      <div className="absolute top-2 left-2 flex items-center gap-1 text-[10px] uppercase tracking-wider text-white/35 font-medium">
         <Activity size={11} />
         Live
       </div>
@@ -298,34 +286,34 @@ const OpenOrderCard = React.memo(function OpenOrderCard({
 }) {
   return (
     <div className="px-5 pt-4">
-      <div className="rounded-2xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-400/20 p-4 space-y-3 shadow-lg shadow-purple-900/10">
+      <div className="rounded-2xl bg-gradient-to-br from-indigo-500/[0.08] to-violet-600/[0.08] border border-white/[0.08] p-4 space-y-3 shadow-lg shadow-black/20">
         <div className="flex items-center justify-between">
-          <span className="text-white/60 text-xs uppercase tracking-wide font-semibold">Open Order</span>
+          <span className="text-white/50 text-xs uppercase tracking-wider font-semibold">Open Order</span>
           <span
-            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              tradeDirection === 'long' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+            className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+              tradeDirection === 'long' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
             }`}
           >
             {tradeDirection === 'long' ? 'LONG' : 'SHORT'}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-y-2 text-xs">
-          <span className="text-white/40">Coin</span>
-          <span className="text-white text-right font-medium">{coinSymbol}</span>
-          <span className="text-white/40">Stake</span>
-          <span className="text-white text-right font-medium">{formatCurrency(tradeAmount)}</span>
-          <span className="text-white/40">Entry Price</span>
-          <span className="text-white text-right font-medium">${formatPrice(entryPrice)}</span>
-          <span className="text-white/40">Current Price</span>
-          <span className="text-white text-right font-medium tabular-nums">${formatPrice(currentPrice)}</span>
+          <span className="text-white/35">Coin</span>
+          <span className="text-white text-right font-semibold">{coinSymbol}</span>
+          <span className="text-white/35">Stake</span>
+          <span className="text-white text-right font-semibold">{formatCurrency(tradeAmount)}</span>
+          <span className="text-white/35">Entry Price</span>
+          <span className="text-white text-right font-semibold">${formatPrice(entryPrice)}</span>
+          <span className="text-white/35">Current Price</span>
+          <span className="text-white text-right font-semibold tabular-nums">${formatPrice(currentPrice)}</span>
         </div>
-        <div className="pt-2 border-t border-white/10 grid grid-cols-2 gap-y-2 text-xs">
-          <span className="text-white/40">Floating P/L</span>
-          <span className={`text-right font-semibold tabular-nums ${inTheMoney ? 'text-emerald-400' : 'text-rose-400'}`}>
+        <div className="pt-2 border-t border-white/[0.08] grid grid-cols-2 gap-y-2 text-xs">
+          <span className="text-white/35">Floating P/L</span>
+          <span className={`text-right font-bold tabular-nums ${inTheMoney ? 'text-emerald-400' : 'text-rose-400'}`}>
             {inTheMoney ? `+${formatCurrency(potentialProfit)}` : `-${formatCurrency(tradeAmount)}`}
           </span>
-          <span className="text-white/40">Move</span>
-          <span className={`text-right font-medium tabular-nums ${inTheMoney ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <span className="text-white/35">Move</span>
+          <span className={`text-right font-semibold tabular-nums ${inTheMoney ? 'text-emerald-400' : 'text-rose-400'}`}>
             {inTheMoney ? '+' : ''}
             {floatingPct.toFixed(3)}%
           </span>
@@ -342,8 +330,8 @@ const ResultCard = React.memo(function ResultCard({ result, entryPrice, exitPric
     <div
       className={`w-full rounded-2xl border p-5 transition-all ${
         result.win
-          ? 'bg-emerald-500/10 border-emerald-500/30 shadow-lg shadow-emerald-500/10'
-          : 'bg-rose-500/10 border-rose-500/30 shadow-lg shadow-rose-500/10'
+          ? 'bg-emerald-500/[0.08] border-emerald-500/25 shadow-lg shadow-emerald-500/5'
+          : 'bg-rose-500/[0.08] border-rose-500/25 shadow-lg shadow-rose-500/5'
       }`}
     >
       <div className="flex items-center justify-center gap-2">
@@ -365,20 +353,20 @@ const ResultCard = React.memo(function ResultCard({ result, entryPrice, exitPric
         {result.win ? `+${formatCurrency(result.profit)}` : `-${formatCurrency(result.stake)}`}
       </p>
 
-      <div className="grid grid-cols-2 gap-y-2 text-xs mt-4 pt-4 border-t border-white/10">
-        <span className="text-white/40">Entry Price</span>
-        <span className="text-white text-right font-medium">${formatPrice(entryPrice)}</span>
-        <span className="text-white/40">Exit Price</span>
-        <span className="text-white text-right font-medium">${formatPrice(exitPrice)}</span>
-        <span className="text-white/40">Price Move</span>
-        <span className={`text-right font-medium ${pctMove >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+      <div className="grid grid-cols-2 gap-y-2 text-xs mt-4 pt-4 border-t border-white/[0.08]">
+        <span className="text-white/35">Entry Price</span>
+        <span className="text-white text-right font-semibold">${formatPrice(entryPrice)}</span>
+        <span className="text-white/35">Exit Price</span>
+        <span className="text-white text-right font-semibold">${formatPrice(exitPrice)}</span>
+        <span className="text-white/35">Price Move</span>
+        <span className={`text-right font-semibold ${pctMove >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
           {pctMove >= 0 ? '+' : ''}
           {pctMove.toFixed(3)}%
         </span>
-        <span className="text-white/40">Duration</span>
-        <span className="text-white text-right font-medium">{formatDuration(periodSeconds)}</span>
-        <span className="text-white/40">Completed</span>
-        <span className="text-white text-right font-medium">{formatClockTime(result.completedAt)}</span>
+        <span className="text-white/35">Duration</span>
+        <span className="text-white text-right font-semibold">{formatDuration(periodSeconds)}</span>
+        <span className="text-white/35">Completed</span>
+        <span className="text-white text-right font-semibold">{formatClockTime(result.completedAt)}</span>
       </div>
     </div>
   );
@@ -387,24 +375,24 @@ const ResultCard = React.memo(function ResultCard({ result, entryPrice, exitPric
 const HistoryRow = React.memo(function HistoryRow({ trade }) {
   const pctMove = trade.entryPrice ? ((trade.exitPrice - trade.entryPrice) / trade.entryPrice) * 100 : 0;
   return (
-    <div className="px-4 py-2.5 text-xs space-y-1.5 hover:bg-white/[0.03] transition-colors">
+    <div className="px-4 py-2.5 text-xs space-y-1.5 hover:bg-white/[0.02] transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={`w-1.5 h-1.5 rounded-full ${trade.win ? 'bg-emerald-400' : 'bg-rose-400'}`} />
           <span className="text-white/70 font-medium">{trade.coin}</span>
           <span
-            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-              trade.direction === 'long' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+            className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+              trade.direction === 'long' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
             }`}
           >
             {trade.direction === 'long' ? 'LONG' : 'SHORT'}
           </span>
         </div>
-        <span className={`font-semibold tabular-nums ${trade.win ? 'text-emerald-400' : 'text-rose-400'}`}>
+        <span className={`font-bold tabular-nums ${trade.win ? 'text-emerald-400' : 'text-rose-400'}`}>
           {trade.win ? `+${formatCurrency(trade.profit)}` : `-${formatCurrency(trade.stake)}`}
         </span>
       </div>
-      <div className="flex items-center justify-between text-white/35 text-[10px]">
+      <div className="flex items-center justify-between text-white/30 text-[10px]">
         <span>
           ${formatPrice(trade.entryPrice)} → ${formatPrice(trade.exitPrice)}
           <span className={pctMove >= 0 ? 'text-emerald-400/80 ml-1' : 'text-rose-400/80 ml-1'}>
@@ -435,12 +423,12 @@ export default function TradeModal({
   const [amount, setAmount] = useState('');
   const [amountError, setAmountError] = useState('');
 
-  const [tradeState, setTradeState] = useState('idle'); // idle | active | resolved
+  const [tradeState, setTradeState] = useState('idle');
   const [entryPrice, setEntryPrice] = useState(null);
   const [exitPrice, setExitPrice] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [totalSeconds, setTotalSeconds] = useState(0);
-  const [result, setResult] = useState(null); // { win, profit, stake, completedAt }
+  const [result, setResult] = useState(null);
   const [tradeDirection, setTradeDirection] = useState('long');
   const [tradeAmount, setTradeAmount] = useState(0);
   const [tradePeriod, setTradePeriod] = useState(PERIODS[0]);
@@ -698,34 +686,34 @@ export default function TradeModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4">
       <div className="w-full sm:max-w-md flex flex-col gap-3 max-h-[94vh]">
-        <div className="relative w-full overflow-y-auto rounded-t-3xl sm:rounded-3xl border border-white/10 bg-gradient-to-b from-[#161227]/95 to-[#0d0b18]/95 backdrop-blur-xl shadow-2xl shadow-purple-900/40">
-          <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-white/10 bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-xl">
+        <div className="relative w-full overflow-y-auto rounded-t-3xl sm:rounded-3xl border border-white/[0.08] bg-[#0d0c15]/95 backdrop-blur-xl shadow-2xl shadow-black/50">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-[#0d0c15]/90 backdrop-blur-xl">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-purple-500/40 ring-2 ring-purple-400/20">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/30 ring-2 ring-white/[0.06]">
                 {coin.symbol?.slice(0, 3)}
               </div>
               <div>
                 <p className="text-white font-semibold text-sm leading-none">{coin.name}</p>
-                <p className="text-white/50 text-xs mt-1">{coin.symbol}/USDT</p>
+                <p className="text-white/45 text-xs mt-1">{coin.symbol}/USDT</p>
               </div>
             </div>
             <button
               onClick={handleClose}
-              className="p-2 rounded-full hover:bg-white/10 transition-colors text-white/70 hover:text-white active:scale-90"
+              className="p-2 rounded-full hover:bg-white/[0.06] transition-colors text-white/60 hover:text-white active:scale-90"
             >
               <X size={20} />
             </button>
           </div>
 
           <div className="px-5 pt-5">
-            <div className="rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 p-4 space-y-3">
+            <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-white/50 text-xs uppercase tracking-wide">Simulated Price</span>
+                <span className="text-white/40 text-xs uppercase tracking-wider">Simulated Price</span>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${
-                    direction === 'long' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
+                  className={`text-xs px-2 py-0.5 rounded-full font-bold transition-colors ${
+                    direction === 'long' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
                   }`}
                 >
                   {direction === 'long' ? 'LONG' : 'SHORT'}
@@ -733,13 +721,13 @@ export default function TradeModal({
               </div>
               <p
                 className="text-3xl font-bold text-white tabular-nums transition-all duration-300"
-                style={{ textShadow: '0 0 18px rgba(168,85,247,0.45)' }}
+                style={{ textShadow: '0 0 18px rgba(99,102,241,0.4)' }}
               >
                 ${formatPrice(currentPrice)}
               </p>
               <LiveChart price={currentPrice} direction={direction} />
               {entryPrice !== null && (
-                <p className="text-xs text-white/40">Entry: ${formatPrice(entryPrice)}</p>
+                <p className="text-xs text-white/35">Entry: ${formatPrice(entryPrice)}</p>
               )}
             </div>
           </div>
@@ -761,7 +749,7 @@ export default function TradeModal({
             <div className="flex flex-col items-center justify-center py-6">
               <div className="relative w-36 h-36">
                 <svg className="w-36 h-36 -rotate-90" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r={RADIUS} stroke="rgba(255,255,255,0.08)" strokeWidth="8" fill="none" />
+                  <circle cx="60" cy="60" r={RADIUS} stroke="rgba(255,255,255,0.06)" strokeWidth="8" fill="none" />
                   <circle
                     cx="60"
                     cy="60"
@@ -774,22 +762,22 @@ export default function TradeModal({
                     strokeDashoffset={strokeDashoffset}
                     style={{
                       transition: 'stroke-dashoffset 1s linear',
-                      filter: 'drop-shadow(0 0 6px rgba(168,85,247,0.6))',
+                      filter: 'drop-shadow(0 0 6px rgba(99,102,241,0.5))',
                     }}
                   />
                   <defs>
                     <linearGradient id="countdown-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#a855f7" />
-                      <stop offset="100%" stopColor="#3b82f6" />
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
                     </linearGradient>
                   </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-white text-2xl font-bold tabular-nums">{formatCountdown(secondsLeft)}</span>
-                  <span className="text-white/40 text-[10px] uppercase tracking-wide mt-0.5">Time Left</span>
+                  <span className="text-white/35 text-[10px] uppercase tracking-wider mt-0.5">Time Left</span>
                 </div>
               </div>
-              <p className="text-white/50 text-xs mt-4">Trade in progress — hold tight...</p>
+              <p className="text-white/45 text-xs mt-4">Trade in progress — hold tight...</p>
             </div>
           )}
 
@@ -798,7 +786,7 @@ export default function TradeModal({
               <ResultCard result={result} entryPrice={entryPrice} exitPrice={exitPrice} periodSeconds={tradePeriod.seconds} />
               <button
                 onClick={handleReset}
-                className="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-purple-500/20"
+                className="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-indigo-500/20"
               >
                 Trade Again
               </button>
@@ -810,10 +798,10 @@ export default function TradeModal({
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setDirection('long')}
-                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all border active:scale-[0.98] ${
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all border active:scale-[0.98] ${
                     direction === 'long'
-                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-500/30'
-                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                      ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/20'
+                      : 'bg-white/[0.03] border-white/[0.08] text-white/50 hover:bg-white/[0.06]'
                   }`}
                 >
                   <TrendingUp size={16} />
@@ -821,10 +809,10 @@ export default function TradeModal({
                 </button>
                 <button
                   onClick={() => setDirection('short')}
-                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all border active:scale-[0.98] ${
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all border active:scale-[0.98] ${
                     direction === 'short'
-                      ? 'bg-gradient-to-r from-rose-500 to-rose-600 border-rose-400 text-white shadow-lg shadow-rose-500/30'
-                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                      ? 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-500/20'
+                      : 'bg-white/[0.03] border-white/[0.08] text-white/50 hover:bg-white/[0.06]'
                   }`}
                 >
                   <TrendingDown size={16} />
@@ -834,18 +822,18 @@ export default function TradeModal({
 
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Clock size={14} className="text-white/40" />
-                  <span className="text-white/50 text-xs uppercase tracking-wide">Period</span>
+                  <Clock size={14} className="text-white/35" />
+                  <span className="text-white/45 text-xs uppercase tracking-wider">Period</span>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   {PERIODS.map((p) => (
                     <button
                       key={p.label}
                       onClick={() => setPeriod(p)}
-                      className={`py-2 rounded-lg text-sm font-medium transition-all border active:scale-[0.97] ${
+                      className={`py-2 rounded-lg text-sm font-semibold transition-all border active:scale-[0.97] ${
                         period.label === p.label
-                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 border-purple-400 text-white shadow-md shadow-purple-500/30'
-                          : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                          ? 'bg-gradient-to-r from-indigo-500 to-violet-600 border-indigo-400 text-white shadow-md shadow-indigo-500/20'
+                          : 'bg-white/[0.03] border-white/[0.08] text-white/50 hover:bg-white/[0.06]'
                       }`}
                     >
                       <div>{p.label}</div>
@@ -857,8 +845,8 @@ export default function TradeModal({
 
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign size={14} className="text-white/40" />
-                  <span className="text-white/50 text-xs uppercase tracking-wide">Purchase Amount</span>
+                  <DollarSign size={14} className="text-white/35" />
+                  <span className="text-white/45 text-xs uppercase tracking-wider">Purchase Amount</span>
                 </div>
                 <input
                   type="text"
@@ -866,8 +854,8 @@ export default function TradeModal({
                   value={amount}
                   onChange={handleAmountChange}
                   placeholder="0.00"
-                  className={`w-full px-4 py-3 rounded-xl bg-white/5 border text-white text-lg font-semibold placeholder-white/20 outline-none transition-colors ${
-                    amountError ? 'border-rose-500/60 focus:border-rose-500' : 'border-white/10 focus:border-purple-500/60'
+                  className={`w-full px-4 py-3 rounded-xl bg-white/[0.03] border text-white text-lg font-semibold placeholder-white/15 outline-none transition-colors ${
+                    amountError ? 'border-rose-500/50 focus:border-rose-500' : 'border-white/[0.08] focus:border-indigo-500/50'
                   }`}
                 />
                 {amountError && <p className="text-rose-400 text-xs mt-1.5">{amountError}</p>}
@@ -876,7 +864,7 @@ export default function TradeModal({
                     <button
                       key={val}
                       onClick={() => handleQuickAmount(val)}
-                      className="py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-colors active:scale-95"
+                      className="py-1.5 rounded-lg text-xs font-semibold bg-white/[0.03] border border-white/[0.08] text-white/50 hover:bg-white/[0.06] hover:text-white transition-colors active:scale-95"
                     >
                       {val >= 1000 ? `${val / 1000}k` : val}
                     </button>
@@ -884,24 +872,24 @@ export default function TradeModal({
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-2.5">
+              <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2.5">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-1.5 text-white/50">
+                  <span className="flex items-center gap-1.5 text-white/45">
                     <Wallet size={14} />
                     Available Balance
                   </span>
-                  <span className="text-white font-medium">{formatCurrency(balance)}</span>
+                  <span className="text-white font-semibold">{formatCurrency(balance)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-1.5 text-white/50">
+                  <span className="flex items-center gap-1.5 text-white/45">
                     <Percent size={14} />
                     Trading Fee
                   </span>
-                  <span className="text-white/70 font-medium">{formatCurrency(fee)}</span>
+                  <span className="text-white/65 font-semibold">{formatCurrency(fee)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-white/10">
-                  <span className="text-white/50">Estimated Profit ({Math.round(period.payout * 100)}%)</span>
-                  <span className="text-emerald-400 font-semibold">+{formatCurrency(estimatedProfit)}</span>
+                <div className="flex items-center justify-between text-sm pt-2 border-t border-white/[0.06]">
+                  <span className="text-white/45">Estimated Profit ({Math.round(period.payout * 100)}%)</span>
+                  <span className="text-emerald-400 font-bold">+{formatCurrency(estimatedProfit)}</span>
                 </div>
               </div>
 
@@ -910,8 +898,8 @@ export default function TradeModal({
                 disabled={!canConfirm}
                 className={`w-full py-3.5 rounded-xl font-bold text-base transition-all ${
                   canConfirm
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/30 hover:opacity-90 active:scale-[0.98]'
-                    : 'bg-white/5 text-white/30 cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20 hover:opacity-90 active:scale-[0.98]'
+                    : 'bg-white/[0.03] text-white/25 cursor-not-allowed'
                 }`}
               >
                 Confirm Trade
@@ -921,11 +909,11 @@ export default function TradeModal({
         </div>
 
         {tradeHistory.length > 0 && (
-          <div className="w-full rounded-2xl border border-white/10 bg-gradient-to-b from-[#161227]/90 to-[#0d0b18]/90 backdrop-blur-xl shadow-xl shadow-black/30 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <div className="w-full rounded-2xl border border-white/[0.08] bg-[#0d0c15]/90 backdrop-blur-xl shadow-xl shadow-black/40 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
               <div className="flex items-center gap-2">
-                <HistoryIcon size={14} className="text-white/40" />
-                <span className="text-white/50 text-xs uppercase tracking-wide font-semibold">Recent Trades</span>
+                <HistoryIcon size={14} className="text-white/35" />
+                <span className="text-white/45 text-xs uppercase tracking-wider font-semibold">Recent Trades</span>
               </div>
               <div className="flex items-center gap-1">
                 {[
@@ -936,10 +924,10 @@ export default function TradeModal({
                   <button
                     key={f.key}
                     onClick={() => setHistoryFilter(f.key)}
-                    className={`px-2 py-1 rounded-md text-[10px] font-semibold transition-colors ${
+                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-colors ${
                       historyFilter === f.key
-                        ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
-                        : 'text-white/40 hover:text-white/70 hover:bg-white/5'
+                        ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white'
+                        : 'text-white/35 hover:text-white/65 hover:bg-white/[0.04]'
                     }`}
                   >
                     {f.label}
@@ -947,9 +935,9 @@ export default function TradeModal({
                 ))}
               </div>
             </div>
-            <div className="divide-y divide-white/5 max-h-56 overflow-y-auto">
+            <div className="divide-y divide-white/[0.04] max-h-56 overflow-y-auto">
               {filteredHistory.length === 0 ? (
-                <p className="text-white/30 text-xs text-center py-4">No trades in this filter.</p>
+                <p className="text-white/25 text-xs text-center py-4">No trades in this filter.</p>
               ) : (
                 filteredHistory.map((t) => <HistoryRow key={t.id} trade={t} />)
               )}
