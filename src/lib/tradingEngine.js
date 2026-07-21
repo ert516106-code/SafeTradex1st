@@ -1,6 +1,6 @@
 // ========================================
 // SafeTrade V2 Trading Engine
-// Version 1.0
+// Version 2.0
 // ========================================
 
 export const TRADE_PERIODS = [
@@ -10,24 +10,52 @@ export const TRADE_PERIODS = [
   { id: 5, seconds: 300, label: "5m", profit: 100 },
 ];
 
-export function calculateFee(amount) {
-  return Number((amount * 0.005).toFixed(2));
+export const PAYOUT_RATIO = {
+  "1m": 0.3,
+  "2m": 0.45,
+  "3m": 0.75,
+  "5m": 1.0,
+};
+
+// ========================================
+// Calculations
+// ========================================
+
+export function calculateFee(amount = 0) {
+  return Number((Number(amount) * 0.005).toFixed(2));
 }
 
-export function calculateProfit(amount, percent) {
-  return Number((amount * (percent / 100)).toFixed(2));
+export function calculateProfit(amount = 0, percent = 0) {
+  return Number((Number(amount) * (Number(percent) / 100)).toFixed(2));
 }
 
-export function calculateTotal(amount) {
-  return Number((amount + calculateFee(amount)).toFixed(2));
+export function calculateTotal(amount = 0) {
+  return Number((Number(amount) + calculateFee(amount)).toFixed(2));
 }
 
-export function formatPrice(price) {
-  return Number(price).toLocaleString(undefined, {
+// ========================================
+// Formatting
+// ========================================
+
+export function formatPrice(price = 0) {
+  return Number(price).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
+
+export function formatCurrency(value = 0) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value));
+}
+
+// ========================================
+// Random Helpers
+// ========================================
 
 export function randomBetween(min, max) {
   return Math.random() * (max - min) + min;
@@ -37,23 +65,18 @@ export function randomDirection() {
   return Math.random() > 0.5 ? 1 : -1;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Simulated Market Movement
-|--------------------------------------------------------------------------
-|
-| Creates a realistic moving price without using a live exchange.
-|
-*/
+// ========================================
+// Simulated Market Movement
+// ========================================
 
 export function generatePricePath({
-  startPrice,
-  seconds,
-  direction,
+  startPrice = 0,
+  seconds = 60,
+  direction = "up",
 }) {
   const prices = [];
 
-  let current = startPrice;
+  let current = Number(startPrice);
 
   for (let i = 0; i < seconds; i++) {
     const noise = randomBetween(0.05, 0.35);
@@ -71,18 +94,30 @@ export function generatePricePath({
   return prices;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Trade Result
-|--------------------------------------------------------------------------
-*/
+// ========================================
+// Live Price Helpers
+// ========================================
+
+export function nextPrice(price = 0) {
+  const movement = randomBetween(-0.18, 0.18);
+  return Number((Number(price) + movement).toFixed(2));
+}
+
+// Alias for compatibility
+export function generateNextPrice(price = 0) {
+  return nextPrice(price);
+}
+
+// ========================================
+// Trade Resolution
+// ========================================
 
 export function resolveTrade({
   side,
-  amount,
-  entryPrice,
-  exitPrice,
-  payout,
+  amount = 0,
+  entryPrice = 0,
+  exitPrice = 0,
+  payout = 0,
 }) {
   const isWin =
     side === "BUY"
@@ -93,44 +128,32 @@ export function resolveTrade({
 
   return {
     win: isWin,
-
     fee,
-
     payout,
-
     profit: isWin
       ? calculateProfit(amount, payout)
       : -amount,
-
     finalBalanceChange: isWin
       ? calculateProfit(amount, payout)
       : -amount,
-
     entryPrice,
-
     exitPrice,
   };
 }
 
-/*
-|--------------------------------------------------------------------------
-| Fake Live Price
-|--------------------------------------------------------------------------
-*/
+// ========================================
+// Countdown Helper
+// ========================================
 
-export function nextPrice(price) {
-  const movement = randomBetween(-0.18, 0.18);
-
-  return Number((price + movement).toFixed(2));
-}
-
-export function countdown(seconds, callback) {
+export function countdown(seconds = 0, callback) {
   let remaining = seconds;
 
   const timer = setInterval(() => {
     remaining--;
 
-    callback(remaining);
+    if (typeof callback === "function") {
+      callback(remaining);
+    }
 
     if (remaining <= 0) {
       clearInterval(timer);
