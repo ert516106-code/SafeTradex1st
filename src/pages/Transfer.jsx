@@ -79,7 +79,7 @@ export default function Transfer() {
         className={`fixed inset-0 z-50 overflow-x-hidden overflow-y-auto transition-opacity duration-300 ${
           mounted ? "opacity-100" : "opacity-0"
         }`}
-        style={{ background: "radial-gradient(circle at top, #1b2a5e 0%, #0a0f24 55%, #050816 100%)" }}
+        style={{ background: "radial-gradient(circle at top, #18254b 0%, #050816 70%)" }}
       >
         <div
           className="pointer-events-none absolute -left-[12%] -top-[10%] h-[60vmax] w-[60vmax] rounded-full opacity-[0.16] blur-[110px]"
