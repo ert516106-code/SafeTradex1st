@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Info, CandlestickChart, AreaChart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import TradingViewWidget from "../components/trading/TradingViewWidget";
 import TradeModal from "../components/trading/TradeModal";
 import OpenOrders from "../components/trading/Openorders";
@@ -174,18 +173,18 @@ export default function OptionsTrading() {
       <div className="mb-24">{orderList}</div>
 
       <div className="fixed bottom-16 left-0 right-0 px-4 py-3 bg-white border-t flex gap-3 z-40 max-w-lg mx-auto">
-        <Button
+        <button
           onClick={() => handleOpenModal('long')}
-          className="flex-1 h-12 rounded-xl text-base font-bold bg-emerald-500 hover:bg-emerald-600 text-white"
+          className="flex-1 h-12 rounded-xl text-base font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-colors"
         >
           BUY LONG
-        </Button>
-        <Button
+        </button>
+        <button
           onClick={() => handleOpenModal('short')}
-          className="flex-1 h-12 rounded-xl text-base font-bold bg-red-500 hover:bg-red-600 text-white"
+          className="flex-1 h-12 rounded-xl text-base font-bold bg-red-500 hover:bg-red-600 text-white transition-colors"
         >
           SELL SHORT
-        </Button>
+        </button>
       </div>
 
       {modal.open && (
