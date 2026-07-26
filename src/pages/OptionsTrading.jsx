@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Info, CandlestickChart, AreaChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import TradingViewWidget from '../TradingViewWidget';
-import TradeModal from '../TradeModal';
-import OpenOrders from '../OpenOrders';
-import OrderHistory from '../OrderHistory';
+import TradingViewWidget from "../components/trading/TradingViewWidget";
+import TradeModal from "../components/trading/TradeModal";
+import OpenOrders from "../components/trading/Openorders";
+import OrderHistory from "../components/trading/Orderhistory";
 
 const pairs = [
   { symbol: 'BTC/USDT', tv: 'BINANCE:BTCUSDT', coin: 'BTC' },
