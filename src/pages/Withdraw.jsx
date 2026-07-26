@@ -76,7 +76,7 @@ export default function Withdraw() {
         className={`fixed inset-0 z-50 overflow-x-hidden overflow-y-auto transition-opacity duration-300 ${
           mounted ? "opacity-100" : "opacity-0"
         }`}
-        style={{ background: "radial-gradient(circle at top, #1b2a5e 0%, #0a0f24 55%, #050816 100%)" }}
+        style={{ background: "radial-gradient(circle at top, #18254b 0%, #050816 70%)" }}
       >
         <div
           className="pointer-events-none fixed -left-[12%] -top-[10%] h-[60vmax] w-[60vmax] rounded-full opacity-[0.16] blur-[110px]"
@@ -163,21 +163,7 @@ export function WithdrawHeader({ title, onBack, onClose, right = null, showFlowS
 
         <h1 className="text-[17px] font-bold text-white">{title}</h1>
 
-        {right ? (
-          right
-        ) : onClose ? (
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-        ) : (
-          <div className="h-10 w-10" />
-        )}
+        {right ? right : <div className="h-10 w-10" />}
       </div>
 
       {showFlowSwitch && <FlowTabs active="withdraw" />}
