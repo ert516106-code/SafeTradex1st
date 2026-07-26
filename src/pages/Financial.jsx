@@ -116,7 +116,7 @@ function CryptoNewsFeed() {
 
       {status !== "loading" &&
         articles.map((item, idx) => (
-          <a
+          
             key={item.id || item.url || idx}
             href={item.url}
             target="_blank"
@@ -204,7 +204,7 @@ export default function Financial() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top,#1E3170 0%,#091120 70%)",
+          "radial-gradient(circle at top,#18254b 0%,#050816 70%)",
         color: "#FFFFFF",
         padding: 20,
         paddingBottom: 100,
@@ -232,7 +232,7 @@ export default function Financial() {
 
           <div
             style={{
-              color: "#8FA4D8",
+              color: "#94A3B8",
               marginTop: 5,
             }}
           >
@@ -295,7 +295,7 @@ export default function Financial() {
 
         <div
           style={{
-            color: "#8FA4D8",
+            color: "#94A3B8",
           }}
         >
           Live headlines, refreshed every 12 hours
