@@ -115,67 +115,71 @@ function CryptoNewsFeed() {
       )}
 
       {status !== "loading" &&
-        articles.map((item, idx) => (
-          
-            key={item.id || item.url || idx}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "flex",
-              gap: 12,
-              padding: "14px 18px",
-              textDecoration: "none",
-              borderBottom:
-                idx !== articles.length - 1 ? "1px solid #1a2540" : "none",
-              transition: "background 0.15s ease",
-            }}
-          >
-            <div
+        articles.map((item, idx) => {
+          const itemKey = item.id ? item.id : item.url ? item.url : idx;
+          const isLast = idx === articles.length - 1;
+
+          return (
+            
+              key={itemKey}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 10,
-                background: "rgba(59,130,246,0.12)",
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
+                gap: 12,
+                padding: "14px 18px",
+                textDecoration: "none",
+                borderBottom: isLast ? "none" : "1px solid #1a2540",
+                transition: "background 0.15s ease",
               }}
             >
-              <Newspaper size={16} color="#60A5FA" />
-            </div>
-
-            <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
-                  fontSize: 13.5,
-                  fontWeight: 600,
-                  color: "#F1F5F9",
-                  lineHeight: 1.4,
-                }}
-              >
-                {item.title}
-              </div>
-              <div
-                style={{
-                  marginTop: 5,
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  background: "rgba(59,130,246,0.12)",
                   display: "flex",
                   alignItems: "center",
-                  gap: 6,
-                  fontSize: 11.5,
-                  color: "#64748B",
+                  justifyContent: "center",
+                  flexShrink: 0,
                 }}
               >
-                <span>{item.source || "Crypto News"}</span>
-                <span>·</span>
-                <span>{timeAgo(item.publishedAt)}</span>
+                <Newspaper size={16} color="#60A5FA" />
               </div>
-            </div>
 
-            <ExternalLink size={14} color="#475569" style={{ flexShrink: 0, marginTop: 2 }} />
-          </a>
-        ))}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    color: "#F1F5F9",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {item.title}
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 11.5,
+                    color: "#64748B",
+                  }}
+                >
+                  <span>{item.source || "Crypto News"}</span>
+                  <span>·</span>
+                  <span>{timeAgo(item.publishedAt)}</span>
+                </div>
+              </div>
+
+              <ExternalLink size={14} color="#475569" style={{ flexShrink: 0, marginTop: 2 }} />
+            </a>
+          );
+        })}
 
       <div
         style={{
