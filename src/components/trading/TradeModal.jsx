@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { X, TrendingUp, TrendingDown } from 'lucide-react';
 import { calculateFee, calculateProfit, formatPrice, formatCurrency } from '../lib/tradingEngine';
+import { addActiveOrder, removeActiveOrder, addTransaction } from '../lib/orderStore';
 
 const periods = [
   { label: '1m', seconds: 60, profit: '+30.00%', rate: 0.30, minAmount: 100 },
@@ -178,6 +179,9 @@ export default function TradeModal({
     return () => {
       clearInterval(timerRef.current);
       clearInterval(priceRef.current);
+      if (activeTradeRef.current?.orderId) {
+        removeActiveOrder(activeTradeRef.current.orderId);
+      }
     };
   }, []);
 
@@ -203,6 +207,9 @@ export default function TradeModal({
   const resetModal = useCallback(() => {
     clearInterval(timerRef.current);
     clearInterval(priceRef.current);
+    if (activeTradeRef.current?.orderId) {
+      removeActiveOrder(activeTradeRef.current.orderId);
+    }
     setPhase('idle');
     setResult(null);
     setAmount('');
@@ -250,6 +257,17 @@ export default function TradeModal({
       updatedBalance,
     };
 
+    if (trade.orderId) {
+      removeActiveOrder(trade.orderId);
+    }
+    addTransaction({
+      coin,
+      direction: isLong ? 'Long' : 'Short',
+      period: trade.period.label,
+      amount: trade.amount,
+      type: win ? 'trade_win' : 'trade_lose',
+    });
+
     if (mountedRef.current) {
       setResult(outcome);
       setPhase('result');
@@ -257,7 +275,7 @@ export default function TradeModal({
     onTradeComplete?.(outcome);
     activeTradeRef.current = null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coin, type, onBalanceChange, onTradeComplete, livePrice]);
+  }, [coin, type, isLong, onBalanceChange, onTradeComplete, livePrice]);
 
   const handleConfirm = useCallback(() => {
     if (numAmount < period.minAmount) return;
@@ -272,11 +290,22 @@ export default function TradeModal({
 
     const win = Math.random() > 0.5;
 
+    const orderId = addActiveOrder({
+      coin,
+      direction: isLong ? 'Long' : 'Short',
+      period: period.label,
+      amount: numAmount,
+      entryPrice: snapPrice,
+      totalSeconds: period.seconds,
+      potentialWin: potentialWin.toFixed(2),
+    });
+
     activeTradeRef.current = {
       amount: numAmount,
       period,
       entryPrice: snapPrice,
       outcome: win,
+      orderId,
     };
 
     setPhase('countdown');
@@ -292,7 +321,7 @@ export default function TradeModal({
         return prev - 1;
       });
     }, 1000);
-  }, [numAmount, period, totalDeduct, currentPrice, onBalanceChange, finishTrade]);
+  }, [numAmount, period, totalDeduct, currentPrice, coin, isLong, potentialWin, onBalanceChange, finishTrade]);
 
   return (
     <div
