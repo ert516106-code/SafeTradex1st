@@ -6,6 +6,7 @@ import ExternalWithdraw from "../components/withdraw/ExternalWithdraw";
 import NetworkSelector from "../components/withdraw/NetworkSelector";
 import WithdrawReview from "../components/withdraw/WithdrawReview";
 import WithdrawSuccess from "../components/withdraw/WithdrawSuccess";
+import { useSystemSettings } from "../contexts/SystemSettingsContext";
 
 export const COINS = [
   { symbol: "BTC", name: "Bitcoin", balance: 0.0842, color: "#F7931A" },
@@ -58,9 +59,31 @@ export const FLOW_THEME = {
   blueDeep: "#2563EB",
 };
 
+function WithdrawDisabledScreen() {
+  const navigate = useNavigate();
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 24, textAlign: "center" }}>
+      <div style={{ fontSize: 40, marginBottom: 16 }}>🚫</div>
+      <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginBottom: 8 }}>
+        Withdrawals are temporarily disabled
+      </h1>
+      <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, maxWidth: 320, marginBottom: 24 }}>
+        The platform has paused new withdrawals. Please try again later.
+      </p>
+      <button
+        onClick={() => navigate(-1)}
+        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, color: "#fff", padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+      >
+        Go back
+      </button>
+    </div>
+  );
+}
+
 export default function Withdraw() {
   const [draft, setDraft] = useState(initialDraft);
   const [mounted, setMounted] = useState(false);
+  const { settings, loading: settingsLoading } = useSystemSettings();
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 20);
@@ -88,15 +111,19 @@ export default function Withdraw() {
         />
 
         <div className="relative z-10">
-          <Routes>
-            <Route index element={<WithdrawHome />} />
-            <Route path="internal" element={<InternalWithdraw />} />
-            <Route path="external" element={<ExternalWithdraw />} />
-            <Route path="external/network" element={<NetworkSelector />} />
-            <Route path="review" element={<WithdrawReview />} />
-            <Route path="success" element={<WithdrawSuccess />} />
-            <Route path="*" element={<Navigate to="/withdraw" replace />} />
-          </Routes>
+          {!settingsLoading && !settings.withdrawals ? (
+            <WithdrawDisabledScreen />
+          ) : (
+            <Routes>
+              <Route index element={<WithdrawHome />} />
+              <Route path="internal" element={<InternalWithdraw />} />
+              <Route path="external" element={<ExternalWithdraw />} />
+              <Route path="external/network" element={<NetworkSelector />} />
+              <Route path="review" element={<WithdrawReview />} />
+              <Route path="success" element={<WithdrawSuccess />} />
+              <Route path="*" element={<Navigate to="/withdraw" replace />} />
+            </Routes>
+          )}
         </div>
       </div>
     </WithdrawContext.Provider>
