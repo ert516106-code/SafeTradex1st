@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Info, CandlestickChart, AreaChart } from 'lucide-react';
 import TradingViewWidget from "../components/trading/TradingViewWidget";
-import TradeModal from "../components/trading/TradingModal";
+import TradingModal from "../components/trading/TradingModal";
 import OpenOrders from "../components/trading/Openorders";
 import OrderHistory from "../components/trading/Orderhistory";
 
@@ -187,17 +187,16 @@ export default function OptionsTrading() {
         </button>
       </div>
 
-      {modal.open && (
-        <TradeModal
-          balance={balance}
-          currentPrice={currentPrice}
-          coin={selected.coin}
-          type={modal.type}
-          onClose={handleCloseModal}
-          onTradeComplete={handleTradeComplete}
-          onBalanceChange={handleBalanceChange}
-        />
-      )}
+      <TradingModal
+        open={modal.open}
+        type={modal.type}
+        coin={selected.coin}
+        balance={balance}
+        currentPrice={currentPrice}
+        onClose={handleCloseModal}
+        onTradeComplete={handleTradeComplete}
+        onBalanceChange={handleBalanceChange}
+      />
     </div>
   );
 }
