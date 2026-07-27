@@ -1,7 +1,12 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { X, TrendingUp, TrendingDown } from 'lucide-react';
-import { startTrade } from '../../lib/tradeEngine';
+import { useState, useMemo, useEffect } from 'react';
+import { useMarket } from '../../contexts/MarketContext';
 import { useSystemSettings } from '../../contexts/SystemSettingsContext';
+import TradingHeader from './TradingHeader';
+import TradingChart from './TradingChart';
+import TradingTabs from './TradingTabs';
+import TradeForm from './TradeForm';
+import BalanceCard from './BalanceCard';
+import OrderSummary from './OrderSummary';
 
 const periods = [
   { label: '1m', seconds: 60, profit: '+30.00%', rate: 0.30, minAmount: 100 },
