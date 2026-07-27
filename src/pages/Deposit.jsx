@@ -6,6 +6,7 @@ import NetworkSelector from "../components/deposit/NetworkSelector";
 import DepositDetails from "../components/deposit/DepositDetails";
 import BuyCryptoProviders from "../components/deposit/BuyCryptoProviders";
 import DepositHistory from "../components/deposit/DepositHistory";
+import { useSystemSettings } from "../contexts/SystemSettingsContext";
 
 export const DEPOSIT_COINS = [
   { symbol: "USDT", name: "Tether", color: "#26A17B" },
@@ -122,9 +123,31 @@ export const FLOW_THEME = {
   blueDeep: "#2563EB",
 };
 
+function DepositDisabledScreen() {
+  const navigate = useNavigate();
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 24, textAlign: "center" }}>
+      <div style={{ fontSize: 40, marginBottom: 16 }}>🚫</div>
+      <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginBottom: 8 }}>
+        Deposits are temporarily disabled
+      </h1>
+      <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, maxWidth: 320, marginBottom: 24 }}>
+        The platform has paused new deposits. Please try again later.
+      </p>
+      <button
+        onClick={() => navigate(-1)}
+        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, color: "#fff", padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+      >
+        Go back
+      </button>
+    </div>
+  );
+}
+
 export default function Deposit() {
   const [selection, setSelection] = useState(initialSelection);
   const [mounted, setMounted] = useState(false);
+  const { settings, loading: settingsLoading } = useSystemSettings();
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 20);
@@ -152,15 +175,19 @@ export default function Deposit() {
         />
 
         <div className="relative z-10">
-          <Routes>
-            <Route index element={<DepositHome />} />
-            <Route path="select-coin" element={<CoinSelector />} />
-            <Route path="select-network" element={<NetworkSelector />} />
-            <Route path="details" element={<DepositDetails />} />
-            <Route path="buy" element={<BuyCryptoProviders />} />
-            <Route path="history" element={<DepositHistory />} />
-            <Route path="*" element={<Navigate to="/deposit" replace />} />
-          </Routes>
+          {!settingsLoading && !settings.deposits ? (
+            <DepositDisabledScreen />
+          ) : (
+            <Routes>
+              <Route index element={<DepositHome />} />
+              <Route path="select-coin" element={<CoinSelector />} />
+              <Route path="select-network" element={<NetworkSelector />} />
+              <Route path="details" element={<DepositDetails />} />
+              <Route path="buy" element={<BuyCryptoProviders />} />
+              <Route path="history" element={<DepositHistory />} />
+              <Route path="*" element={<Navigate to="/deposit" replace />} />
+            </Routes>
+          )}
         </div>
       </div>
     </DepositContext.Provider>
