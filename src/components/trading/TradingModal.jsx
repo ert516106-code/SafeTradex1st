@@ -4,10 +4,6 @@ import { useMarket } from '../../contexts/MarketContext';
 import { useSystemSettings } from '../../contexts/SystemSettingsContext';
 import TradingHeader from './TradingHeader';
 import TradingChart from './TradingChart';
-import TradingTabs from './TradingTabs';
-import TradeForm from './TradeForm';
-import BalanceCard from './BalanceCard';
-import OrderSummary from './OrderSummary';
 
 const periods = [
   { label: '1m', seconds: 60, profit: '+30.00%', rate: 0.30, minAmount: 100 },
@@ -33,7 +29,7 @@ const CircleTimer = ({ total, remaining }) => {
   return (
     <div style={{ position: 'relative', width: 140, height: 140 }}>
       <svg width="140" height="140" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="70" cy="70" r={r} fill="none" stroke="#e5e7eb" strokeWidth="8" />
+        <circle cx="70" cy="70" r={r} fill="none" stroke="#1e293b" strokeWidth="8" />
         <circle
           cx="70" cy="70" r={r} fill="none" stroke="#10b981" strokeWidth="8"
           strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
@@ -43,10 +39,10 @@ const CircleTimer = ({ total, remaining }) => {
       <div style={{
         position: 'absolute', top: 2, left: '50%', transform: 'translateX(-50%)',
         width: 12, height: 12, borderRadius: '50%', backgroundColor: '#10b981',
-        border: '2px solid #fff', boxShadow: '0 0 0 2px #10b981',
+        border: '2px solid #0d1322', boxShadow: '0 0 0 2px #10b981',
       }} />
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 28, fontWeight: 800, color: '#111', letterSpacing: 1 }}>
+        <span style={{ fontSize: 28, fontWeight: 800, color: '#f8fafc', letterSpacing: 1 }}>
           {formatMM(remaining)}
         </span>
       </div>
@@ -56,8 +52,8 @@ const CircleTimer = ({ total, remaining }) => {
 
 const InfoRow = ({ label, value, valueColor, bold }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-    <span style={{ color: '#6b7280' }}>{label}</span>
-    <span style={{ fontWeight: bold ? 700 : 500, color: valueColor || '#111' }}>{value}</span>
+    <span style={{ color: '#94a3b8' }}>{label}</span>
+    <span style={{ fontWeight: bold ? 700 : 500, color: valueColor || '#f8fafc' }}>{value}</span>
   </div>
 );
 
@@ -220,22 +216,54 @@ export default function TradingModal({
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        backdropFilter: 'blur(4px)',
+      }}
       onClick={handleClose}
     >
       <div
-        style={{ width: '100%', maxWidth: 512, backgroundColor: '#fff', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', maxHeight: '92vh' }}
+        style={{
+          width: '100%',
+          maxWidth: 512,
+          backgroundColor: '#0d1322',
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '92vh',
+          border: '1px solid #1e293b',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          color: '#f8fafc',
+        }}
         onClick={e => e.stopPropagation()}
       >
+        {/* Mobile Handle */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
-          <div style={{ width: 40, height: 4, borderRadius: 9999, backgroundColor: '#d1d5db' }} />
+          <div style={{ width: 40, height: 4, borderRadius: 9999, backgroundColor: '#334155' }} />
         </div>
 
         {coinObj && <TradingHeader coin={coinObj} onBack={handleClose} />}
 
+        {/* Phase: Result */}
         {phase === 'result' && result && (
           <div style={{ padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', backgroundColor: result.win ? '#d1fae5' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <div style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              backgroundColor: result.win ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 16
+            }}>
               {result.win
                 ? <TrendingUp style={{ width: 40, height: 40, color: '#10b981' }} />
                 : <TrendingDown style={{ width: 40, height: 40, color: '#ef4444' }} />}
@@ -243,31 +271,42 @@ export default function TradingModal({
             <h2 style={{ fontSize: 24, fontWeight: 800, color: result.win ? '#10b981' : '#ef4444', marginBottom: 4 }}>
               {result.win ? 'YOU WIN! 🎉' : 'YOU LOST 😔'}
             </h2>
-            <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 8 }}>{result.win ? 'Profit earned' : 'Amount lost'}</p>
-            <p style={{ fontSize: 28, fontWeight: 800, color: result.win ? '#10b981' : '#ef4444', marginBottom: 4 }}>
+            <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: 8 }}>{result.win ? 'Profit earned' : 'Amount lost'}</p>
+            <p style={{ fontSize: 28, fontWeight: 800, color: result.win ? '#10b981' : '#ef4444', marginBottom: 24 }}>
               {result.win ? '+' : ''}{result.profit.toFixed(2)} USDT
             </p>
             <button
               onClick={handleClose}
-              style={{ width: '100%', height: 52, borderRadius: 14, backgroundColor: '#3b82f6', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', cursor: 'pointer' }}
+              style={{
+                width: '100%',
+                height: 52,
+                borderRadius: 14,
+                backgroundColor: '#6366f1',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 16,
+                border: 'none',
+                cursor: 'pointer'
+              }}
             >
               Done
             </button>
           </div>
         )}
 
+        {/* Phase: Countdown */}
         {phase === 'countdown' && (
           <div style={{ padding: '28px 24px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <span style={{ fontWeight: 700, fontSize: 18 }}>{coin}</span>
-              <button onClick={handleClose} style={{ background: '#f3f4f6', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X style={{ width: 16, height: 16, color: '#6b7280' }} />
+              <span style={{ fontWeight: 700, fontSize: 18, color: '#fff' }}>{coin}</span>
+              <button onClick={handleClose} style={{ background: '#1e293b', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X style={{ width: 16, height: 16, color: '#94a3b8' }} />
               </button>
             </div>
 
             <CircleTimer total={period.seconds} remaining={countdown} />
 
-            <div style={{ width: '100%', marginTop: 28, borderTop: '1px solid #f3f4f6', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14 }}>
+            <div style={{ width: '100%', marginTop: 28, borderTop: '1px solid #1e293b', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14 }}>
               <InfoRow label="Current price" value={animatedPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} />
               <InfoRow label="Cycle" value={period.label} />
               <InfoRow label="Direction" value={isLong ? 'Buying up' : 'Buy down'} valueColor={isLong ? '#10b981' : '#ef4444'} />
@@ -276,107 +315,164 @@ export default function TradingModal({
               <InfoRow label="Expected profit" value={`+${potentialWin} USDT`} valueColor="#10b981" bold />
             </div>
 
-            <p style={{ marginTop: 20, fontSize: 12, color: '#9ca3af', textAlign: 'center' }}>
+            <p style={{ marginTop: 20, fontSize: 12, color: '#64748b', textAlign: 'center' }}>
               The final price is subject to system settlement.
             </p>
           </div>
         )}
 
+        {/* Phase: Idle */}
         {phase === 'idle' && (
           <>
             <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px' }}>
               {!coinObj && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontWeight: 700, fontSize: 18 }}>{coin}</span>
+                    <span style={{ fontWeight: 700, fontSize: 18, color: '#fff' }}>{coin}</span>
                     <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 999, backgroundColor: isLong ? '#10b981' : '#ef4444', color: '#fff' }}>
                       {isLong ? 'Buying up' : 'Buy down'}
                     </span>
                   </div>
                   <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                    <X style={{ width: 20, height: 20, color: '#6b7280' }} />
+                    <X style={{ width: 20, height: 20, color: '#94a3b8' }} />
                   </button>
                 </div>
               )}
 
               {!tradingEnabled && (
-                <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 14px', marginBottom: 20, color: '#b91c1c', fontSize: 13, fontWeight: 600 }}>
+                <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12, padding: '12px 14px', marginBottom: 20, color: '#f87171', fontSize: 13, fontWeight: 600 }}>
                   Trading is temporarily disabled by the platform. Please check back later.
                 </div>
               )}
 
               {coinObj && <TradingChart coin={coinObj} />}
 
-              <p style={{ fontWeight: 600, marginBottom: 12, marginTop: coinObj ? 16 : 0 }}>Select Period</p>
+              <p style={{ fontWeight: 600, marginBottom: 12, marginTop: coinObj ? 16 : 0, color: '#cbd5e1', fontSize: 13 }}>
+                Select Period
+              </p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-                {periods.map(p => (
-                  <button
-                    key={p.label}
-                    onClick={() => { setPeriod(p); setAmount(''); }}
-                    disabled={!tradingEnabled}
-                    style={{
-                      flex: 1, borderRadius: 12, padding: '10px 4px', textAlign: 'center', border: 'none',
-                      cursor: (tradingEnabled && effectiveBalance >= p.minAmount) ? 'pointer' : 'not-allowed',
-                      backgroundColor: period.label === p.label ? '#3b82f6' : effectiveBalance >= p.minAmount ? '#f3f4f6' : '#f9fafb',
-                      color: period.label === p.label ? '#fff' : effectiveBalance >= p.minAmount ? '#111' : '#9ca3af',
-                      opacity: (tradingEnabled && effectiveBalance >= p.minAmount) ? 1 : 0.6,
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{p.label}</div>
-                    <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>{p.profit}</div>
-                    <div style={{ fontSize: 9, marginTop: 2, fontWeight: 600 }}>
-                      Min {p.minAmount >= 1000 ? (p.minAmount / 1000) + 'K' : p.minAmount} USDT
-                    </div>
-                  </button>
-                ))}
+                {periods.map(p => {
+                  const isSelected = period.label === p.label;
+                  const canAfford = effectiveBalance >= p.minAmount;
+                  return (
+                    <button
+                      key={p.label}
+                      onClick={() => { setPeriod(p); setAmount(''); }}
+                      disabled={!tradingEnabled}
+                      style={{
+                        flex: 1,
+                        borderRadius: 12,
+                        padding: '10px 4px',
+                        textAlign: 'center',
+                        border: isSelected ? '1px solid #6366f1' : '1px solid #1e293b',
+                        cursor: (tradingEnabled && canAfford) ? 'pointer' : 'not-allowed',
+                        backgroundColor: isSelected ? '#6366f1' : '#131b2e',
+                        color: isSelected ? '#fff' : canAfford ? '#e2e8f0' : '#64748b',
+                        opacity: (tradingEnabled && canAfford) ? 1 : 0.5,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{p.label}</div>
+                      <div style={{ fontSize: 10, marginTop: 2, color: isSelected ? '#e0e7ff' : '#34d399', fontWeight: 600 }}>{p.profit}</div>
+                      <div style={{ fontSize: 9, marginTop: 2, fontWeight: 600, color: isSelected ? '#c7d2fe' : '#64748b' }}>
+                        Min {p.minAmount >= 1000 ? (p.minAmount / 1000) + 'K' : p.minAmount} USDT
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
-              <p style={{ fontWeight: 600, marginBottom: 12 }}>Purchase volume</p>
+              <p style={{ fontWeight: 600, marginBottom: 12, color: '#cbd5e1', fontSize: 13 }}>Purchase volume</p>
               <input
                 type="number"
                 placeholder={`At least ${period.minAmount >= 1000 ? (period.minAmount / 1000) + 'K' : period.minAmount} USDT`}
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
                 disabled={!tradingEnabled}
-                style={{ width: '100%', height: 48, border: '1px solid #e5e7eb', borderRadius: 12, padding: '0 16px', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 12 }}
+                style={{
+                  width: '100%',
+                  height: 48,
+                  backgroundColor: '#131b2e',
+                  border: '1px solid #1e293b',
+                  borderRadius: 12,
+                  padding: '0 16px',
+                  fontSize: 14,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  marginBottom: 12,
+                  color: '#fff',
+                  fontWeight: 600,
+                }}
               />
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
-                {quickAmounts.map(a => (
-                  <button
-                    key={a}
-                    onClick={() => setAmount(String(a))}
-                    disabled={!tradingEnabled}
-                    style={{ padding: '8px 14px', borderRadius: 10, backgroundColor: numAmount === a ? '#3b82f6' : '#f3f4f6', color: numAmount === a ? '#fff' : '#111', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
-                  >
-                    {a}
-                  </button>
-                ))}
+                {quickAmounts.map(a => {
+                  const isSelected = numAmount === a;
+                  return (
+                    <button
+                      key={a}
+                      onClick={() => setAmount(String(a))}
+                      disabled={!tradingEnabled}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 10,
+                        backgroundColor: isSelected ? '#6366f1' : '#131b2e',
+                        color: isSelected ? '#fff' : '#cbd5e1',
+                        border: isSelected ? '1px solid #6366f1' : '1px solid #1e293b',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {a}
+                    </button>
+                  );
+                })}
               </div>
 
-              <div style={{ backgroundColor: '#f9fafb', borderRadius: 14, padding: 16, marginBottom: 20, fontSize: 14 }}>
-                <p style={{ fontWeight: 700, marginBottom: 8 }}>
+              {/* Balance & Fee Breakdown */}
+              <div style={{ backgroundColor: '#131b2e', border: '1px solid #1e293b', borderRadius: 14, padding: 16, marginBottom: 20, fontSize: 13 }}>
+                <p style={{ fontWeight: 700, marginBottom: 10, color: '#fff' }}>
                   Available balance: {effectiveBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT
                 </p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', marginBottom: 4 }}><span>Fee ratio:</span><span>0.5%</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', marginBottom: 4 }}><span>Fee amount:</span><span>{fee} USDT</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', marginBottom: numAmount > 0 ? 4 : 0 }}><span>Total deduction:</span><span>{totalDeduct} USDT</span></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', marginBottom: 6 }}>
+                  <span>Fee ratio:</span>
+                  <span style={{ color: '#cbd5e1' }}>0.5%</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', marginBottom: 6 }}>
+                  <span>Fee amount:</span>
+                  <span style={{ color: '#cbd5e1' }}>{fee} USDT</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', marginBottom: numAmount > 0 ? 6 : 0 }}>
+                  <span>Total deduction:</span>
+                  <span style={{ color: '#cbd5e1' }}>{totalDeduct} USDT</span>
+                </div>
                 {numAmount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981', fontWeight: 600 }}>
-                    <span>Potential profit ({period.profit}):</span><span>+{potentialWin} USDT</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#34d399', fontWeight: 600, marginTop: 8, paddingTop: 8, borderTop: '1px border-slate-800' }}>
+                    <span>Potential profit ({period.profit}):</span>
+                    <span>+{potentialWin} USDT</span>
                   </div>
                 )}
               </div>
             </div>
 
-            <div style={{ padding: '12px 20px 28px', backgroundColor: '#fff', borderTop: '1px solid #f3f4f6' }}>
+            {/* Bottom Action Area */}
+            <div style={{ padding: '12px 20px 28px', backgroundColor: '#0d1322', borderTop: '1px solid #1e293b' }}>
               <button
                 onClick={handleConfirm}
                 disabled={confirmDisabled}
                 style={{
-                  width: '100%', height: 56, borderRadius: 14,
-                  backgroundColor: confirmDisabled ? '#9ca3af' : '#10b981',
-                  color: '#fff', fontWeight: 700, fontSize: 16, border: 'none',
+                  width: '100%',
+                  height: 56,
+                  borderRadius: 14,
+                  backgroundColor: confirmDisabled ? '#334155' : isLong ? '#10b981' : '#f43f5e',
+                  color: confirmDisabled ? '#94a3b8' : '#fff',
+                  fontWeight: 700,
+                  fontSize: 16,
+                  border: 'none',
                   cursor: confirmDisabled ? 'not-allowed' : 'pointer',
+                  transition: 'background-color 0.2s ease',
+                  boxShadow: confirmDisabled ? 'none' : isLong ? '0 10px 15px -3px rgba(16, 185, 129, 0.25)' : '0 10px 15px -3px rgba(244, 63, 94, 0.25)',
                 }}
               >
                 Confirm Order
