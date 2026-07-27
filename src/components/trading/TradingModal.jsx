@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { X, TrendingUp, TrendingDown } from 'lucide-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { useSystemSettings } from '../../contexts/SystemSettingsContext';
 import TradingHeader from './TradingHeader';
@@ -60,19 +61,32 @@ const InfoRow = ({ label, value, valueColor, bold }) => (
   </div>
 );
 
-export default function TradeModal({
+export default function TradingModal({
   open,
   onClose,
   type = 'long',
-  coin = 'BTC',
+  coin: coinProp = 'BTC',
+  coinId,
   balance = 0,
-  currentPrice = 0,
+  balanceUSDT = 0,
+  balanceCoin = 0,
+  currentPrice: currentPriceProp = 0,
   winMode = 'neutral',
   onTradeComplete,
+  onOrderComplete,
   onBalanceChange,
 }) {
+  const { coins } = useMarket();
   const { settings } = useSystemSettings();
-  const tradingEnabled = settings.trading;
+  const tradingEnabled = settings?.trading !== false;
+
+  const coinObj = useMemo(
+    () => coins?.find((c) => c.id === coinId) || coins?.[0] || null,
+    [coins, coinId]
+  );
+
+  const coin = typeof coinProp === 'string' ? coinProp : coinObj?.symbol || 'BTC';
+  const currentPrice = currentPriceProp || coinObj?.price || 0;
 
   const [period, setPeriod] = useState(periods[0]);
   const [amount, setAmount] = useState('');
@@ -87,6 +101,7 @@ export default function TradeModal({
   const mountedRef = useRef(true);
 
   const isLong = type === 'long';
+  const effectiveBalance = balance || balanceUSDT;
   const numAmount = parseFloat(amount) || 0;
   const fee = useMemo(() => +(numAmount * 0.005).toFixed(4), [numAmount]);
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
@@ -148,54 +163,60 @@ export default function TradeModal({
     if (numAmount < period.minAmount) {
       return;
     }
-    if (numAmount > balance) {
+    if (numAmount > effectiveBalance) {
       return;
     }
 
     const snapEntryPrice = animatedPrice;
     setEntryPrice(snapEntryPrice);
 
-    const balanceAfterDeduction = +(balance - numAmount).toFixed(2);
+    const balanceAfterDeduction = +(effectiveBalance - numAmount).toFixed(2);
     onBalanceChange?.(balanceAfterDeduction);
 
     setPhase('countdown');
     setCountdown(period.seconds);
 
-    // Local countdown display only — resolution itself runs independently below.
     timerRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
+          
+          const win = winMode === 'win' ? true : winMode === 'lose' ? false : Math.random() > 0.5;
+          const profit = win ? potentialWin : numAmount;
+          const updatedBalance = win 
+            ? +(balanceAfterDeduction + numAmount + potentialWin).toFixed(2)
+            : balanceAfterDeduction;
+
+          const transaction = {
+            coin,
+            isLong,
+            period: period.label,
+            amount: numAmount,
+            entryPrice: snapEntryPrice,
+            win,
+            profit,
+            timestamp: Date.now(),
+          };
+
+          onBalanceChange?.(updatedBalance);
+          onTradeComplete?.(transaction);
+          onOrderComplete?.(transaction);
+
+          if (mountedRef.current) {
+            clearInterval(priceRef.current);
+            setResult({ win, profit });
+            setPhase('result');
+          }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
-    startTrade({
-      coin,
-      isLong,
-      period,
-      numAmount,
-      entryPrice: snapEntryPrice,
-      potentialWin,
-      balanceAfterDeduction,
-      winMode,
-      onResolve: ({ win, profit, updatedBalance, transaction }) => {
-        onBalanceChange?.(updatedBalance);
-        onTradeComplete?.(transaction);
-
-        if (!mountedRef.current) return;
-        clearInterval(priceRef.current);
-        setResult({ win, profit });
-        setPhase('result');
-      },
-    });
-  }, [tradingEnabled, numAmount, period, balance, animatedPrice, coin, isLong, potentialWin, winMode, onBalanceChange, onTradeComplete]);
+  }, [tradingEnabled, numAmount, period, effectiveBalance, animatedPrice, coin, isLong, potentialWin, winMode, onBalanceChange, onTradeComplete, onOrderComplete]);
 
   if (!open) return null;
 
-  const confirmDisabled = !tradingEnabled || numAmount < period.minAmount || numAmount > balance;
+  const confirmDisabled = !tradingEnabled || numAmount < period.minAmount || numAmount > effectiveBalance;
 
   return (
     <div
@@ -209,6 +230,8 @@ export default function TradeModal({
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
           <div style={{ width: 40, height: 4, borderRadius: 9999, backgroundColor: '#d1d5db' }} />
         </div>
+
+        {coinObj && <TradingHeader coin={coinObj} onBack={handleClose} />}
 
         {phase === 'result' && result && (
           <div style={{ padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -262,17 +285,19 @@ export default function TradeModal({
         {phase === 'idle' && (
           <>
             <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontWeight: 700, fontSize: 18 }}>{coin}</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 999, backgroundColor: isLong ? '#10b981' : '#ef4444', color: '#fff' }}>
-                    {isLong ? 'Buying up' : 'Buy down'}
-                  </span>
+              {!coinObj && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontWeight: 700, fontSize: 18 }}>{coin}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 999, backgroundColor: isLong ? '#10b981' : '#ef4444', color: '#fff' }}>
+                      {isLong ? 'Buying up' : 'Buy down'}
+                    </span>
+                  </div>
+                  <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                    <X style={{ width: 20, height: 20, color: '#6b7280' }} />
+                  </button>
                 </div>
-                <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                  <X style={{ width: 20, height: 20, color: '#6b7280' }} />
-                </button>
-              </div>
+              )}
 
               {!tradingEnabled && (
                 <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 14px', marginBottom: 20, color: '#b91c1c', fontSize: 13, fontWeight: 600 }}>
@@ -280,7 +305,9 @@ export default function TradeModal({
                 </div>
               )}
 
-              <p style={{ fontWeight: 600, marginBottom: 12 }}>Select Period</p>
+              {coinObj && <TradingChart coin={coinObj} />}
+
+              <p style={{ fontWeight: 600, marginBottom: 12, marginTop: coinObj ? 16 : 0 }}>Select Period</p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
                 {periods.map(p => (
                   <button
@@ -289,10 +316,10 @@ export default function TradeModal({
                     disabled={!tradingEnabled}
                     style={{
                       flex: 1, borderRadius: 12, padding: '10px 4px', textAlign: 'center', border: 'none',
-                      cursor: (tradingEnabled && balance >= p.minAmount) ? 'pointer' : 'not-allowed',
-                      backgroundColor: period.label === p.label ? '#3b82f6' : balance >= p.minAmount ? '#f3f4f6' : '#f9fafb',
-                      color: period.label === p.label ? '#fff' : balance >= p.minAmount ? '#111' : '#9ca3af',
-                      opacity: (tradingEnabled && balance >= p.minAmount) ? 1 : 0.6,
+                      cursor: (tradingEnabled && effectiveBalance >= p.minAmount) ? 'pointer' : 'not-allowed',
+                      backgroundColor: period.label === p.label ? '#3b82f6' : effectiveBalance >= p.minAmount ? '#f3f4f6' : '#f9fafb',
+                      color: period.label === p.label ? '#fff' : effectiveBalance >= p.minAmount ? '#111' : '#9ca3af',
+                      opacity: (tradingEnabled && effectiveBalance >= p.minAmount) ? 1 : 0.6,
                     }}
                   >
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{p.label}</div>
@@ -328,7 +355,7 @@ export default function TradeModal({
 
               <div style={{ backgroundColor: '#f9fafb', borderRadius: 14, padding: 16, marginBottom: 20, fontSize: 14 }}>
                 <p style={{ fontWeight: 700, marginBottom: 8 }}>
-                  Available balance: {balance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT
+                  Available balance: {effectiveBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', marginBottom: 4 }}><span>Fee ratio:</span><span>0.5%</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', marginBottom: 4 }}><span>Fee amount:</span><span>{fee} USDT</span></div>
