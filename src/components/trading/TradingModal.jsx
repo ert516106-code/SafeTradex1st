@@ -244,9 +244,44 @@ export default function TradingModal({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Mobile Handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 4px' }}>
+        {/* Top Header Section with Drag Handle & Trade Type Logo Badge */}
+        <div style={{
+          padding: '10px 16px 8px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 8,
+          borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+        }}>
+          {/* Drag Handle Bar */}
           <div style={{ width: 40, height: 4, borderRadius: 9999, backgroundColor: '#334155' }} />
+
+          {/* Trade Direction Logo Badge */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 14px',
+            borderRadius: 20,
+            backgroundColor: isLong ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            border: `1px solid ${isLong ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+            boxShadow: isLong ? '0 0 12px rgba(16, 185, 129, 0.15)' : '0 0 12px rgba(239, 68, 68, 0.15)'
+          }}>
+            {isLong ? (
+              <TrendingUp style={{ width: 16, height: 16, color: '#10b981' }} />
+            ) : (
+              <TrendingDown style={{ width: 16, height: 16, color: '#ef4444' }} />
+            )}
+            <span style={{
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+              color: isLong ? '#10b981' : '#ef4444'
+            }}>
+              {isLong ? 'Buy Long' : 'Sell Short'}
+            </span>
+          </div>
         </div>
 
         {coinObj && <TradingHeader coin={coinObj} onBack={handleClose} />}
@@ -296,8 +331,8 @@ export default function TradingModal({
 
         {/* Phase: Countdown */}
         {phase === 'countdown' && (
-          <div style={{ padding: '28px 24px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div style={{ padding: '24px 24px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <span style={{ fontWeight: 700, fontSize: 18, color: '#fff' }}>{coin}</span>
               <button onClick={handleClose} style={{ background: '#1e293b', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X style={{ width: 16, height: 16, color: '#94a3b8' }} />
@@ -306,16 +341,16 @@ export default function TradingModal({
 
             <CircleTimer total={period.seconds} remaining={countdown} />
 
-            <div style={{ width: '100%', marginTop: 28, borderTop: '1px solid #1e293b', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14 }}>
+            <div style={{ width: '100%', marginTop: 24, borderTop: '1px solid #1e293b', paddingTop: 18, display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
               <InfoRow label="Current price" value={animatedPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} />
               <InfoRow label="Cycle" value={period.label} />
-              <InfoRow label="Direction" value={isLong ? 'Buying up' : 'Buy down'} valueColor={isLong ? '#10b981' : '#ef4444'} />
+              <InfoRow label="Direction" value={isLong ? 'Buy Long' : 'Sell Short'} valueColor={isLong ? '#10b981' : '#ef4444'} />
               <InfoRow label="Quantity" value={`${numAmount.toFixed(2)} USDT`} />
               <InfoRow label="Price" value={`${entryPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT`} />
               <InfoRow label="Expected profit" value={`+${potentialWin} USDT`} valueColor="#10b981" bold />
             </div>
 
-            <p style={{ marginTop: 20, fontSize: 12, color: '#64748b', textAlign: 'center' }}>
+            <p style={{ marginTop: 18, fontSize: 12, color: '#64748b', textAlign: 'center' }}>
               The final price is subject to system settlement.
             </p>
           </div>
@@ -324,14 +359,11 @@ export default function TradingModal({
         {/* Phase: Idle */}
         {phase === 'idle' && (
           <>
-            <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px' }}>
+            <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px 12px' }}>
               {!coinObj && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontWeight: 700, fontSize: 18, color: '#fff' }}>{coin}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 999, backgroundColor: isLong ? '#10b981' : '#ef4444', color: '#fff' }}>
-                      {isLong ? 'Buying up' : 'Buy down'}
-                    </span>
                   </div>
                   <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                     <X style={{ width: 20, height: 20, color: '#94a3b8' }} />
@@ -340,17 +372,17 @@ export default function TradingModal({
               )}
 
               {!tradingEnabled && (
-                <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12, padding: '12px 14px', marginBottom: 20, color: '#f87171', fontSize: 13, fontWeight: 600 }}>
+                <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 12, padding: '12px 14px', margin: '12px 0', color: '#f87171', fontSize: 13, fontWeight: 600 }}>
                   Trading is temporarily disabled by the platform. Please check back later.
                 </div>
               )}
 
               {coinObj && <TradingChart coin={coinObj} />}
 
-              <p style={{ fontWeight: 600, marginBottom: 12, marginTop: coinObj ? 16 : 0, color: '#cbd5e1', fontSize: 13 }}>
+              <p style={{ fontWeight: 600, marginBottom: 10, marginTop: coinObj ? 14 : 0, color: '#cbd5e1', fontSize: 13 }}>
                 Select Period
               </p>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                 {periods.map(p => {
                   const isSelected = period.label === p.label;
                   const canAfford = effectiveBalance >= p.minAmount;
@@ -382,7 +414,7 @@ export default function TradingModal({
                 })}
               </div>
 
-              <p style={{ fontWeight: 600, marginBottom: 12, color: '#cbd5e1', fontSize: 13 }}>Purchase volume</p>
+              <p style={{ fontWeight: 600, marginBottom: 10, color: '#cbd5e1', fontSize: 13 }}>Purchase volume</p>
               <input
                 type="number"
                 placeholder={`At least ${period.minAmount >= 1000 ? (period.minAmount / 1000) + 'K' : period.minAmount} USDT`}
@@ -399,12 +431,12 @@ export default function TradingModal({
                   fontSize: 14,
                   outline: 'none',
                   boxSizing: 'border-box',
-                  marginBottom: 12,
+                  marginBottom: 10,
                   color: '#fff',
                   fontWeight: 600,
                 }}
               />
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
                 {quickAmounts.map(a => {
                   const isSelected = numAmount === a;
                   return (
@@ -430,8 +462,8 @@ export default function TradingModal({
                 })}
               </div>
 
-              {/* Balance & Fee Breakdown */}
-              <div style={{ backgroundColor: '#131b2e', border: '1px solid #1e293b', borderRadius: 14, padding: 16, marginBottom: 20, fontSize: 13 }}>
+              {/* Balance & Fee Summary */}
+              <div style={{ backgroundColor: '#131b2e', border: '1px solid #1e293b', borderRadius: 14, padding: 16, marginBottom: 12, fontSize: 13 }}>
                 <p style={{ fontWeight: 700, marginBottom: 10, color: '#fff' }}>
                   Available balance: {effectiveBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT
                 </p>
@@ -448,7 +480,7 @@ export default function TradingModal({
                   <span style={{ color: '#cbd5e1' }}>{totalDeduct} USDT</span>
                 </div>
                 {numAmount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#34d399', fontWeight: 600, marginTop: 8, paddingTop: 8, borderTop: '1px border-slate-800' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#34d399', fontWeight: 600, marginTop: 8, paddingTop: 8, borderTop: '1px solid #1e293b' }}>
                     <span>Potential profit ({period.profit}):</span>
                     <span>+{potentialWin} USDT</span>
                   </div>
@@ -456,26 +488,31 @@ export default function TradingModal({
               </div>
             </div>
 
-            {/* Bottom Action Area */}
-            <div style={{ padding: '12px 20px 28px', backgroundColor: '#0d1322', borderTop: '1px solid #1e293b' }}>
+            {/* Confirm Order Button with Type Icon */}
+            <div style={{ padding: '12px 20px 24px', backgroundColor: '#0d1322', borderTop: '1px solid #1e293b' }}>
               <button
                 onClick={handleConfirm}
                 disabled={confirmDisabled}
                 style={{
                   width: '100%',
-                  height: 56,
+                  height: 52,
                   borderRadius: 14,
-                  backgroundColor: confirmDisabled ? '#334155' : isLong ? '#10b981' : '#f43f5e',
+                  backgroundColor: confirmDisabled ? '#334155' : isLong ? '#10b981' : '#ef4444',
                   color: confirmDisabled ? '#94a3b8' : '#fff',
                   fontWeight: 700,
                   fontSize: 16,
                   border: 'none',
                   cursor: confirmDisabled ? 'not-allowed' : 'pointer',
-                  transition: 'background-color 0.2s ease',
-                  boxShadow: confirmDisabled ? 'none' : isLong ? '0 10px 15px -3px rgba(16, 185, 129, 0.25)' : '0 10px 15px -3px rgba(244, 63, 94, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  transition: 'all 0.2s ease',
+                  boxShadow: confirmDisabled ? 'none' : isLong ? '0 8px 16px -4px rgba(16, 185, 129, 0.3)' : '0 8px 16px -4px rgba(239, 68, 68, 0.3)',
                 }}
               >
-                Confirm Order
+                {isLong ? <TrendingUp style={{ width: 20, height: 20 }} /> : <TrendingDown style={{ width: 20, height: 20 }} />}
+                <span>{isLong ? 'Confirm Buy Long' : 'Confirm Sell Short'}</span>
               </button>
             </div>
           </>
