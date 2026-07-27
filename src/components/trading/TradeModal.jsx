@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { X, TrendingUp, TrendingDown } from 'lucide-react';
 import { startTrade } from '../../lib/tradeEngine';
+import { useSystemSettings } from '../../contexts/SystemSettingsContext';
 
 const periods = [
   { label: '1m', seconds: 60, profit: '+30.00%', rate: 0.30, minAmount: 100 },
@@ -65,6 +66,9 @@ export default function TradeModal({
   onTradeComplete,
   onBalanceChange,
 }) {
+  const { settings } = useSystemSettings();
+  const tradingEnabled = settings.trading;
+
   const [period, setPeriod] = useState(periods[0]);
   const [amount, setAmount] = useState('');
   const [phase, setPhase] = useState('idle');
@@ -135,6 +139,7 @@ export default function TradeModal({
   }, [resetModal, onClose]);
 
   const handleConfirm = useCallback(() => {
+    if (!tradingEnabled) return;
     if (numAmount < period.minAmount) {
       return;
     }
@@ -181,9 +186,11 @@ export default function TradeModal({
         setPhase('result');
       },
     });
-  }, [numAmount, period, balance, animatedPrice, coin, isLong, potentialWin, winMode, onBalanceChange, onTradeComplete]);
+  }, [tradingEnabled, numAmount, period, balance, animatedPrice, coin, isLong, potentialWin, winMode, onBalanceChange, onTradeComplete]);
 
   if (!open) return null;
+
+  const confirmDisabled = !tradingEnabled || numAmount < period.minAmount || numAmount > balance;
 
   return (
     <div
@@ -262,18 +269,25 @@ export default function TradeModal({
                 </button>
               </div>
 
+              {!tradingEnabled && (
+                <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 14px', marginBottom: 20, color: '#b91c1c', fontSize: 13, fontWeight: 600 }}>
+                  Trading is temporarily disabled by the platform. Please check back later.
+                </div>
+              )}
+
               <p style={{ fontWeight: 600, marginBottom: 12 }}>Select Period</p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
                 {periods.map(p => (
                   <button
                     key={p.label}
                     onClick={() => { setPeriod(p); setAmount(''); }}
+                    disabled={!tradingEnabled}
                     style={{
                       flex: 1, borderRadius: 12, padding: '10px 4px', textAlign: 'center', border: 'none',
-                      cursor: balance >= p.minAmount ? 'pointer' : 'not-allowed',
+                      cursor: (tradingEnabled && balance >= p.minAmount) ? 'pointer' : 'not-allowed',
                       backgroundColor: period.label === p.label ? '#3b82f6' : balance >= p.minAmount ? '#f3f4f6' : '#f9fafb',
                       color: period.label === p.label ? '#fff' : balance >= p.minAmount ? '#111' : '#9ca3af',
-                      opacity: balance >= p.minAmount ? 1 : 0.6,
+                      opacity: (tradingEnabled && balance >= p.minAmount) ? 1 : 0.6,
                     }}
                   >
                     <div style={{ fontWeight: 700, fontSize: 14 }}>{p.label}</div>
@@ -291,6 +305,7 @@ export default function TradeModal({
                 placeholder={`At least ${period.minAmount >= 1000 ? (period.minAmount / 1000) + 'K' : period.minAmount} USDT`}
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
+                disabled={!tradingEnabled}
                 style={{ width: '100%', height: 48, border: '1px solid #e5e7eb', borderRadius: 12, padding: '0 16px', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 12 }}
               />
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
@@ -298,6 +313,7 @@ export default function TradeModal({
                   <button
                     key={a}
                     onClick={() => setAmount(String(a))}
+                    disabled={!tradingEnabled}
                     style={{ padding: '8px 14px', borderRadius: 10, backgroundColor: numAmount === a ? '#3b82f6' : '#f3f4f6', color: numAmount === a ? '#fff' : '#111', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
                   >
                     {a}
@@ -323,12 +339,12 @@ export default function TradeModal({
             <div style={{ padding: '12px 20px 28px', backgroundColor: '#fff', borderTop: '1px solid #f3f4f6' }}>
               <button
                 onClick={handleConfirm}
-                disabled={numAmount < period.minAmount || numAmount > balance}
+                disabled={confirmDisabled}
                 style={{
                   width: '100%', height: 56, borderRadius: 14,
-                  backgroundColor: (numAmount < period.minAmount || numAmount > balance) ? '#9ca3af' : '#10b981',
+                  backgroundColor: confirmDisabled ? '#9ca3af' : '#10b981',
                   color: '#fff', fontWeight: 700, fontSize: 16, border: 'none',
-                  cursor: (numAmount < period.minAmount || numAmount > balance) ? 'not-allowed' : 'pointer',
+                  cursor: confirmDisabled ? 'not-allowed' : 'pointer',
                 }}
               >
                 Confirm Order
