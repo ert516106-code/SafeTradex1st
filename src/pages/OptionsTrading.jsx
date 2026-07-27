@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Info, CandlestickChart, AreaChart } from 'lucide-react';
+import { Info, CandlestickChart, AreaChart, Menu } from 'lucide-react';
 import TradingViewWidget from "../components/trading/TradingViewWidget";
 import TradingModal from "../components/trading/TradingModal";
 import OpenOrders from "../components/trading/Openorders";
@@ -17,7 +17,7 @@ const pairs = [
 const timeframes = ['1m', '15m', '30m', '1h', '2h', '6h'];
 
 const BASE_PRICES = {
-  BTC: 68400,
+  BTC: 65380.00,
   ETH: 3850,
   XRP: 0.62,
   SOL: 185,
@@ -32,7 +32,7 @@ export default function OptionsTrading() {
   const [modal, setModal] = useState({ open: false, type: 'long' });
   const [showPairs, setShowPairs] = useState(false);
   const [activeTab, setActiveTab] = useState('open');
-  const [activeTimeframe, setActiveTimeframe] = useState('15m');
+  const [activeTimeframe, setActiveTimeframe] = useState('1m');
   const [chartStyle, setChartStyle] = useState('1'); // '1'=candles, '3'=area
   const [balance, setBalance] = useState(INITIAL_BALANCE);
   const [currentPrice, setCurrentPrice] = useState(BASE_PRICES[pairs[0].coin]);
@@ -48,7 +48,7 @@ export default function OptionsTrading() {
     priceTickRef.current = setInterval(() => {
       setCurrentPrice((prev) => {
         const pct = (Math.random() - 0.5) * 0.001;
-        return +(prev * (1 + pct)).toFixed(4);
+        return +(prev * (1 + pct)).toFixed(2);
       });
     }, 2000);
     return () => clearInterval(priceTickRef.current);
@@ -72,8 +72,7 @@ export default function OptionsTrading() {
   }, []);
 
   const handleTradeComplete = useCallback(() => {
-    // Open Orders / Order History components manage their own data sources;
-    // this hook is available for any future local bookkeeping.
+    // Open Orders / Order History components handle their own data persistence
   }, []);
 
   const toggleChartStyle = useCallback(() => {
@@ -86,22 +85,27 @@ export default function OptionsTrading() {
   );
 
   return (
-    <div className="pb-24">
-      <div className="px-4 pt-3 flex items-center justify-between mb-2">
-        <button onClick={() => setShowPairs(!showPairs)} className="flex items-center gap-1">
-          <span className="text-lg font-bold">{selected.symbol}</span>
-        </button>
-        <Info className="w-5 h-5 text-muted-foreground" />
+    <div className="pb-28 bg-white min-h-screen text-slate-900">
+      {/* Top Header Bar */}
+      <div className="px-4 pt-3 flex items-center justify-between border-b border-gray-100 pb-2">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowPairs(!showPairs)} className="flex items-center gap-2">
+            <Menu className="w-5 h-5 text-gray-700" />
+            <span className="text-lg font-bold tracking-tight">{selected.symbol}</span>
+          </button>
+        </div>
+        <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
       </div>
 
+      {/* Pair Selector Dropdown */}
       {showPairs && (
-        <div className="mx-4 mb-3 bg-white border rounded-xl shadow-lg p-2 space-y-1">
+        <div className="mx-4 my-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 space-y-1 z-50 relative">
           {pairs.map((p) => (
             <button
               key={p.symbol}
               onClick={() => handleSelectPair(p)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium ${
-                selected.symbol === p.symbol ? 'bg-primary text-white' : 'hover:bg-secondary'
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selected.symbol === p.symbol ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-800'
               }`}
             >
               {p.symbol}
@@ -110,16 +114,43 @@ export default function OptionsTrading() {
         </div>
       )}
 
-      <div className="px-4 mb-3 flex items-center justify-between">
-        <div className="flex gap-3 overflow-x-auto text-sm">
+      {/* Live Price Statistics Bar (Matched to Reference Image 3) */}
+      <div className="px-4 py-3 flex items-start justify-between">
+        <div>
+          <div className="text-3xl font-extrabold text-slate-800 tracking-tight">
+            {currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-xs font-semibold text-emerald-500 mt-0.5">
+            +6.21%
+          </div>
+        </div>
+        <div className="text-right text-[11px] space-y-0.5 text-gray-500 font-medium">
+          <div className="flex justify-between gap-3">
+            <span>High</span>
+            <span className="font-bold text-slate-800">65416.77</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span>Low</span>
+            <span className="font-bold text-slate-800">64341.99</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span>Vol</span>
+            <span className="font-bold text-slate-800">9.44K</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Timeframe & Chart Style Toolbar */}
+      <div className="px-4 mb-2 flex items-center justify-between border-t border-gray-100 pt-2">
+        <div className="flex gap-4 overflow-x-auto text-sm">
           {timeframes.map((t) => (
             <button
               key={t}
               onClick={() => setActiveTimeframe(t)}
-              className={`font-medium whitespace-nowrap transition-colors ${
+              className={`font-medium text-xs whitespace-nowrap transition-colors pb-1 ${
                 activeTimeframe === t
-                  ? 'text-primary font-bold border-b-2 border-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'text-blue-600 font-bold border-b-2 border-blue-600'
+                  : 'text-gray-400 hover:text-gray-700'
               }`}
             >
               {t}
@@ -128,65 +159,77 @@ export default function OptionsTrading() {
         </div>
         <button
           onClick={toggleChartStyle}
-          className="ml-3 w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0 border border-border"
+          className="ml-2 p-1.5 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"
           title={chartStyle === '1' ? 'Switch to Area chart' : 'Switch to Candlestick chart'}
         >
           {chartStyle === '1' ? (
-            <AreaChart className="w-4 h-4 text-muted-foreground" />
+            <AreaChart className="w-4 h-4 text-gray-500" />
           ) : (
-            <CandlestickChart className="w-4 h-4 text-primary" />
+            <CandlestickChart className="w-4 h-4 text-blue-600" />
           )}
         </button>
       </div>
 
-      <div className="mx-4 rounded-xl overflow-hidden border mb-4" style={{ height: 350 }}>
-        <TradingViewWidget symbol={selected.tv} height={350} interval={activeTimeframe} chartStyle={chartStyle} />
+      {/* Main Graph Box (Sized compact with light theme styling) */}
+      <div className="mx-4 rounded-xl overflow-hidden border border-gray-200 mb-3" style={{ height: 280 }}>
+        <TradingViewWidget 
+          symbol={selected.tv} 
+          height={280} 
+          interval={activeTimeframe} 
+          chartStyle={chartStyle} 
+          theme="light" 
+        />
       </div>
 
-      <div className="px-4 flex gap-3 text-xs text-muted-foreground mb-4 overflow-x-auto">
+      {/* Technical Indicators Bar */}
+      <div className="px-4 flex gap-4 text-[11px] text-gray-400 font-semibold mb-3 overflow-x-auto border-b border-gray-100 pb-2">
         {['MA', 'EMA', 'BOLL', 'MACD', 'RSI', 'WR'].map((i) => (
-          <span key={i} className="font-medium">
+          <span key={i} className="hover:text-gray-700 cursor-pointer">
             {i}
           </span>
         ))}
       </div>
 
-      <div className="px-4 flex gap-4 border-b border-border pb-3 mb-0 text-sm">
+      {/* Tabs */}
+      <div className="px-4 flex gap-6 border-b border-gray-200 text-xs font-bold mb-3">
         <button
           onClick={() => setActiveTab('open')}
-          className={`font-semibold pb-1 border-b-2 transition-colors ${
-            activeTab === 'open' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent'
+          className={`pb-2 transition-colors border-b-2 ${
+            activeTab === 'open' ? 'text-blue-600 border-blue-600' : 'text-gray-400 border-transparent'
           }`}
         >
           Open Orders
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`font-semibold pb-1 border-b-2 transition-colors ${
-            activeTab === 'history' ? 'text-primary border-primary' : 'text-muted-foreground border-transparent'
+          className={`pb-2 transition-colors border-b-2 ${
+            activeTab === 'history' ? 'text-blue-600 border-blue-600' : 'text-gray-400 border-transparent'
           }`}
         >
-          Order History
+          Order History (201)
         </button>
       </div>
 
-      <div className="mb-24">{orderList}</div>
+      {/* Orders List Container */}
+      <div className="px-4 mb-20">{orderList}</div>
 
-      <div className="fixed bottom-16 left-0 right-0 px-4 py-3 bg-white border-t flex gap-3 z-40 max-w-lg mx-auto">
+      {/* Fixed Bottom Action Buttons */}
+      <div className="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white border-t border-gray-200 flex gap-3 z-40 max-w-lg mx-auto shadow-lg">
         <button
           onClick={() => handleOpenModal('long')}
-          className="flex-1 h-12 rounded-xl text-base font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-colors"
+          className="flex-1 h-12 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-colors"
         >
           BUY LONG
         </button>
         <button
           onClick={() => handleOpenModal('short')}
-          className="flex-1 h-12 rounded-xl text-base font-bold bg-red-500 hover:bg-red-600 text-white transition-colors"
+          className="flex-1 h-12 rounded-xl text-sm font-bold bg-red-500 hover:bg-red-600 text-white transition-colors"
         >
           SELL SHORT
         </button>
       </div>
 
+      {/* Trading Modal Integration */}
       <TradingModal
         open={modal.open}
         type={modal.type}
