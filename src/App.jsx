@@ -30,6 +30,8 @@ import OptionsTrading from "./pages/OptionsTrading";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { MarketProvider } from "./contexts/MarketContext";
+import { SystemSettingsProvider, useSystemSettings } from "./contexts/SystemSettingsContext";
+import MaintenanceScreen from "./components/MaintenanceScreen";
 
 // OptionsTrading expects an onBack callback rather than being route-aware,
 // so this thin wrapper hooks it up to the router.
@@ -38,44 +40,55 @@ function TradeRoute() {
   return <OptionsTrading onBack={() => navigate(-1)} />;
 }
 
+function MaintenanceGate({ children }) {
+  const { settings, loading } = useSystemSettings();
+  if (loading) return null;
+  if (settings.maintenanceMode) return <MaintenanceScreen />;
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <MarketProvider>
-        <Routes>
-          <Route path="/" element={<Splash />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+      <SystemSettingsProvider>
+        <MarketProvider>
+          <MaintenanceGate>
+            <Routes>
+              <Route path="/" element={<Splash />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/markets" element={<ProtectedRoute><Markets /></ProtectedRoute>} />
-          <Route path="/coin/:id" element={<ProtectedRoute><CoinDetails /></ProtectedRoute>} />
-          <Route path="/deposit/*" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
-          <Route path="/withdraw/*" element={<ProtectedRoute><Withdraw /></ProtectedRoute>} />
-          <Route path="/transfer/*" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
-          <Route path="/convert/*" element={<ProtectedRoute><Convert /></ProtectedRoute>} />
-          <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
-          <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/markets" element={<ProtectedRoute><Markets /></ProtectedRoute>} />
+              <Route path="/coin/:id" element={<ProtectedRoute><CoinDetails /></ProtectedRoute>} />
+              <Route path="/deposit/*" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
+              <Route path="/withdraw/*" element={<ProtectedRoute><Withdraw /></ProtectedRoute>} />
+              <Route path="/transfer/*" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
+              <Route path="/convert/*" element={<ProtectedRoute><Convert /></ProtectedRoute>} />
+              <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
+              <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
 
-          {/* Trade tab — also accept /trade/:coinSymbol in case your nav links to a specific coin */}
-          <Route path="/trade" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
-          <Route path="/trade/:coinSymbol" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
+              {/* Trade tab — also accept /trade/:coinSymbol in case your nav links to a specific coin */}
+              <Route path="/trade" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
+              <Route path="/trade/:coinSymbol" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
 
-          <Route path="/security-center" element={<ProtectedRoute><SecurityCenter /></ProtectedRoute>} />
-          <Route path="/personal-information" element={<ProtectedRoute><PersonalInformation /></ProtectedRoute>} />
-          <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
-          <Route path="/language-settings" element={<ProtectedRoute><LanguageSettings /></ProtectedRoute>} />
-          <Route path="/appearance-settings" element={<ProtectedRoute><AppearanceSettings /></ProtectedRoute>} />
-          <Route path="/help-center" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
-          <Route path="/terms-privacy" element={<ProtectedRoute><TermsPrivacy /></ProtectedRoute>} />
-          <Route path="/about-safetrade" element={<ProtectedRoute><AboutSafeTrade /></ProtectedRoute>} />
-          <Route path="/rewards-center" element={<ProtectedRoute><RewardsCenter /></ProtectedRoute>} />
+              <Route path="/security-center" element={<ProtectedRoute><SecurityCenter /></ProtectedRoute>} />
+              <Route path="/personal-information" element={<ProtectedRoute><PersonalInformation /></ProtectedRoute>} />
+              <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+              <Route path="/language-settings" element={<ProtectedRoute><LanguageSettings /></ProtectedRoute>} />
+              <Route path="/appearance-settings" element={<ProtectedRoute><AppearanceSettings /></ProtectedRoute>} />
+              <Route path="/help-center" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
+              <Route path="/terms-privacy" element={<ProtectedRoute><TermsPrivacy /></ProtectedRoute>} />
+              <Route path="/about-safetrade" element={<ProtectedRoute><AboutSafeTrade /></ProtectedRoute>} />
+              <Route path="/rewards-center" element={<ProtectedRoute><RewardsCenter /></ProtectedRoute>} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </MarketProvider>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </MaintenanceGate>
+        </MarketProvider>
+      </SystemSettingsProvider>
     </BrowserRouter>
   );
 }
