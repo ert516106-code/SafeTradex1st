@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
-  ArrowLeft, Menu, ChevronDown, Star, Bell, Share2, 
+  ArrowLeft, Menu, ChevronDown, 
   Maximize2, Sliders, TrendingUp, TrendingDown, FileText, Search 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,6 @@ import TradingViewWidget from "../components/trading/TradingViewWidget";
 import TradingModal from "../components/trading/TradingModal";
 import OpenOrders from "../components/trading/Openorders";
 import OrderHistory from "../components/trading/Orderhistory";
-import BottomNavigation from "../components/layout/BottomNavigation";
 
 const pairs = [
   { symbol: 'BTC/USDT', tv: 'BINANCE:BTCUSDT', coinId: 'bitcoin', ticker: 'BTC' },
@@ -30,7 +29,6 @@ export default function OptionsTrading() {
   const [activeTimeframe, setActiveTimeframe] = useState('1m');
   const [activeIndicator, setActiveIndicator] = useState('MA');
   const [balance, setBalance] = useState(10000);
-  const [isFavorite, setIsFavorite] = useState(false);
 
   // Live market stats state sourced from CoinGecko
   const [marketData, setMarketData] = useState({
@@ -95,11 +93,11 @@ export default function OptionsTrading() {
         background: "radial-gradient(circle at top, #18254b 0%, #050816 70%)",
         boxSizing: "border-box",
       }}
-      className="text-slate-100 font-sans pb-40 relative flex flex-col items-center"
+      className="text-slate-100 font-sans pb-28 relative flex flex-col items-center"
     >
       <div className="w-full max-w-[520px] px-4 pt-4 flex flex-col relative">
         
-        {/* 1. TOP HEADER BAR WITH BIGGER ICONS */}
+        {/* 1. TOP HEADER BAR (STAR, BELL, SHARE REMOVED) */}
         <header className="py-3 flex items-center justify-between border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="text-slate-200 hover:text-white p-1">
@@ -114,14 +112,6 @@ export default function OptionsTrading() {
               <span className="text-xl font-extrabold text-white tracking-tight">{selected.symbol}</span>
               <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
             </button>
-          </div>
-
-          <div className="flex items-center gap-4 text-slate-200">
-            <button onClick={() => setIsFavorite(!isFavorite)} className="p-1">
-              <Star className={`w-5 h-5 ${isFavorite ? 'fill-amber-400 text-amber-400' : ''}`} />
-            </button>
-            <button className="p-1"><Bell className="w-5 h-5" /></button>
-            <button className="p-1"><Share2 className="w-5 h-5" /></button>
           </div>
         </header>
 
@@ -264,12 +254,12 @@ export default function OptionsTrading() {
         </div>
       </div>
 
-      {/* 9. FLOATING ACTION BUTTONS (FLOATING WITH COINGECKO LIVE PRICES) */}
-      <div className="fixed bottom-[85px] left-0 right-0 z-40 px-4 flex justify-center pointer-events-none">
+      {/* 9. FLOATING ACTION BUTTONS AT THE BOTTOM (POSITIONED FOR CLEAN DISPLAY WITHOUT NAV BAR) */}
+      <div className="fixed bottom-6 left-0 right-0 z-40 px-4 flex justify-center pointer-events-none">
         <div className="w-full max-w-[520px] flex gap-3 pointer-events-auto">
           <button
             onClick={() => setModal({ open: true, type: 'long' })}
-            className="flex-1 py-3 rounded-2xl bg-[#10b981] hover:bg-emerald-500 active:scale-[0.98] text-white flex flex-col items-center justify-center transition-all shadow-xl shadow-emerald-950/50 cursor-pointer"
+            className="flex-1 py-3.5 rounded-2xl bg-[#10b981] hover:bg-emerald-500 active:scale-[0.98] text-white flex flex-col items-center justify-center transition-all shadow-xl shadow-emerald-950/50 cursor-pointer"
           >
             <span className="text-sm font-black tracking-wide flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 stroke-[3]" /> BUY LONG
@@ -281,7 +271,7 @@ export default function OptionsTrading() {
 
           <button
             onClick={() => setModal({ open: true, type: 'short' })}
-            className="flex-1 py-3 rounded-2xl bg-[#f43f5e] hover:bg-rose-500 active:scale-[0.98] text-white flex flex-col items-center justify-center transition-all shadow-xl shadow-rose-950/50 cursor-pointer"
+            className="flex-1 py-3.5 rounded-2xl bg-[#f43f5e] hover:bg-rose-500 active:scale-[0.98] text-white flex flex-col items-center justify-center transition-all shadow-xl shadow-rose-950/50 cursor-pointer"
           >
             <span className="text-sm font-black tracking-wide flex items-center gap-1.5">
               <TrendingDown className="w-4 h-4 stroke-[3]" /> SELL SHORT
@@ -303,9 +293,6 @@ export default function OptionsTrading() {
         onClose={() => setModal({ open: false, type: 'long' })}
         onBalanceChange={setBalance}
       />
-
-      {/* 11. GLOBAL BOTTOM NAVIGATION */}
-      <BottomNavigation />
     </div>
   );
 }
