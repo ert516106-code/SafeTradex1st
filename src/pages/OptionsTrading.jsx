@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Info, CandlestickChart, AreaChart } from 'lucide-react';
 import TradingViewWidget from "../components/trading/TradingViewWidget";
-import TradeModal from "../components/trading/TradeModal";
+import TradeModal from "../components/trading/TradingModal";
 import OpenOrders from "../components/trading/Openorders";
 import OrderHistory from "../components/trading/Orderhistory";
 
