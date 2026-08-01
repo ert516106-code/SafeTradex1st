@@ -1,29 +1,51 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DepositCoinLogo,
   DepositHeader,
   GlassCard,
-  getMockWalletAddress,
   getNetworksForCoin,
   useDeposit,
 } from "../../pages/Deposit";
+import { getWalletAddress } from "../../services/walletAddressService";
 
 export default function DepositDetails() {
   const navigate = useNavigate();
   const { selection } = useDeposit();
   const { coin, networkId } = selection;
   const [copied, setCopied] = useState(false);
+  const [wallet, setWallet] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(true);
 
   const network = useMemo(() => {
     if (!coin || !networkId) return null;
     return getNetworksForCoin(coin.symbol).find((n) => n.id === networkId) || null;
   }, [coin, networkId]);
 
-  const address = useMemo(() => {
-    if (!coin || !networkId) return "";
-    return getMockWalletAddress(coin.symbol, networkId);
+  useEffect(() => {
+    let active = true;
+
+    if (!coin || !networkId) {
+      setWallet(null);
+      setWalletLoading(false);
+      return;
+    }
+
+    setWalletLoading(true);
+    getWalletAddress(coin.symbol, networkId)
+      .then((data) => {
+        if (active) setWallet(data);
+      })
+      .finally(() => {
+        if (active) setWalletLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [coin, networkId]);
+
+  const address = wallet?.address || "";
 
   if (!coin || !network) {
     return (
@@ -40,6 +62,7 @@ export default function DepositDetails() {
   }
 
   const handleCopy = async () => {
+    if (!address) return;
     try {
       await navigator.clipboard.writeText(address);
       setCopied(true);
@@ -71,12 +94,32 @@ export default function DepositDetails() {
 
         <GlassCard className="flex flex-col gap-3 !p-4">
           <span className="text-[12.5px] font-semibold text-white/45">Wallet Address</span>
-          <div className="break-all rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-[13.5px] text-white">
-            {address}
-          </div>
+
+          {walletLoading ? (
+            <div className="break-all rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-[13.5px] text-white/40">
+              Loading address...
+            </div>
+          ) : address ? (
+            <>
+              <div className="break-all rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-[13.5px] text-white">
+                {address}
+              </div>
+              {wallet?.memo ? (
+                <div className="break-all rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-[13.5px] text-white/70">
+                  Memo: {wallet.memo}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div className="break-all rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-[13.5px] text-white/50">
+              Wallet address not configured.
+            </div>
+          )}
+
           <button
             onClick={handleCopy}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-3.5 text-[14.5px] font-bold text-white shadow-[0_10px_28px_-8px_rgba(124,58,237,0.6)] transition-all duration-150 hover:brightness-110 active:scale-[0.97]"
+            disabled={!address}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] py-3.5 text-[14.5px] font-bold text-white shadow-[0_10px_28px_-8px_rgba(124,58,237,0.6)] transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {copied ? (
               <>
@@ -114,7 +157,7 @@ export default function DepositDetails() {
             </li>
             <li className="flex gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#A78BFA]" />
-              This address is a placeholder and will be managed by the Admin Dashboard.
+              Deposit addresses are securely managed by the SafeTradeX Admin Dashboard.
             </li>
           </ul>
         </GlassCard>
