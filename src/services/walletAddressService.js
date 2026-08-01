@@ -1,89 +1,96 @@
 import { supabase } from "../lib/supabase";
 
-/**
- * Get a wallet address for a coin + network.
- * Example:
- * BTC + bitcoin
- * USDT + trc20
- */
+/*
+|--------------------------------------------------------------------------
+| Wallet Address Service
+|--------------------------------------------------------------------------
+| Reads deposit wallet addresses directly from Supabase.
+| This service is shared by SafeTradeX and the Admin Panel.
+|--------------------------------------------------------------------------
+*/
+
 export async function getWalletAddress(coin, network) {
   const { data, error } = await supabase
     .from("wallet_addresses")
     .select("*")
     .eq("coin", coin)
     .eq("network", network)
+    .eq("status", "active")
     .maybeSingle();
 
   if (error) {
-    throw error;
+    console.error(error);
+    return null;
   }
 
   return data;
 }
 
-/**
- * Create or update a wallet address.
- * Used by the Admin Panel.
- */
-export async function saveWalletAddress({
-  coin,
-  network,
-  address,
-  memo = "",
-  enabled = true,
-}) {
-  const { data, error } = await supabase
-    .from("wallet_addresses")
-    .upsert(
-      {
-        coin,
-        network,
-        address,
-        memo,
-        enabled,
-      },
-      {
-        onConflict: "coin,network",
-      }
-    )
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-/**
- * Load every configured wallet.
- */
-export async function getWalletAddresses() {
+export async function getAllWalletAddresses() {
   const { data, error } = await supabase
     .from("wallet_addresses")
     .select("*")
     .order("coin");
 
   if (error) {
-    throw error;
+    console.error(error);
+    return [];
   }
 
-  return data || [];
+  return data;
 }
 
-/**
- * Delete a wallet.
- */
+export async function updateWalletAddress({
+  id,
+  address,
+  memo,
+  status,
+}) {
+  const { data, error } = await supabase
+    .from("wallet_addresses")
+    .update({
+      address,
+      memo,
+      status,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function createWalletAddress({
+  coin,
+  network,
+  address,
+  memo = "",
+  status = "active",
+}) {
+  const { data, error } = await supabase
+    .from("wallet_addresses")
+    .insert({
+      coin,
+      network,
+      address,
+      memo,
+      status,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
 export async function deleteWalletAddress(id) {
   const { error } = await supabase
     .from("wallet_addresses")
     .delete()
     .eq("id", id);
 
-  if (error) {
-    throw error;
-  }
-
-  return true;
+  if (error) throw error;
 }
