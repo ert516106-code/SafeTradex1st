@@ -5,12 +5,11 @@ import { getMarketPrices } from '../../services/marketService';
 // Stablecoins pegged to $1 — used when the market feed doesn't return a price for them
 const STABLECOINS = ['USDT', 'USDC'];
 
+// Ordered strongest currency to weakest (by approximate value per unit)
 const CURRENCIES = [
-  { code: 'USD', symbol: '$' },
-  { code: 'EUR', symbol: '€' },
   { code: 'GBP', symbol: '£' },
-  { code: 'JPY', symbol: '¥' },
-  { code: 'PHP', symbol: '₱' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'USD', symbol: '$' },
 ];
 
 export default function PortfolioCard({ assets = [], loading = false }) {
@@ -104,174 +103,185 @@ export default function PortfolioCard({ assets = [], loading = false }) {
         boxShadow: "0 20px 40px -8px rgba(37, 99, 235, 0.45)",
         border: "1px solid rgba(255,255,255,0.08)",
         position: "relative",
-        overflow: "hidden",
       }}
     >
-      {/* Decorative background graphics */}
+      {/* Decorative background layer — clipped separately so it never clips real UI (like the dropdown) */}
       <div
         style={{
           position: "absolute",
-          right: -30,
-          top: -40,
-          width: 160,
-          height: 160,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 70%)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          left: -40,
-          bottom: -50,
-          width: 140,
-          height: 140,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%)",
-        }}
-      />
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          position: "relative",
-          zIndex: 1,
+          inset: 0,
+          borderRadius: 28,
+          overflow: "hidden",
+          pointerEvents: "none",
+          zIndex: 0,
         }}
       >
-        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", fontWeight: 500, letterSpacing: 0.3 }}>
-          Total Portfolio Value
-        </span>
+        <div
+          style={{
+            position: "absolute",
+            right: -30,
+            top: -40,
+            width: 160,
+            height: 160,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 70%)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: -40,
+            bottom: -50,
+            width: 140,
+            height: 140,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%)",
+          }}
+        />
+      </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* Currency switcher */}
-          <div ref={menuRef} style={{ position: "relative" }}>
-            <button
-              onClick={() => setCurrencyMenuOpen((v) => !v)}
-              style={{
-                background: "rgba(255,255,255,0.1)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 999,
-                padding: "6px 10px",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                cursor: "pointer",
-                color: "white",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              {currency}
-              <ChevronDown style={{ width: 12, height: 12 }} />
-            </button>
+      {/* Real content — sits above the clipped decorative layer, never clipped itself */}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", fontWeight: 500, letterSpacing: 0.3 }}>
+            Total Portfolio Value
+          </span>
 
-            {currencyMenuOpen && (
-              <div
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Currency switcher */}
+            <div ref={menuRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setCurrencyMenuOpen((v) => !v)}
                 style={{
-                  position: "absolute",
-                  right: 0,
-                  top: "calc(100% + 6px)",
-                  background: "#101a3d",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 14,
-                  padding: 6,
-                  minWidth: 96,
-                  boxShadow: "0 12px 24px rgba(0,0,0,0.4)",
-                  zIndex: 10,
+                  background: "rgba(255,255,255,0.1)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: 999,
+                  padding: "6px 10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  cursor: "pointer",
+                  color: "white",
+                  fontSize: 12,
+                  fontWeight: 600,
                 }}
               >
-                {CURRENCIES.map((c) => (
-                  <button
-                    key={c.code}
-                    onClick={() => {
-                      setCurrency(c.code);
-                      setCurrencyMenuOpen(false);
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      width: "100%",
-                      background: c.code === currency ? "rgba(59,130,246,0.25)" : "transparent",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "8px 10px",
-                      color: "white",
-                      fontSize: 13,
-                      fontWeight: c.code === currency ? 700 : 500,
-                      cursor: "pointer",
-                      textAlign: "left",
-                    }}
-                  >
-                    <span>{c.code}</span>
-                    <span style={{ color: "rgba(255,255,255,0.6)" }}>{c.symbol}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+                {currency}
+                <ChevronDown style={{ width: 12, height: 12 }} />
+              </button>
 
-          {/* Show/hide balance */}
-          <button
-            onClick={() => setShowBalance(!showBalance)}
-            style={{
-              background: "rgba(255,255,255,0.1)",
-              border: "none",
-              borderRadius: "50%",
-              width: 36,
-              height: 36,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              color: "white",
-            }}
-          >
-            {showBalance ? (
-              <Eye style={{ width: 18, height: 18 }} />
-            ) : (
-              <EyeOff style={{ width: 18, height: 18 }} />
-            )}
-          </button>
+              {currencyMenuOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "calc(100% + 6px)",
+                    background: "#101a3d",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 14,
+                    padding: 6,
+                    minWidth: 110,
+                    maxHeight: 220,
+                    overflowY: "auto",
+                    boxShadow: "0 12px 24px rgba(0,0,0,0.4)",
+                    zIndex: 20,
+                  }}
+                >
+                  {CURRENCIES.map((c) => (
+                    <button
+                      key={c.code}
+                      onClick={() => {
+                        setCurrency(c.code);
+                        setCurrencyMenuOpen(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        width: "100%",
+                        background: c.code === currency ? "rgba(59,130,246,0.25)" : "transparent",
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "8px 10px",
+                        color: "white",
+                        fontSize: 13,
+                        fontWeight: c.code === currency ? 700 : 500,
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span>{c.code}</span>
+                      <span style={{ color: "rgba(255,255,255,0.6)" }}>{c.symbol}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Show/hide balance */}
+            <button
+              onClick={() => setShowBalance(!showBalance)}
+              style={{
+                background: "rgba(255,255,255,0.1)",
+                border: "none",
+                borderRadius: "50%",
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "white",
+              }}
+            >
+              {showBalance ? (
+                <Eye style={{ width: 18, height: 18 }} />
+              ) : (
+                <EyeOff style={{ width: 18, height: 18 }} />
+              )}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div style={{ marginTop: 14, position: "relative", zIndex: 1 }}>
-        {isLoading ? (
-          <div style={{ height: 40, width: 200, background: "rgba(255,255,255,0.2)", borderRadius: 8, animation: "pulse 1.5s infinite" }} />
-        ) : (
-          <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: -0.5 }}>
-            {showBalance
-              ? `${currencyMeta.symbol}${displayValue.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`
-              : "****"}
-          </div>
-        )}
-      </div>
+        <div style={{ marginTop: 14 }}>
+          {isLoading ? (
+            <div style={{ height: 40, width: 200, background: "rgba(255,255,255,0.2)", borderRadius: 8, animation: "pulse 1.5s infinite" }} />
+          ) : (
+            <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: -0.5 }}>
+              {showBalance
+                ? `${currencyMeta.symbol}${displayValue.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`
+                : "****"}
+            </div>
+          )}
+        </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          marginTop: 12,
-          background: "rgba(16, 185, 129, 0.18)",
-          border: "1px solid rgba(16, 185, 129, 0.25)",
-          padding: "6px 14px",
-          borderRadius: 20,
-          width: "fit-content",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        <TrendingUp style={{ width: 14, height: 14, color: "#34d399" }} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#34d399" }}>
-          +{currencyMeta.symbol}0.00 (+0.00%) Today
-        </span>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            marginTop: 12,
+            background: "rgba(16, 185, 129, 0.18)",
+            border: "1px solid rgba(16, 185, 129, 0.25)",
+            padding: "6px 14px",
+            borderRadius: 20,
+            width: "fit-content",
+          }}
+        >
+          <TrendingUp style={{ width: 14, height: 14, color: "#34d399" }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#34d399" }}>
+            +{currencyMeta.symbol}0.00 (+0.00%) Today
+          </span>
+        </div>
       </div>
     </div>
   );
