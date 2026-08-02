@@ -2,7 +2,7 @@ import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMarket } from "../../contexts/MarketContext";
 
-export default function MarketOverview({ currency = 'USD', currencySymbol = '$', rate = 1 }) {
+export default function MarketOverview() {
   const navigate = useNavigate();
   const { coins, loading } = useMarket();
 
@@ -57,9 +57,6 @@ export default function MarketOverview({ currency = 'USD', currencySymbol = '$',
         </button>
       </div>
       {coins.slice(0, 5).map((coin) => {
-        // THE FIX: Use the actual 'rate' prop passed from Home.jsx
-        const convertedPrice = coin.price * rate;
-        
         return (
           <div
             key={coin.symbol}
@@ -115,8 +112,7 @@ export default function MarketOverview({ currency = 'USD', currencySymbol = '$',
                   fontWeight: 700,
                 }}
               >
-                {currencySymbol}
-                {convertedPrice.toLocaleString(undefined, {
+                ${coin.price.toLocaleString(undefined, {
                   maximumFractionDigits: 2,
                 })}
               </div>
