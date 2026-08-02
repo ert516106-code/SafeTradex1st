@@ -1,24 +1,22 @@
 import { Eye, EyeOff, TrendingUp, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { getMarketPrices } from '../../services/marketService';
+import { CURRENCIES } from '../../pages/Home';
 
 // Stablecoins pegged to $1 — used when the market feed doesn't return a price for them
 const STABLECOINS = ['USDT', 'USDC'];
 
-// Ordered strongest currency to weakest (by approximate value per unit)
-const CURRENCIES = [
-  { code: 'GBP', symbol: '£' },
-  { code: 'EUR', symbol: '€' },
-  { code: 'USD', symbol: '$' },
-];
-
-export default function PortfolioCard({ assets = [], loading = false }) {
+export default function PortfolioCard({
+  assets = [],
+  loading = false,
+  currency = 'USD',
+  currencySymbol = '$',
+  rate = 1,
+  onCurrencyChange,
+}) {
   const [showBalance, setShowBalance] = useState(true);
   const [livePrices, setLivePrices] = useState({});
   const [priceLoading, setPriceLoading] = useState(true);
-
-  const [currency, setCurrency] = useState('USD');
-  const [fxRates, setFxRates] = useState({});
   const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -42,24 +40,6 @@ export default function PortfolioCard({ assets = [], loading = false }) {
     return () => clearInterval(interval);
   }, []);
 
-  // --- FETCH LIVE FX RATES (USD base) ---
-  useEffect(() => {
-    async function fetchFxRates() {
-      try {
-        const symbols = CURRENCIES.filter(c => c.code !== 'USD').map(c => c.code).join(',');
-        const res = await fetch(`https://api.frankfurter.app/latest?from=USD&to=${symbols}`);
-        const data = await res.json();
-        setFxRates({ USD: 1, ...data.rates });
-      } catch (err) {
-        console.error("Failed to fetch FX rates:", err);
-        setFxRates({ USD: 1 });
-      }
-    }
-    fetchFxRates();
-    const interval = setInterval(fetchFxRates, 60 * 60 * 1000); // refresh hourly
-    return () => clearInterval(interval);
-  }, []);
-
   // Close the currency dropdown when clicking outside it
   useEffect(() => {
     function handleClickOutside(e) {
@@ -77,7 +57,7 @@ export default function PortfolioCard({ assets = [], loading = false }) {
     return 0;
   }
 
-  // --- CALCULATE TOTAL PORTFOLIO VALUE (in USD) ---
+  // --- CALCULATE TOTAL PORTFOLIO VALUE (in USD, then converted) ---
   let totalUsdValue = 0;
   if (assets && assets.length > 0 && !loading) {
     totalUsdValue = assets.reduce((sum, asset) => {
@@ -86,10 +66,7 @@ export default function PortfolioCard({ assets = [], loading = false }) {
     }, 0);
   }
 
-  const rate = fxRates[currency] || 1;
   const displayValue = totalUsdValue * rate;
-  const currencyMeta = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
-
   const isLoading = loading || priceLoading;
 
   return (
@@ -197,7 +174,7 @@ export default function PortfolioCard({ assets = [], loading = false }) {
                     <button
                       key={c.code}
                       onClick={() => {
-                        setCurrency(c.code);
+                        onCurrencyChange?.(c.code);
                         setCurrencyMenuOpen(false);
                       }}
                       style={{
@@ -255,7 +232,7 @@ export default function PortfolioCard({ assets = [], loading = false }) {
           ) : (
             <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: -0.5 }}>
               {showBalance
-                ? `${currencyMeta.symbol}${displayValue.toLocaleString(undefined, {
+                ? `${currencySymbol}${displayValue.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}`
@@ -279,7 +256,7 @@ export default function PortfolioCard({ assets = [], loading = false }) {
         >
           <TrendingUp style={{ width: 14, height: 14, color: "#34d399" }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: "#34d399" }}>
-            +{currencyMeta.symbol}0.00 (+0.00%) Today
+            +{currencySymbol}0.00 (+0.00%) Today
           </span>
         </div>
       </div>
