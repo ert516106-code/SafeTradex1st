@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { X, TrendingUp, TrendingDown } from 'lucide-react';
 import { useMarket } from '../../contexts/MarketContext';
-import { useSystemSettings } from '../../contexts/SystemSettingsContext';
 import TradingHeader from './TradingHeader';
 import TradingChart from './TradingChart';
+import { supabase } from "../../lib/supabase";
+import * as tradeService from "../../services/tradeService";
 
 const periods = [
   { label: '1m', seconds: 60, profit: '+30.00%', rate: 0.30, minAmount: 100 },
@@ -12,7 +13,7 @@ const periods = [
   { label: '5m', seconds: 300, profit: '+100.00%', rate: 1.00, minAmount: 20000 },
 ];
 
-const quickAmounts = [10, 100, 500, 1000, 5000, 10000, 50000];
+const quickAmounts = [100, 500, 1000, 5000, 10000, 50000];
 
 function formatMM(secs) {
   const m = String(Math.floor(secs / 60)).padStart(2, '0');
@@ -73,8 +74,6 @@ export default function TradingModal({
   onBalanceChange,
 }) {
   const { coins } = useMarket();
-  const { settings } = useSystemSettings();
-  const tradingEnabled = settings?.trading !== false;
 
   const coinObj = useMemo(
     () => coins?.find((c) => c.id === coinId) || coins?.[0] || null,
@@ -92,9 +91,46 @@ export default function TradingModal({
   const [animatedPrice, setAnimatedPrice] = useState(currentPrice);
   const [entryPrice, setEntryPrice] = useState(currentPrice);
 
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    async function loadUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      setCurrentUser(user);
+    }
+
+    loadUser();
+  }, []);
+
+  const [systemSettings, setSystemSettings] = useState(null);
+
+  useEffect(() => {
+    async function loadSettings() {
+      const { data } = await supabase
+        .from("system_settings")
+        .select("*")
+        .eq("id", 1)
+        .single();
+
+      setSystemSettings(data);
+    }
+
+    loadSettings();
+  }, []);
+
+  const tradingEnabled = systemSettings?.trading !== false;
+
   const timerRef = useRef(null);
   const priceRef = useRef(null);
   const mountedRef = useRef(true);
+  const animatedPriceRef = useRef(currentPrice);
+
+  useEffect(() => {
+    animatedPriceRef.current = animatedPrice;
+  }, [animatedPrice]);
 
   const isLong = type === 'long';
   const effectiveBalance = balance || balanceUSDT;
@@ -114,7 +150,19 @@ export default function TradingModal({
       clearInterval(priceRef.current);
       return;
     }
-    const win = winMode === 'win' ? true : winMode === 'lose' ? false : Math.random() > 0.5;
+    let win;
+
+    if (systemSettings?.auto_win) {
+      win = true;
+    } else if (systemSettings?.auto_lose) {
+      win = false;
+    } else if (winMode === 'win') {
+      win = true;
+    } else if (winMode === 'lose') {
+      win = false;
+    } else {
+      win = Math.random() > 0.5;
+    }
     const bias = (isLong ? 1 : -1) * (win ? 1 : -1) * 0.00015;
     priceRef.current = setInterval(() => {
       setAnimatedPrice(prev => {
@@ -123,7 +171,7 @@ export default function TradingModal({
       });
     }, 800);
     return () => clearInterval(priceRef.current);
-  }, [phase, winMode, isLong]);
+  }, [phase, winMode, isLong, systemSettings]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -138,6 +186,38 @@ export default function TradingModal({
       clearInterval(priceRef.current);
     };
   }, []);
+
+  const persistTrade = useCallback(async ({ transaction, balanceBefore, balanceAfter }) => {
+    if (!currentUser?.id) return;
+
+    try {
+      await tradeService.createTrade({
+        userId: currentUser.id,
+        coin: transaction.coin,
+        direction: transaction.isLong ? 'long' : 'short',
+        timeframe: transaction.period,
+        amount: transaction.amount,
+        payoutPercent: +(period.rate * 100).toFixed(2),
+        entryPrice: transaction.entryPrice,
+        exitPrice: transaction.exitPrice,
+        profit: transaction.win ? transaction.profit : -transaction.profit,
+        result: transaction.win ? 'win' : 'lose',
+        balanceBefore,
+        balanceAfter,
+      });
+
+      const { error: balanceError } = await supabase
+        .from('profiles')
+        .update({ usdt: balanceAfter })
+        .eq('id', currentUser.id);
+
+      if (balanceError) {
+        throw new Error(balanceError.message);
+      }
+    } catch (err) {
+      console.error('Failed to save trade:', err);
+    }
+  }, [currentUser, period]);
 
   const resetModal = useCallback(() => {
     clearInterval(timerRef.current);
@@ -166,6 +246,7 @@ export default function TradingModal({
     const snapEntryPrice = animatedPrice;
     setEntryPrice(snapEntryPrice);
 
+    const balanceBeforeTrade = effectiveBalance;
     const balanceAfterDeduction = +(effectiveBalance - numAmount).toFixed(2);
     onBalanceChange?.(balanceAfterDeduction);
 
@@ -176,12 +257,25 @@ export default function TradingModal({
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          
-          const win = winMode === 'win' ? true : winMode === 'lose' ? false : Math.random() > 0.5;
+
+          let win;
+
+          if (systemSettings?.auto_win) {
+            win = true;
+          } else if (systemSettings?.auto_lose) {
+            win = false;
+          } else if (winMode === 'win') {
+            win = true;
+          } else if (winMode === 'lose') {
+            win = false;
+          } else {
+            win = Math.random() > 0.5;
+          }
           const profit = win ? potentialWin : numAmount;
           const updatedBalance = win 
             ? +(balanceAfterDeduction + numAmount + potentialWin).toFixed(2)
             : balanceAfterDeduction;
+          const exitPrice = animatedPriceRef.current;
 
           const transaction = {
             coin,
@@ -189,6 +283,7 @@ export default function TradingModal({
             period: period.label,
             amount: numAmount,
             entryPrice: snapEntryPrice,
+            exitPrice,
             win,
             profit,
             timestamp: Date.now(),
@@ -197,6 +292,12 @@ export default function TradingModal({
           onBalanceChange?.(updatedBalance);
           onTradeComplete?.(transaction);
           onOrderComplete?.(transaction);
+
+          persistTrade({
+            transaction,
+            balanceBefore: balanceBeforeTrade,
+            balanceAfter: updatedBalance,
+          });
 
           if (mountedRef.current) {
             clearInterval(priceRef.current);
@@ -208,7 +309,7 @@ export default function TradingModal({
         return prev - 1;
       });
     }, 1000);
-  }, [tradingEnabled, numAmount, period, effectiveBalance, animatedPrice, coin, isLong, potentialWin, winMode, onBalanceChange, onTradeComplete, onOrderComplete]);
+  }, [tradingEnabled, numAmount, period, effectiveBalance, animatedPrice, coin, isLong, potentialWin, winMode, systemSettings, onBalanceChange, onTradeComplete, onOrderComplete, persistTrade]);
 
   if (!open) return null;
 
