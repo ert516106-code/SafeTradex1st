@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from "../lib/supabase";
 import GreetingHeader from "../components/home/GreetingHeader";
 import PortfolioCard from "../components/home/PortfolioCard";
+import RewardsCarousel from "../components/home/RewardsCarousel";
 import MarketOverview from "../components/home/MarketOverview";
 import BottomNavigation from "../components/layout/BottomNavigation";
 
@@ -9,7 +10,6 @@ export default function Home() {
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- FETCH ALL LIVE BALANCES FROM SUPABASE ---
   useEffect(() => {
     async function fetchLiveAssets() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -36,7 +36,6 @@ export default function Home() {
     }
     fetchLiveAssets();
     
-    // Refresh user balance every 10 seconds
     const interval = setInterval(fetchLiveAssets, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -59,7 +58,6 @@ export default function Home() {
         }}
       >
         <GreetingHeader />
-        {/* Pass USD hardcoded values */}
         <PortfolioCard
           assets={assets}
           loading={loading}
@@ -67,6 +65,7 @@ export default function Home() {
           currencySymbol="$"
           rate={1}
         />
+        <RewardsCarousel />
         <MarketOverview currency="USD" currencySymbol="$" rate={1} />
       </div>
       <BottomNavigation />
