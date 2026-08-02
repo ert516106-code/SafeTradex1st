@@ -5,9 +5,21 @@ import PortfolioCard from "../components/home/PortfolioCard";
 import MarketOverview from "../components/home/MarketOverview";
 import BottomNavigation from "../components/layout/BottomNavigation";
 
+// Ordered strongest currency to weakest (by approximate value per unit)
+export const CURRENCIES = [
+  { code: 'GBP', symbol: '£' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'USD', symbol: '$' },
+  { code: 'PHP', symbol: '₱' },
+  { code: 'JPY', symbol: '¥' },
+];
+
 export default function Home() {
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [currency, setCurrency] = useState('USD');
+  const [fxRates, setFxRates] = useState({ USD: 1 });
 
   // --- FETCH ALL LIVE BALANCES FROM SUPABASE ---
   useEffect(() => {
@@ -40,6 +52,27 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  // --- FETCH LIVE FX RATES (USD base) — shared across the whole page ---
+  useEffect(() => {
+    async function fetchFxRates() {
+      try {
+        const symbols = CURRENCIES.filter(c => c.code !== 'USD').map(c => c.code).join(',');
+        const res = await fetch(`https://api.frankfurter.app/latest?from=USD&to=${symbols}`);
+        const data = await res.json();
+        setFxRates({ USD: 1, ...data.rates });
+      } catch (err) {
+        console.error("Failed to fetch FX rates:", err);
+        setFxRates({ USD: 1 });
+      }
+    }
+    fetchFxRates();
+    const interval = setInterval(fetchFxRates, 60 * 60 * 1000); // refresh hourly
+    return () => clearInterval(interval);
+  }, []);
+
+  const currencyMeta = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
+  const rate = fxRates[currency] || 1;
+
   return (
     <div
       style={{
@@ -58,9 +91,15 @@ export default function Home() {
         }}
       >
         <GreetingHeader />
-        {/* Pass the full asset list so the card can total everything */}
-        <PortfolioCard assets={assets} loading={loading} />
-        <MarketOverview />
+        <PortfolioCard
+          assets={assets}
+          loading={loading}
+          currency={currency}
+          currencySymbol={currencyMeta.symbol}
+          rate={rate}
+          onCurrencyChange={setCurrency}
+        />
+        <MarketOverview currency={currency} currencySymbol={currencyMeta.symbol} rate={rate} />
       </div>
       <BottomNavigation />
     </div>
