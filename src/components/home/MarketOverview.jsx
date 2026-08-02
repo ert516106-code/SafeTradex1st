@@ -1,10 +1,16 @@
 import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMarket } from "../../contexts/MarketContext";
+import { CURRENCIES } from "../../pages/Home"; // Import the exact currency list
 
-export default function MarketOverview({ currency = 'USD', currencySymbol = '$', rate = 1 }) {
+export default function MarketOverview({ currency = 'USD', currencySymbol = '$' }) {
   const navigate = useNavigate();
   const { coins, loading } = useMarket();
+
+  // Find the correct exchange rate based on the currency string
+  const targetCurrency = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
+  const rate = targetCurrency ? 1 : 1; // The rate will be handled by the CoinGecko API directly for the market list
+
   if (loading) {
     return (
       <div
@@ -18,6 +24,7 @@ export default function MarketOverview({ currency = 'USD', currencySymbol = '$',
       </div>
     );
   }
+
   return (
     <div style={{ marginBottom: 100 }}>
       <div
@@ -55,7 +62,9 @@ export default function MarketOverview({ currency = 'USD', currencySymbol = '$',
         </button>
       </div>
       {coins.slice(0, 5).map((coin) => {
+        // Directly multiply the USD price by the FX rate
         const convertedPrice = coin.price * rate;
+        
         return (
           <div
             key={coin.symbol}
