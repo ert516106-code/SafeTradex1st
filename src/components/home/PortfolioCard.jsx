@@ -1,8 +1,43 @@
 import { Eye, EyeOff, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getMarketPrices } from '../../services/marketService';
 
-export default function PortfolioCard({ balance = 0, loading = false }) {
+export default function PortfolioCard({ assets = [], loading = false }) {
   const [showBalance, setShowBalance] = useState(true);
+  const [livePrices, setLivePrices] = useState({});
+  const [priceLoading, setPriceLoading] = useState(true);
+
+  // --- FETCH LIVE PRICES ---
+  useEffect(() => {
+    async function fetchLivePrices() {
+      try {
+        const marketData = await getMarketPrices();
+        const priceMap = {};
+        marketData.forEach(coin => {
+          priceMap[coin.symbol] = coin.price;
+        });
+        setLivePrices(priceMap);
+        setPriceLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch live prices for Portfolio:", err);
+      }
+    }
+    fetchLivePrices();
+    const interval = setInterval(fetchLivePrices, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // --- CALCULATE TOTAL PORTFOLIO VALUE ---
+  let totalUsdValue = 0;
+  if (assets && assets.length > 0 && !loading) {
+    totalUsdValue = assets.reduce((sum, asset) => {
+      // Use live price if available, otherwise fallback to the asset's passed price (or 0)
+      const price = livePrices[asset.id] || asset.price || 0;
+      return sum + (asset.balance || 0) * price;
+    }, 0);
+  }
+
+  const isLoading = loading || priceLoading;
 
   return (
     <div
@@ -66,11 +101,11 @@ export default function PortfolioCard({ balance = 0, loading = false }) {
       </div>
 
       <div style={{ marginTop: 12 }}>
-        {loading ? (
+        {isLoading ? (
           <div style={{ height: 40, width: 200, background: "rgba(255,255,255,0.2)", borderRadius: 8, animation: "pulse 1.5s infinite" }} />
         ) : (
           <div style={{ fontSize: 38, fontWeight: 700 }}>
-            {showBalance ? `$${balance.toLocaleString()}` : "****"}
+            {showBalance ? `$${totalUsdValue.toLocaleString()}` : "****"}
           </div>
         )}
       </div>
