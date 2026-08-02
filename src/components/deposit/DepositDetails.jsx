@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase"; // Added Supabase import
 import {
   DepositCoinLogo,
   DepositHeader,
@@ -22,6 +23,7 @@ export default function DepositDetails() {
     return getNetworksForCoin(coin.symbol).find((n) => n.id === networkId) || null;
   }, [coin, networkId]);
 
+  // --- UPDATED USE EFFECT TO FETCH USER ID AND WALLET ADDRESS ---
   useEffect(() => {
     let active = true;
 
@@ -32,13 +34,25 @@ export default function DepositDetails() {
     }
 
     setWalletLoading(true);
-    getWalletAddress(coin.symbol, networkId)
-      .then((data) => {
-        if (active) setWallet(data);
-      })
-      .finally(() => {
-        if (active) setWalletLoading(false);
-      });
+    
+    // 1. Get the logged-in user
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!active) return;
+      if (!user) {
+        setWallet(null);
+        setWalletLoading(false);
+        return;
+      }
+
+      // 2. Pass the user.id, coin symbol, and network ID to getWalletAddress
+      getWalletAddress(user.id, coin.symbol, networkId)
+        .then((data) => {
+          if (active) setWallet(data);
+        })
+        .finally(() => {
+          if (active) setWalletLoading(false);
+        });
+    });
 
     return () => {
       active = false;
