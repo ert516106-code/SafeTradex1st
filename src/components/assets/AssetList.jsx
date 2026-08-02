@@ -1,4 +1,7 @@
-// Crypto Logos (Hardcoded SVGs for reliability)
+import { useState, useEffect } from 'react';
+import { getMarketPrices } from '../../services/marketService';
+
+// --- SVG LOGOS (Static) ---
 const COIN_LOGOS = {
   BTC: <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#F7931A"/><path d="M22.3 13.3C22.5 11.5 21.1 10.3 19.1 9.6L19.9 6.4L18 6L17.2 9L15.6 8.6L16.4 5.7L14.5 5.3L13.7 8.1C13.4 8.1 13.1 8.1 12.8 8.1L11.4 8.3L10.8 8.5L10.5 8.6L11.3 5.7L8.2 5L7.4 8.2C7.4 8.2 8.2 8.2 8 8.3L3 9.2L3.6 11.7L4.8 12C5.5 12.2 5.7 12.7 5.6 13.3L4.4 18.5L3.7 21.2C3.7 21.5 3.7 22 4.1 22.3L4.3 22.4L2.8 22.7L1.8 25.9L11.7 24.5L10.9 27.4L12.8 27.8L13.6 25L15.3 25.4L14.5 28.2L16.4 28.6L17.2 25.7C19.4 25.4 21.6 25.2 23 23.8C24.5 22.2 25.2 19.6 22.8 17.8C24 17 24.5 15.4 22.3 13.3ZM19.2 19.5C18.5 21.2 15.2 20.5 13.3 20.1L14.3 16.6C16.2 17.1 19.9 17.8 19.2 19.5ZM20 14.4C19.4 16 16.7 15.4 15.2 15.1L16.1 12.1C17.6 12.4 20.6 12.8 20 14.4Z" fill="white"/></svg>,
   ETH: <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#627EEA"/><path d="M16 5L16 12.3L8.1 16.4L16 5Z" fill="#C0CBF6"/><path d="M16 5L23.9 16.4L16 12.3V5Z" fill="#FFFFFF"/><path d="M16 20.8L8.1 16.7L16 27.7V20.8Z" fill="#C0CBF6"/><path d="M16 20.8L23.9 16.7L16 27.7V20.8Z" fill="#FFFFFF"/><path d="M8.1 16.4L16 12.3L23.9 16.4L16 20.8L8.1 16.4Z" fill="#8196EE"/></svg>,
@@ -8,18 +11,34 @@ const COIN_LOGOS = {
   USDT: <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#26A17B"/><path d="M17.9 17.2V14.4H21.7V12.2H10.4V14.4H14.2V17.2H10.1C8.4 17.5 7.2 18.1 7.2 18.8H7.2V20.3H7.3C7.4 21.1 8.8 21.7 10.5 22V22.1H21.6V22C23.3 21.7 24.7 21.1 24.8 20.3V18.8C24.8 18.1 23.6 17.5 21.9 17.2H17.9Z" fill="#fff"/></svg>,
 };
 
-const MARKET_PRICES = {
-  BTC: 63437,
-  ETH: 1882.47,
-  SOL: 73.64,
-  XRP: 1.08,
-  BNB: 588.56,
-  USDT: 1.00,
-  USDC: 1.00,
-};
-
 export default function AssetList({ assets = [], loading = false }) {
-  if (loading) {
+  const [livePrices, setLivePrices] = useState({});
+  const [priceLoading, setPriceLoading] = useState(true);
+
+  // --- FETCH LIVE MARKET PRICES EVERY 15 SECONDS ---
+  useEffect(() => {
+    async function fetchLivePrices() {
+      try {
+        const marketData = await getMarketPrices();
+        // Convert array into object: { BTC: 63437, ETH: 1882... }
+        const priceMap = {};
+        marketData.forEach(coin => {
+          priceMap[coin.symbol] = coin.price;
+        });
+        setLivePrices(priceMap);
+        setPriceLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch live prices:", err);
+      }
+    }
+
+    fetchLivePrices(); // Run immediately
+    const interval = setInterval(fetchLivePrices, 15000); // Refresh every 15 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading || priceLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {[1, 2, 3].map(i => (
@@ -29,11 +48,11 @@ export default function AssetList({ assets = [], loading = false }) {
     );
   }
 
-  // 1. CALCULATE USD VALUE
+  // 1. CALCULATE LIVE USD VALUE
   const enrichedAssets = assets.map((asset) => ({
     ...asset,
-    price: MARKET_PRICES[asset.id] || 0,
-    usdValue: (asset.balance || 0) * (MARKET_PRICES[asset.id] || 0)
+    price: livePrices[asset.id] || 0,
+    usdValue: (asset.balance || 0) * (livePrices[asset.id] || 0)
   }));
 
   // 2. FILTER OUT ZERO BALANCES
@@ -79,7 +98,7 @@ export default function AssetList({ assets = [], loading = false }) {
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            {/* ACTUAL USD VALUE */}
+            {/* LIVE USD VALUE */}
             <div style={{ fontWeight: 600, fontSize: 16 }}>
               ${asset.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
