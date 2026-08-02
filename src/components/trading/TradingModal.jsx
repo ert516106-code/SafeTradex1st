@@ -95,22 +95,34 @@ export default function TradingModal({
   const [currentUser, setCurrentUser] = useState(null);
   const [realUsdtBalance, setRealUsdtBalance] = useState(0);
 
+  // --- THE FIX: Reload user AND balance every time modal opens ---
   useEffect(() => {
-    async function loadUser() {
+    async function loadUserAndBalance() {
+      if (!open) return;
+      
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
       
       if (user?.id) {
-        const { data: profile } = await supabase
+        // Force fetch the absolute latest balance from Supabase every time modal opens
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('usdt')
           .eq('id', user.id)
           .single();
-        if (profile) setRealUsdtBalance(profile.usdt || 0);
+          
+        if (!error && profile) {
+          const newBalance = profile.usdt || 0;
+          setRealUsdtBalance(newBalance);
+          // Also update the parent if it has a balance change function
+          if (onBalanceChange) {
+            onBalanceChange(newBalance);
+          }
+        }
       }
     }
-    loadUser();
-  }, []);
+    loadUserAndBalance();
+  }, [open, onBalanceChange]);
 
   useEffect(() => {
     if (open && currentPrice > 0) {
@@ -144,6 +156,7 @@ export default function TradingModal({
   }, [animatedPrice]);
 
   const isLong = type === 'long';
+  // Use Real Balance fetched from DB
   const effectiveBalance = realUsdtBalance || balance || balanceUSDT;
   
   const numAmount = parseFloat(amount) || 0;
