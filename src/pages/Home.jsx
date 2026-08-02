@@ -6,31 +6,37 @@ import MarketOverview from "../components/home/MarketOverview";
 import BottomNavigation from "../components/layout/BottomNavigation";
 
 export default function Home() {
-  const [totalBalance, setTotalBalance] = useState(0);
+  const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- FETCH LIVE BALANCE FROM SUPABASE ---
+  // --- FETCH ALL LIVE BALANCES FROM SUPABASE ---
   useEffect(() => {
-    async function fetchLiveBalance() {
+    async function fetchLiveAssets() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('usdt')
+          .select('btc, eth, sol, xrp, bnb, usdt, usdc')
           .eq('id', user.id)
           .single();
-        
+
         if (profile) {
-          setTotalBalance(profile.usdt || 0);
+          setAssets([
+            { id: 'BTC', balance: profile.btc || 0, symbol: 'BTC' },
+            { id: 'ETH', balance: profile.eth || 0, symbol: 'ETH' },
+            { id: 'SOL', balance: profile.sol || 0, symbol: 'SOL' },
+            { id: 'XRP', balance: profile.xrp || 0, symbol: 'XRP' },
+            { id: 'BNB', balance: profile.bnb || 0, symbol: 'BNB' },
+            { id: 'USDT', balance: profile.usdt || 0, symbol: 'USDT' },
+            { id: 'USDC', balance: profile.usdc || 0, symbol: 'USDC' },
+          ]);
         }
       }
       setLoading(false);
     }
-
-    fetchLiveBalance();
-
+    fetchLiveAssets();
     // Refresh every 10 seconds while on this page
-    const interval = setInterval(fetchLiveBalance, 10000);
+    const interval = setInterval(fetchLiveAssets, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -52,13 +58,10 @@ export default function Home() {
         }}
       >
         <GreetingHeader />
-
-        {/* Pass the live balance to the Portfolio Card */}
-        <PortfolioCard balance={totalBalance} loading={loading} />
-
+        {/* Pass the full asset list so the card can total everything */}
+        <PortfolioCard assets={assets} loading={loading} />
         <MarketOverview />
       </div>
-
       <BottomNavigation />
     </div>
   );
