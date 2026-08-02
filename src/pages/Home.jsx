@@ -45,26 +45,33 @@ export default function Home() {
       setLoading(false);
     }
     fetchLiveAssets();
-    // Refresh every 10 seconds while on this page
+    
+    // Refresh user balance every 10 seconds
     const interval = setInterval(fetchLiveAssets, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // --- FETCH LIVE FX RATES (USD base) — shared across the whole page ---
+  // --- FETCH LIVE FX RATES (Using CoinGecko) ---
   useEffect(() => {
     async function fetchFxRates() {
       try {
+        // Fetch rates from CoinGecko (which doesn't block domains)
         const symbols = CURRENCIES.filter(c => c.code !== 'USD').map(c => c.code).join(',');
-        const res = await fetch(`https://api.frankfurter.app/latest?from=USD&to=${symbols}`);
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=usd&vs_currencies=${symbols}`);
         const data = await res.json();
-        setFxRates({ USD: 1, ...data.rates });
+        
+        if (data && data.usd) {
+          setFxRates({ USD: 1, ...data.usd });
+        }
       } catch (err) {
         console.error("Failed to fetch FX rates:", err);
         setFxRates({ USD: 1 });
       }
     }
     fetchFxRates();
-    const interval = setInterval(fetchFxRates, 60 * 60 * 1000); // refresh hourly
+    
+    // Refresh rates every hour
+    const interval = setInterval(fetchFxRates, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
