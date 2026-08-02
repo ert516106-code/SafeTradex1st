@@ -5,19 +5,9 @@ import PortfolioCard from "../components/home/PortfolioCard";
 import MarketOverview from "../components/home/MarketOverview";
 import BottomNavigation from "../components/layout/BottomNavigation";
 
-// Ordered strongest currency to weakest (by approximate value per unit)
-export const CURRENCIES = [
-  { code: 'GBP', symbol: '£' },
-  { code: 'EUR', symbol: '€' },
-  { code: 'USD', symbol: '$' },
-];
-
 export default function Home() {
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [currency, setCurrency] = useState('USD');
-  const [fxRates, setFxRates] = useState({ USD: 1 });
 
   // --- FETCH ALL LIVE BALANCES FROM SUPABASE ---
   useEffect(() => {
@@ -51,33 +41,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // --- FETCH LIVE FX RATES (Using CoinGecko) ---
-  useEffect(() => {
-    async function fetchFxRates() {
-      try {
-        // Fetch rates from CoinGecko (which doesn't block domains)
-        const symbols = CURRENCIES.filter(c => c.code !== 'USD').map(c => c.code).join(',');
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=usd&vs_currencies=${symbols}`);
-        const data = await res.json();
-        
-        if (data && data.usd) {
-          setFxRates({ USD: 1, ...data.usd });
-        }
-      } catch (err) {
-        console.error("Failed to fetch FX rates:", err);
-        setFxRates({ USD: 1 });
-      }
-    }
-    fetchFxRates();
-    
-    // Refresh rates every hour
-    const interval = setInterval(fetchFxRates, 60 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const currencyMeta = CURRENCIES.find(c => c.code === currency) || CURRENCIES[0];
-  const rate = fxRates[currency] || 1;
-
   return (
     <div
       style={{
@@ -96,15 +59,15 @@ export default function Home() {
         }}
       >
         <GreetingHeader />
+        {/* Pass USD hardcoded values */}
         <PortfolioCard
           assets={assets}
           loading={loading}
-          currency={currency}
-          currencySymbol={currencyMeta.symbol}
-          rate={rate}
-          onCurrencyChange={setCurrency}
+          currency="USD"
+          currencySymbol="$"
+          rate={1}
         />
-        <MarketOverview currency={currency} currencySymbol={currencyMeta.symbol} rate={rate} />
+        <MarketOverview currency="USD" currencySymbol="$" rate={1} />
       </div>
       <BottomNavigation />
     </div>
