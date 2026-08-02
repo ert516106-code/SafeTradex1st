@@ -1,8 +1,42 @@
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getMarketPrices } from '../../services/marketService';
 
-export default function BalanceCard({ balance = 0, loading = false }) {
+export default function BalanceCard({ assets = [], loading = false }) {
   const [showBalance, setShowBalance] = useState(true);
+  const [livePrices, setLivePrices] = useState({});
+  const [priceLoading, setPriceLoading] = useState(true);
+
+  // --- FETCH LIVE PRICES ---
+  useEffect(() => {
+    async function fetchLivePrices() {
+      try {
+        const marketData = await getMarketPrices();
+        const priceMap = {};
+        marketData.forEach(coin => {
+          priceMap[coin.symbol] = coin.price;
+        });
+        setLivePrices(priceMap);
+        setPriceLoading(false);
+      } catch (err) {
+        console.error("Failed to fetch live prices for Balance:", err);
+      }
+    }
+    fetchLivePrices();
+    const interval = setInterval(fetchLivePrices, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // --- CALCULATE TOTAL PORTFOLIO VALUE ---
+  let totalUsdValue = 0;
+  if (assets && assets.length > 0 && !loading) {
+    totalUsdValue = assets.reduce((sum, asset) => {
+      const price = livePrices[asset.id] || asset.price || 0;
+      return sum + (asset.balance || 0) * price;
+    }, 0);
+  }
+
+  const isLoading = loading || priceLoading;
 
   return (
     <div
@@ -30,11 +64,11 @@ export default function BalanceCard({ balance = 0, loading = false }) {
       </div>
 
       <div style={{ margin: "8px 0 12px" }}>
-        {loading ? (
+        {isLoading ? (
           <div style={{ height: 36, width: 160, background: "rgba(255,255,255,0.2)", borderRadius: 6 }} />
         ) : (
           <div style={{ fontSize: 36, fontWeight: 700 }}>
-            {showBalance ? `$${balance.toLocaleString()}` : "****"}
+            {showBalance ? `$${totalUsdValue.toLocaleString()}` : "****"}
           </div>
         )}
       </div>
