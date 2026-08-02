@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   X,
@@ -19,11 +19,7 @@ import {
   KeyRound,
   ChevronRight,
 } from "lucide-react";
-
-function generateUid() {
-  const num = 600000 + Math.floor(Math.random() * 100000); // 600000–699999
-  return `SFT-${num}`;
-}
+import { supabase } from "../lib/supabase";
 
 const menuGroups = [
   {
@@ -55,13 +51,56 @@ const menuGroups = [
 export default function ProfileDrawer({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
-  const [uid] = useState(generateUid);
+  const [profile, setProfile] = useState(null);
+  const [authEmail, setAuthEmail] = useState("");
 
-  const username = "alexmorgan";
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let isMounted = true;
+
+    async function loadProfile() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || !isMounted) return;
+
+      setAuthEmail(user.email || "");
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, email, uid, account_id")
+        .eq("id", user.id)
+        .single();
+
+      if (!error && isMounted) {
+        setProfile(data);
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
+
+  const displayName =
+    profile?.full_name ||
+    profile?.email?.split("@")[0] ||
+    authEmail.split("@")[0] ||
+    "Loading...";
+
+  const displayEmail = profile?.email || authEmail || "Loading...";
+
+  const accountId =
+    profile?.account_id ||
+    (profile?.uid ? `STX${profile.uid}` : "Loading...");
 
   const handleCopyUid = () => {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(uid).catch(() => {});
+      navigator.clipboard.writeText(accountId).catch(() => {});
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
@@ -191,6 +230,14 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       fontWeight: 600,
       color: "#ffffff",
       margin: 0,
+    },
+    email: {
+      fontSize: "11.5px",
+      color: "#94a3b8",
+      margin: "3px 0 0",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
     },
     verifiedPill: {
       display: "inline-flex",
@@ -371,13 +418,14 @@ export default function ProfileDrawer({ isOpen, onClose }) {
               </div>
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={styles.username}>{username}</p>
+              <p style={styles.username}>{displayName}</p>
+              <p style={styles.email}>{displayEmail}</p>
               <span style={styles.verifiedPill}>
                 <ShieldCheck size={11} />
                 Verified
               </span>
               <button style={styles.uidRow} onClick={handleCopyUid}>
-                <span>UID {uid}</span>
+                <span>Account ID {accountId}</span>
                 {copied ? (
                   <Check size={13} color="#34d399" />
                 ) : (
