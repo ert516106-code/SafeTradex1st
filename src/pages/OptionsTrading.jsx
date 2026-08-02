@@ -90,163 +90,193 @@ export default function OptionsTrading() {
     <div 
       style={{
         minHeight: "100vh",
-        background: "radial-gradient(circle at top, #18254b 0%, #050816 70%)",
+        // Slightly softer gradient for better contrast with text
+        background: "radial-gradient(circle at 50% 0%, #1a2744 0%, #0b1026 100%)",
         boxSizing: "border-box",
       }}
-      className="text-slate-100 font-sans pb-28 relative flex flex-col items-center"
+      // Added 'select-none' to prevent accidental text highlighting while tapping
+      className="text-slate-100 font-sans pb-32 relative flex flex-col items-center select-none"
     >
-      <div className="w-full max-w-[520px] px-4 pt-4 flex flex-col relative">
+      {/* Container with extra padding for professional breathing room */}
+      <div className="w-full max-w-[520px] px-5 pt-4 flex flex-col relative">
         
-        {/* 1. TOP HEADER BAR (STAR, BELL, SHARE REMOVED) */}
-        <header className="py-3 flex items-center justify-between border-b border-slate-700/50">
+        {/* 1. TOP HEADER BAR */}
+        <header className="py-4 flex items-center justify-between border-b border-white/5">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="text-slate-200 hover:text-white p-1">
-              <ArrowLeft className="w-6 h-6" />
+            <button 
+              onClick={() => navigate(-1)} 
+              className="text-slate-400 hover:text-white transition-colors p-1.5 -ml-1.5 rounded-lg hover:bg-white/5"
+            >
+              <ArrowLeft className="w-5 h-5" />
             </button>
 
-            <button onClick={() => setShowPairs(!showPairs)} className="flex items-center gap-2.5 group">
-              <Menu className="w-6 h-6 text-slate-200" />
-              <div className="w-7 h-7 rounded-full bg-[#f7931a] text-black font-black text-xs flex items-center justify-center shadow-md">
-                ₿
+            <button 
+              onClick={() => setShowPairs(!showPairs)} 
+              className="flex items-center gap-3 group relative"
+            >
+              <Menu className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
+              
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#f7931a] text-black font-black text-xs flex items-center justify-center shadow-lg shadow-orange-900/20">
+                  ₿
+                </div>
+                <span className="text-xl font-bold text-white tracking-tight">{selected.symbol}</span>
+                <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-white transition-colors" />
               </div>
-              <span className="text-xl font-extrabold text-white tracking-tight">{selected.symbol}</span>
-              <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
             </button>
           </div>
         </header>
 
         {/* 2. PAIR SELECTION DROPDOWN */}
         {showPairs && (
-          <div className="mx-2 my-1 border border-slate-700/80 rounded-2xl shadow-2xl p-2 space-y-1 z-50 absolute left-4 right-4 top-16 bg-[#0c132c]/95 backdrop-blur-md">
+          <div className="mx-0 mt-3 border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1 z-50 absolute left-5 right-5 top-16 bg-[#131b36]/95 backdrop-blur-xl">
             {pairs.map((p) => (
               <button
                 key={p.symbol}
                 onClick={() => handleSelectPair(p)}
-                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold flex justify-between items-center transition-all ${
-                  selected.symbol === p.symbol ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800/60 text-slate-300'
+                className={`w-full text-left px-4 py-3.5 rounded-xl text-sm font-bold flex justify-between items-center transition-all ${
+                  selected.symbol === p.symbol 
+                    ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' 
+                    : 'hover:bg-white/5 text-slate-400 hover:text-white'
                 }`}
               >
                 <span className="text-base font-extrabold">{p.symbol}</span>
-                <span className="text-xs text-slate-400 font-semibold uppercase">{p.ticker}</span>
+                <span className="text-xs text-slate-500 font-semibold uppercase">{p.ticker}</span>
               </button>
             ))}
           </div>
         )}
 
         {/* 3. COINGECKO LIVE PRICE & MARKET STATS */}
-        <section className="py-4 flex items-center justify-between border-b border-slate-700/40">
+        <section className="py-6 flex items-start justify-between border-b border-white/5">
           <div>
-            <div className="text-3xl font-black text-white tracking-tight leading-none">
+            <div className="text-4xl font-black text-white tracking-tight leading-none">
               {marketData.loading 
-                ? "..." 
+                ? "---" 
                 : `$${marketData.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </div>
-            <div className={`text-xs font-extrabold mt-1.5 flex items-center gap-1.5 ${marketData.change24h >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
-              <span>{marketData.change24h >= 0 ? '+' : ''}{marketData.change24h.toFixed(2)}%</span>
-              <span className="text-slate-400 font-medium">24H</span>
+            <div className={`text-sm font-bold mt-2 flex items-center gap-2 ${marketData.change24h >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
+              <span className="bg-white/10 px-1.5 py-0.5 rounded-md text-xs">
+                {marketData.change24h >= 0 ? '▲' : '▼'} {Math.abs(marketData.change24h).toFixed(2)}%
+              </span>
+              <span className="text-slate-500 font-medium text-xs uppercase tracking-wider">24h</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-right text-xs font-semibold">
-            <span className="text-slate-400">High</span>
-            <span className="text-emerald-400 font-extrabold">
-              {marketData.loading ? "..." : `$${marketData.high24h.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            </span>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-right text-xs font-semibold">
+            <div className="flex flex-col">
+              <span className="text-slate-500 mb-0.5">High</span>
+              <span className="text-emerald-400 font-bold">
+                {marketData.loading ? "---" : `$${marketData.high24h.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              </span>
+            </div>
             
-            <span className="text-slate-400">Low</span>
-            <span className="text-rose-500 font-extrabold">
-              {marketData.loading ? "..." : `$${marketData.low24h.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            </span>
+            <div className="flex flex-col">
+              <span className="text-slate-500 mb-0.5">Low</span>
+              <span className="text-rose-400 font-bold">
+                {marketData.loading ? "---" : `$${marketData.low24h.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              </span>
+            </div>
             
-            <span className="text-slate-400">24H Vol</span>
-            <span className="text-white font-extrabold">
-              {marketData.loading ? "..." : `$${(marketData.volume24h / 1e6).toFixed(2)}M`}
-            </span>
+            <div className="flex flex-col">
+              <span className="text-slate-500 mb-0.5">Vol</span>
+              <span className="text-white font-bold">
+                {marketData.loading ? "---" : `$${(marketData.volume24h / 1e6).toFixed(2)}M`}
+              </span>
+            </div>
           </div>
         </section>
 
         {/* 4. TIMEFRAME SELECTOR */}
-        <div className="py-2.5 flex items-center justify-between border-b border-slate-700/40">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className="py-3 flex items-center justify-between border-b border-white/5">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
             {timeframes.map((t) => (
               <button
                 key={t}
                 onClick={() => setActiveTimeframe(t)}
-                className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   activeTimeframe === t 
-                    ? 'bg-blue-600 text-white shadow-md' 
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white/10 text-white' 
+                    : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
                 {t}
               </button>
             ))}
           </div>
-          <button className="text-slate-400 hover:text-white pl-2">
+          <button className="text-slate-500 hover:text-white p-1.5 transition-colors">
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
 
         {/* 5. TRADINGVIEW CHART CONTAINER */}
-        <div className="w-full my-2 rounded-2xl overflow-hidden border border-slate-700/50 bg-[#070b19] shadow-xl relative" style={{ height: 340 }}>
+        {/* Increased height slightly for better data visibility */}
+        <div className="w-full my-3 rounded-2xl overflow-hidden border border-white/5 bg-[#070b19] shadow-xl relative" style={{ height: 360 }}>
           <TradingViewWidget 
             symbol={selected.tv} 
-            height={340} 
+            height={360} 
             interval={activeTimeframe} 
             theme="dark" 
           />
         </div>
 
         {/* 6. TECHNICAL INDICATORS */}
-        <div className="py-2 flex items-center justify-between text-xs font-bold border-b border-slate-700/40">
-          <div className="flex items-center gap-3 text-slate-400">
+        <div className="py-2.5 flex items-center justify-between text-xs font-bold border-b border-white/5">
+          <div className="flex items-center gap-1.5 text-slate-500">
             {['MA', 'EMA', 'BOLL', 'MACD', 'RSI', 'WR'].map((i) => (
               <button 
                 key={i} 
                 onClick={() => setActiveIndicator(i)}
-                className={`px-2 py-1 rounded-md transition-colors ${activeIndicator === i ? 'bg-blue-600 text-white font-black' : 'hover:text-white'}`}
+                className={`px-2.5 py-1.5 rounded-md transition-colors ${
+                  activeIndicator === i 
+                    ? 'bg-blue-600/20 text-blue-300' 
+                    : 'hover:text-white'
+                }`}
               >
                 {i}
               </button>
             ))}
           </div>
-          <button className="text-slate-400 hover:text-white p-1"><Sliders className="w-4 h-4" /></button>
+          <button className="text-slate-500 hover:text-white p-1.5 transition-colors">
+            <Sliders className="w-4 h-4" />
+          </button>
         </div>
 
         {/* 7. ORDERS & HISTORY TABS */}
-        <div className="flex gap-8 border-b border-slate-700/50 text-sm font-extrabold pt-4">
+        <div className="flex gap-8 border-b border-white/5 text-sm font-bold pt-6">
           <button
             onClick={() => setActiveTab('open')}
-            className={`pb-2.5 border-b-2 transition-all ${
+            className={`pb-3 border-b-2 transition-all ${
               activeTab === 'open' 
-                ? 'text-blue-400 border-blue-500' 
-                : 'text-slate-400 border-transparent hover:text-slate-200'
+                ? 'text-white border-white' 
+                : 'text-slate-500 border-transparent hover:text-slate-300'
             }`}
           >
-            Open Orders (0)
+            Open Orders
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`pb-2.5 border-b-2 transition-all ${
+            className={`pb-3 border-b-2 transition-all ${
               activeTab === 'history' 
-                ? 'text-blue-400 border-blue-500' 
-                : 'text-slate-400 border-transparent hover:text-slate-200'
+                ? 'text-white border-white' 
+                : 'text-slate-500 border-transparent hover:text-slate-300'
             }`}
           >
             Order History
           </button>
         </div>
 
-        {/* 8. TAB CONTENT / EMPTY STATE */}
-        <div className="py-10 flex-1 flex flex-col justify-center">
+        {/* 8. TAB CONTENT / EMPTY STATE WITH GLASSMORPHISM */}
+        <div className="py-8 flex-1 flex flex-col justify-center min-h-[180px]">
           {activeTab === 'open' ? (
-            <div className="flex flex-col items-center justify-center text-center py-6">
-              <div className="relative mb-3 text-slate-400">
-                <FileText className="w-12 h-12 stroke-1" />
-                <Search className="w-5 h-5 absolute -bottom-1 -right-1 stroke-2 text-slate-300" />
+            // Created a professional glassmorphism card for empty state
+            <div className="flex flex-col items-center justify-center text-center py-10 px-6 rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm">
+              <div className="relative mb-4 text-slate-600">
+                <FileText className="w-14 h-14 stroke-1" />
+                <Search className="w-5 h-5 absolute -bottom-1 -right-1 stroke-2 text-slate-500" />
               </div>
-              <p className="text-sm font-extrabold text-slate-200">No open orders</p>
-              <p className="text-xs text-slate-400 mt-1">Place a trade to see it here</p>
+              <p className="text-base font-bold text-slate-300">No Open Orders</p>
+              <p className="text-sm text-slate-500 mt-1.5 font-medium">Your active positions will appear here.</p>
             </div>
           ) : (
             orderList
@@ -254,30 +284,31 @@ export default function OptionsTrading() {
         </div>
       </div>
 
-      {/* 9. FLOATING ACTION BUTTONS AT THE BOTTOM (POSITIONED FOR CLEAN DISPLAY WITHOUT NAV BAR) */}
-      <div className="fixed bottom-6 left-0 right-0 z-40 px-4 flex justify-center pointer-events-none">
+      {/* 9. FLOATING ACTION BUTTONS AT THE BOTTOM */}
+      {/* Increased bottom padding and added an inner container for separation */}
+      <div className="fixed bottom-8 left-0 right-0 z-40 px-5 flex justify-center pointer-events-none">
         <div className="w-full max-w-[520px] flex gap-3 pointer-events-auto">
           <button
             onClick={() => setModal({ open: true, type: 'long' })}
-            className="flex-1 py-3.5 rounded-2xl bg-[#10b981] hover:bg-emerald-500 active:scale-[0.98] text-white flex flex-col items-center justify-center transition-all shadow-xl shadow-emerald-950/50 cursor-pointer"
+            className="flex-1 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.97] text-white flex flex-col items-center justify-center transition-all shadow-xl shadow-emerald-900/60 cursor-pointer"
           >
-            <span className="text-sm font-black tracking-wide flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 stroke-[3]" /> BUY LONG
+            <span className="text-sm font-black tracking-wide flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 stroke-[2.5]" /> Buy Long
             </span>
-            <span className="text-xs font-bold opacity-90 mt-0.5">
-              {marketData.loading ? "..." : marketData.price.toFixed(2)}
+            <span className="text-[11px] font-bold opacity-90 mt-1">
+              {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
             </span>
           </button>
 
           <button
             onClick={() => setModal({ open: true, type: 'short' })}
-            className="flex-1 py-3.5 rounded-2xl bg-[#f43f5e] hover:bg-rose-500 active:scale-[0.98] text-white flex flex-col items-center justify-center transition-all shadow-xl shadow-rose-950/50 cursor-pointer"
+            className="flex-1 py-4 rounded-2xl bg-rose-500 hover:bg-rose-400 active:scale-[0.97] text-white flex flex-col items-center justify-center transition-all shadow-xl shadow-rose-900/60 cursor-pointer"
           >
-            <span className="text-sm font-black tracking-wide flex items-center gap-1.5">
-              <TrendingDown className="w-4 h-4 stroke-[3]" /> SELL SHORT
+            <span className="text-sm font-black tracking-wide flex items-center gap-2">
+              <TrendingDown className="w-4 h-4 stroke-[2.5]" /> Sell Short
             </span>
-            <span className="text-xs font-bold opacity-90 mt-0.5">
-              {marketData.loading ? "..." : marketData.price.toFixed(2)}
+            <span className="text-[11px] font-bold opacity-90 mt-1">
+              {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
             </span>
           </button>
         </div>
