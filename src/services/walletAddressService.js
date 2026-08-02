@@ -9,23 +9,27 @@ import { supabase } from "../lib/supabase";
 |--------------------------------------------------------------------------
 */
 
-export async function getWalletAddress(coin, network) {
+// THE FIX: We MUST pass the user ID to find their specific wallet!
+export async function getWalletAddress(userId, coin, network) {
+  // 1. Try to find the user's specific address for this coin/network
   const { data, error } = await supabase
     .from("wallet_addresses")
     .select("*")
-    .eq("coin", coin)
+    .eq("user_id", userId)
     .eq("network", network)
     .eq("status", "active")
     .maybeSingle();
 
   if (error) {
-    console.error(error);
+    console.error("Error fetching wallet address:", error);
     return null;
   }
 
+  // If no address is assigned to the user yet, return null
   return data;
 }
 
+// The rest of your file stays exactly the same!
 export async function getAllWalletAddresses() {
   const { data, error } = await supabase
     .from("wallet_addresses")
