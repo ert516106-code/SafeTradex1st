@@ -10,8 +10,6 @@ export const CURRENCIES = [
   { code: 'GBP', symbol: '£' },
   { code: 'EUR', symbol: '€' },
   { code: 'USD', symbol: '$' },
-  { code: 'PHP', symbol: '₱' },
-  { code: 'JPY', symbol: '¥' },
 ];
 
 export default function Home() {
