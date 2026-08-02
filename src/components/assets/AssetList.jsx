@@ -15,6 +15,9 @@ const COIN_COLORS = {
   USDC: '#2775CA',
 };
 
+// Stablecoins pegged to $1 — used when the market feed doesn't return a price for them
+const STABLECOINS = ['USDT', 'USDC'];
+
 function CoinIcon({ id }) {
   const [failed, setFailed] = useState(false);
 
@@ -88,12 +91,22 @@ export default function AssetList({ assets = [], loading = false }) {
     );
   }
 
+  // Helper: stablecoins default to $1 if the market feed has no price for them
+  function getPrice(id) {
+    if (livePrices[id] != null) return livePrices[id];
+    if (STABLECOINS.includes(id)) return 1;
+    return 0;
+  }
+
   // 1. CALCULATE LIVE USD VALUE
-  const enrichedAssets = assets.map((asset) => ({
-    ...asset,
-    price: livePrices[asset.id] || 0,
-    usdValue: (asset.balance || 0) * (livePrices[asset.id] || 0)
-  }));
+  const enrichedAssets = assets.map((asset) => {
+    const price = getPrice(asset.id);
+    return {
+      ...asset,
+      price,
+      usdValue: (asset.balance || 0) * price,
+    };
+  });
 
   // 2. FILTER OUT ZERO BALANCES
   const visibleAssets = enrichedAssets.filter(a => a.balance > 0);
