@@ -1,12 +1,10 @@
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getMarketPrices } from '../../services/marketService';
-
 export default function BalanceCard({ assets = [], loading = false }) {
   const [showBalance, setShowBalance] = useState(true);
   const [livePrices, setLivePrices] = useState({});
   const [priceLoading, setPriceLoading] = useState(true);
-
   // --- FETCH LIVE PRICES ---
   useEffect(() => {
     async function fetchLivePrices() {
@@ -26,18 +24,13 @@ export default function BalanceCard({ assets = [], loading = false }) {
     const interval = setInterval(fetchLivePrices, 15000);
     return () => clearInterval(interval);
   }, []);
-
-  // --- CALCULATE TOTAL PORTFOLIO VALUE ---
-  let totalUsdValue = 0;
+  // --- USDT-ONLY BALANCE (not the full portfolio) ---
+  let usdtBalance = 0;
   if (assets && assets.length > 0 && !loading) {
-    totalUsdValue = assets.reduce((sum, asset) => {
-      const price = livePrices[asset.id] || asset.price || 0;
-      return sum + (asset.balance || 0) * price;
-    }, 0);
+    const usdtAsset = assets.find((asset) => asset.id === 'USDT');
+    usdtBalance = usdtAsset?.balance || 0;
   }
-
   const isLoading = loading || priceLoading;
-
   return (
     <div
       style={{
@@ -62,17 +55,15 @@ export default function BalanceCard({ assets = [], loading = false }) {
           <RefreshCw style={{ width: 16, height: 16, color: "rgba(255,255,255,0.6)" }} />
         </div>
       </div>
-
       <div style={{ margin: "8px 0 12px" }}>
         {isLoading ? (
           <div style={{ height: 36, width: 160, background: "rgba(255,255,255,0.2)", borderRadius: 6 }} />
         ) : (
           <div style={{ fontSize: 36, fontWeight: 700 }}>
-            {showBalance ? `$${totalUsdValue.toLocaleString()}` : "****"}
+            {showBalance ? `$${usdtBalance.toLocaleString()}` : "****"}
           </div>
         )}
       </div>
-
       <div style={{ color: "#34d399", fontSize: 15, fontWeight: 600 }}>
         Today's Profit +0.00
       </div>
