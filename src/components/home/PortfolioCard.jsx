@@ -1,24 +1,17 @@
-import { Eye, EyeOff, TrendingUp, ChevronDown } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { Eye, EyeOff, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { getMarketPrices } from '../../services/marketService';
-import { CURRENCIES } from '../../pages/Home';
 
-// Stablecoins pegged to $1 — used when the market feed doesn't return a price for them
+// Stablecoins pegged to $1
 const STABLECOINS = ['USDT', 'USDC'];
 
 export default function PortfolioCard({
   assets = [],
   loading = false,
-  currency = 'USD',
-  currencySymbol = '$',
-  rate = 1,
-  onCurrencyChange,
 }) {
   const [showBalance, setShowBalance] = useState(true);
   const [livePrices, setLivePrices] = useState({});
   const [priceLoading, setPriceLoading] = useState(true);
-  const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
-  const menuRef = useRef(null);
 
   // --- FETCH LIVE CRYPTO PRICES ---
   useEffect(() => {
@@ -40,24 +33,13 @@ export default function PortfolioCard({
     return () => clearInterval(interval);
   }, []);
 
-  // Close the currency dropdown when clicking outside it
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setCurrencyMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   function getPrice(id) {
     if (livePrices[id] != null) return livePrices[id];
     if (STABLECOINS.includes(id)) return 1;
     return 0;
   }
 
-  // --- CALCULATE TOTAL PORTFOLIO VALUE (in USD, then converted) ---
+  // --- CALCULATE TOTAL PORTFOLIO VALUE (USD) ---
   let totalUsdValue = 0;
   if (assets && assets.length > 0 && !loading) {
     totalUsdValue = assets.reduce((sum, asset) => {
@@ -66,7 +48,6 @@ export default function PortfolioCard({
     }, 0);
   }
 
-  const displayValue = totalUsdValue * rate;
   const isLoading = loading || priceLoading;
 
   return (
@@ -82,7 +63,7 @@ export default function PortfolioCard({
         position: "relative",
       }}
     >
-      {/* Decorative background layer — clipped separately so it never clips real UI (like the dropdown) */}
+      {/* Decorative background layers */}
       <div
         style={{
           position: "absolute",
@@ -117,7 +98,7 @@ export default function PortfolioCard({
         />
       </div>
 
-      {/* Real content — sits above the clipped decorative layer, never clipped itself */}
+      {/* Real content */}
       <div style={{ position: "relative", zIndex: 1 }}>
         <div
           style={{
@@ -130,100 +111,27 @@ export default function PortfolioCard({
             Total Portfolio Value
           </span>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* Currency switcher */}
-            <div ref={menuRef} style={{ position: "relative" }}>
-              <button
-                onClick={() => setCurrencyMenuOpen((v) => !v)}
-                style={{
-                  background: "rgba(255,255,255,0.1)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 999,
-                  padding: "6px 10px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  cursor: "pointer",
-                  color: "white",
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}
-              >
-                {currency}
-                <ChevronDown style={{ width: 12, height: 12 }} />
-              </button>
-
-              {currencyMenuOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: "calc(100% + 6px)",
-                    background: "#101a3d",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 14,
-                    padding: 6,
-                    minWidth: 110,
-                    maxHeight: 220,
-                    overflowY: "auto",
-                    boxShadow: "0 12px 24px rgba(0,0,0,0.4)",
-                    zIndex: 20,
-                  }}
-                >
-                  {CURRENCIES.map((c) => (
-                    <button
-                      key={c.code}
-                      onClick={() => {
-                        onCurrencyChange?.(c.code);
-                        setCurrencyMenuOpen(false);
-                      }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        width: "100%",
-                        background: c.code === currency ? "rgba(59,130,246,0.25)" : "transparent",
-                        border: "none",
-                        borderRadius: 8,
-                        padding: "8px 10px",
-                        color: "white",
-                        fontSize: 13,
-                        fontWeight: c.code === currency ? 700 : 500,
-                        cursor: "pointer",
-                        textAlign: "left",
-                      }}
-                    >
-                      <span>{c.code}</span>
-                      <span style={{ color: "rgba(255,255,255,0.6)" }}>{c.symbol}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Show/hide balance */}
-            <button
-              onClick={() => setShowBalance(!showBalance)}
-              style={{
-                background: "rgba(255,255,255,0.1)",
-                border: "none",
-                borderRadius: "50%",
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: "white",
-              }}
-            >
-              {showBalance ? (
-                <Eye style={{ width: 18, height: 18 }} />
-              ) : (
-                <EyeOff style={{ width: 18, height: 18 }} />
-              )}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowBalance(!showBalance)}
+            style={{
+              background: "rgba(255,255,255,0.1)",
+              border: "none",
+              borderRadius: "50%",
+              width: 36,
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "white",
+            }}
+          >
+            {showBalance ? (
+              <Eye style={{ width: 18, height: 18 }} />
+            ) : (
+              <EyeOff style={{ width: 18, height: 18 }} />
+            )}
+          </button>
         </div>
 
         <div style={{ marginTop: 14 }}>
@@ -232,7 +140,7 @@ export default function PortfolioCard({
           ) : (
             <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: -0.5 }}>
               {showBalance
-                ? `${currencySymbol}${displayValue.toLocaleString(undefined, {
+                ? `$${totalUsdValue.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}`
@@ -256,7 +164,7 @@ export default function PortfolioCard({
         >
           <TrendingUp style={{ width: 14, height: 14, color: "#34d399" }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: "#34d399" }}>
-            +{currencySymbol}0.00 (+0.00%) Today
+            +$0.00 (+0.00%) Today
           </span>
         </div>
       </div>
