@@ -2,11 +2,9 @@ import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMarket } from "../../contexts/MarketContext";
 
-export default function MarketOverview() {
+export default function MarketOverview({ currency = 'USD', currencySymbol = '$', rate = 1 }) {
   const navigate = useNavigate();
-
   const { coins, loading } = useMarket();
-
   if (loading) {
     return (
       <div
@@ -20,7 +18,6 @@ export default function MarketOverview() {
       </div>
     );
   }
-
   return (
     <div style={{ marginBottom: 100 }}>
       <div
@@ -41,7 +38,6 @@ export default function MarketOverview() {
         >
           Markets
         </h2>
-
         <button
           onClick={() => navigate("/markets")}
           style={{
@@ -58,96 +54,93 @@ export default function MarketOverview() {
           <ChevronRight size={18} />
         </button>
       </div>
-
-      {coins.slice(0, 5).map((coin) => (
-        <div
-          key={coin.symbol}
-          onClick={() => navigate(`/coin/${coin.id}`)}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: 16,
-            marginBottom: 14,
-            borderRadius: 18,
-            background: "#101933",
-            border: "1px solid #24304d",
-            cursor: "pointer",
-          }}
-        >
+      {coins.slice(0, 5).map((coin) => {
+        const convertedPrice = coin.price * rate;
+        return (
           <div
+            key={coin.symbol}
+            onClick={() => navigate(`/coin/${coin.id}`)}
             style={{
               display: "flex",
+              justifyContent: "space-between",
               alignItems: "center",
-              gap: 14,
+              padding: 16,
+              marginBottom: 14,
+              borderRadius: 18,
+              background: "#101933",
+              border: "1px solid #24304d",
+              cursor: "pointer",
             }}
           >
-            <img
-              src={coin.logo}
-              alt={coin.symbol}
-              width={42}
-              height={42}
-            />
-
-            <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+              }}
+            >
+              <img
+                src={coin.logo}
+                alt={coin.symbol}
+                width={42}
+                height={42}
+              />
+              <div>
+                <div
+                  style={{
+                    color: "#fff",
+                    fontWeight: 700,
+                  }}
+                >
+                  {coin.name}
+                </div>
+                <div
+                  style={{
+                    color: "#94A3B8",
+                    fontSize: 13,
+                  }}
+                >
+                  {coin.symbol}
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
               <div
                 style={{
                   color: "#fff",
                   fontWeight: 700,
                 }}
               >
-                {coin.name}
+                {currencySymbol}
+                {convertedPrice.toLocaleString(undefined, {
+                  maximumFractionDigits: 2,
+                })}
               </div>
-
               <div
                 style={{
-                  color: "#94A3B8",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  gap: 4,
+                  marginTop: 4,
+                  color:
+                    coin.change >= 0
+                      ? "#22C55E"
+                      : "#EF4444",
                   fontSize: 13,
                 }}
               >
-                {coin.symbol}
+                {coin.change >= 0 ? (
+                  <TrendingUp size={14} />
+                ) : (
+                  <TrendingDown size={14} />
+                )}
+                {coin.change.toFixed(2)}%
               </div>
             </div>
           </div>
-
-          <div style={{ textAlign: "right" }}>
-            <div
-              style={{
-                color: "#fff",
-                fontWeight: 700,
-              }}
-            >
-              $
-              {coin.price.toLocaleString(undefined, {
-                maximumFractionDigits: 2,
-              })}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-                gap: 4,
-                marginTop: 4,
-                color:
-                  coin.change >= 0
-                    ? "#22C55E"
-                    : "#EF4444",
-                fontSize: 13,
-              }}
-            >
-              {coin.change >= 0 ? (
-                <TrendingUp size={14} />
-              ) : (
-                <TrendingDown size={14} />
-              )}
-
-              {coin.change.toFixed(2)}%
-            </div>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
