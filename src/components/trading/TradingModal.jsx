@@ -74,7 +74,6 @@ export default function TradingModal({
 }) {
   const { coins } = useMarket();
 
-  // --- THE FIX: calculate coinObj inside useEffect so it updates when coins loads ---
   const coinObj = useMemo(() => {
     if (coins && coins.length > 0) {
       return coins.find((c) => c.id === coinId) || coins[0] || null;
@@ -83,7 +82,6 @@ export default function TradingModal({
   }, [coins, coinId]);
 
   const coin = typeof coinProp === 'string' ? coinProp : coinObj?.symbol || 'BTC';
-  // Use coinObj.price if available, otherwise fallback to the prop, otherwise 0
   const currentPrice = currentPriceProp || coinObj?.price || 0;
 
   const [period, setPeriod] = useState(periods[0]);
@@ -114,7 +112,6 @@ export default function TradingModal({
     loadUser();
   }, []);
 
-  // --- THE FIX: Update animated price whenever currentPrice or coins update ---
   useEffect(() => {
     if (open && currentPrice > 0) {
       setAnimatedPrice(currentPrice);
@@ -147,7 +144,6 @@ export default function TradingModal({
   }, [animatedPrice]);
 
   const isLong = type === 'long';
-  // Use Real Balance fetched from DB
   const effectiveBalance = realUsdtBalance || balance || balanceUSDT;
   
   const numAmount = parseFloat(amount) || 0;
@@ -155,7 +151,6 @@ export default function TradingModal({
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
   const potentialWin = useMemo(() => +(numAmount * period.rate).toFixed(2), [numAmount, period]);
 
-  // Price animation during countdown
   useEffect(() => {
     if (phase !== 'countdown') {
       clearInterval(priceRef.current);
@@ -237,9 +232,6 @@ export default function TradingModal({
     onClose?.();
   }, [resetModal, onClose]);
 
-  // =========================================================================
-  // THE CORE TRADE LOGIC
-  // =========================================================================
   const handleConfirm = useCallback(() => {
     if (!tradingEnabled) return;
     if (numAmount < period.minAmount || numAmount > effectiveBalance) return;
@@ -406,7 +398,6 @@ export default function TradingModal({
 
         {coinObj && <TradingHeader coin={coinObj} onBack={handleClose} />}
 
-        {/* Phase: Result */}
         {phase === 'result' && result && (
           <div style={{ padding: '32px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
             <div style={{
@@ -437,7 +428,6 @@ export default function TradingModal({
           </div>
         )}
 
-        {/* Phase: Countdown */}
         {phase === 'countdown' && (
           <div style={{ padding: '24px 24px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -464,7 +454,6 @@ export default function TradingModal({
           </div>
         )}
 
-        {/* Phase: Idle */}
         {phase === 'idle' && (
           <>
             <div style={{ overflowY: 'auto', flex: 1, padding: '0 20px 12px' }}>
