@@ -74,12 +74,16 @@ export default function TradingModal({
 }) {
   const { coins } = useMarket();
 
-  const coinObj = useMemo(
-    () => coins?.find((c) => c.id === coinId) || coins?.[0] || null,
-    [coins, coinId]
-  );
+  // --- THE FIX: calculate coinObj inside useEffect so it updates when coins loads ---
+  const coinObj = useMemo(() => {
+    if (coins && coins.length > 0) {
+      return coins.find((c) => c.id === coinId) || coins[0] || null;
+    }
+    return null;
+  }, [coins, coinId]);
 
   const coin = typeof coinProp === 'string' ? coinProp : coinObj?.symbol || 'BTC';
+  // Use coinObj.price if available, otherwise fallback to the prop, otherwise 0
   const currentPrice = currentPriceProp || coinObj?.price || 0;
 
   const [period, setPeriod] = useState(periods[0]);
@@ -98,7 +102,6 @@ export default function TradingModal({
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
       
-      // Fetch Real Balance from Database to avoid mock balances
       if (user?.id) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -110,6 +113,14 @@ export default function TradingModal({
     }
     loadUser();
   }, []);
+
+  // --- THE FIX: Update animated price whenever currentPrice or coins update ---
+  useEffect(() => {
+    if (open && currentPrice > 0) {
+      setAnimatedPrice(currentPrice);
+      setEntryPrice(currentPrice);
+    }
+  }, [open, currentPrice]);
 
   const [systemSettings, setSystemSettings] = useState(null);
   useEffect(() => {
@@ -136,19 +147,13 @@ export default function TradingModal({
   }, [animatedPrice]);
 
   const isLong = type === 'long';
-  // Use Real Balance fetched from DB (fallback to props if not loaded yet)
+  // Use Real Balance fetched from DB
   const effectiveBalance = realUsdtBalance || balance || balanceUSDT;
   
   const numAmount = parseFloat(amount) || 0;
   const fee = useMemo(() => +(numAmount * 0.005).toFixed(4), [numAmount]);
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
   const potentialWin = useMemo(() => +(numAmount * period.rate).toFixed(2), [numAmount, period]);
-
-  useEffect(() => {
-    if (!open) return;
-    setAnimatedPrice(currentPrice);
-    setEntryPrice(currentPrice);
-  }, [open, currentPrice, coin]);
 
   // Price animation during countdown
   useEffect(() => {
@@ -374,7 +379,6 @@ export default function TradingModal({
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Top Header Section */}
         <div style={{
           padding: '10px 16px 8px',
           display: 'flex',
