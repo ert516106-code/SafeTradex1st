@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import ConvertForm from "../components/convert/ConvertForm";
 import SelectCoin from "../components/convert/SelectCoin";
 import ConvertReview from "../components/convert/ConvertReview";
 import ConvertLoading from "../components/convert/ConvertLoading";
 import ConvertSuccess from "../components/convert/ConvertSuccess";
+import { base44 } from "@/api/base44Client"; // same client as your Base44 project
+import { toast } from "sonner";              // or use your own toast library
 
 export const COINS = [
   { symbol: "BTC", name: "Bitcoin", price: 118250, balance: 0.5842, color: "#F7931A" },
@@ -91,6 +93,31 @@ export default function Convert() {
   const [draft, setDraft] = useState(initialDraft);
   const [mounted, setMounted] = useState(false);
 
+  // ----- NEW: Real balance & conversion state -----
+  const [userEmail, setUserEmail] = useState("");
+  const [userBalance, setUserBalance] = useState(0);        // fiat balance (USDT/USDC)
+  const [coinHoldings, setCoinHoldings] = useState([]);     // all crypto holdings
+  const [conversionLoading, setConversionLoading] = useState(false);
+
+  // Fetch user data on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const u = await base44.auth.me();
+        setUserEmail(u.email);
+
+        const balRecs = await base44.entities.UserBalance.filter({ user_email: u.email });
+        if (balRecs.length) setUserBalance(balRecs[0].balance ?? 0);
+
+        const holdings = await base44.entities.CoinHolding.filter({ user_email: u.email });
+        setCoinHoldings(holdings);
+      } catch (err) {
+        console.error("Failed to load user data", err);
+      }
+    };
+    fetchUserData();
+  }, []);
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 20);
     return () => clearTimeout(t);
@@ -99,8 +126,125 @@ export default function Convert() {
   const updateDraft = (patch) => setDraft((prev) => ({ ...prev, ...patch }));
   const resetDraft = () => setDraft(initialDraft);
 
+  // Helper: return available balance for a given coin
+  const getBalanceForCoin = useCallback((symbol) => {
+    if (symbol === "USDT" || symbol === "USDC") return userBalance;
+    const holding = coinHoldings.find(h => h.symbol === symbol);
+    return holding ? holding.amount : 0;
+  }, [userBalance, coinHoldings]);
+
+  // Refresh balances after a conversion
+  const refreshBalances = useCallback(async () => {
+    if (!userEmail) return;
+    const balRecs = await base44.entities.UserBalance.filter({ user_email: userEmail });
+    if (balRecs.length) setUserBalance(balRecs[0].balance ?? 0);
+    const holdings = await base44.entities.CoinHolding.filter({ user_email: userEmail });
+    setCoinHoldings(holdings);
+  }, [userEmail]);
+
+  // Main conversion function – returns true on success
+  const convert = useCallback(async () => {
+    const { fromCoin, toCoin, amount } = draft;
+    const numAmt = parseFloat(amount) || 0;
+    if (numAmt <= 0) {
+      toast.error("Enter an amount");
+      return false;
+    }
+
+    const available = getBalanceForCoin(fromCoin);
+    if (numAmt > available) {
+      toast.error(`Insufficient ${fromCoin} balance`);
+      return false;
+    }
+
+    const quote = computeQuote(fromCoin, toCoin, amount);
+    const netReceive = quote.netReceive;
+    if (netReceive <= 0) {
+      toast.error("Conversion amount too low");
+      return false;
+    }
+
+    setConversionLoading(true);
+    try {
+      // 1. Debit source
+      if (fromCoin === "USDT" || fromCoin === "USDC") {
+        const balRecs = await base44.entities.UserBalance.filter({ user_email: userEmail });
+        if (!balRecs.length) throw new Error("No balance record");
+        const newBal = +(userBalance - numAmt).toFixed(2);
+        await base44.entities.UserBalance.update(balRecs[0].id, { balance: newBal });
+      } else {
+        const holdings = await base44.entities.CoinHolding.filter({ user_email: userEmail, symbol: fromCoin });
+        if (!holdings.length) throw new Error(`No ${fromCoin} holding`);
+        const newAmount = +(holdings[0].amount - numAmt).toFixed(8);
+        if (newAmount < 0) throw new Error(`Insufficient ${fromCoin} holding`);
+        await base44.entities.CoinHolding.update(holdings[0].id, { amount: newAmount });
+      }
+
+      // 2. Credit destination
+      if (toCoin === "USDT" || toCoin === "USDC") {
+        const balRecs = await base44.entities.UserBalance.filter({ user_email: userEmail });
+        const currentBal = balRecs.length ? balRecs[0].balance : 0;
+        const newBal = +(currentBal + netReceive).toFixed(2);
+        if (balRecs.length) {
+          await base44.entities.UserBalance.update(balRecs[0].id, { balance: newBal });
+        } else {
+          await base44.entities.UserBalance.create({ user_email: userEmail, balance: netReceive });
+        }
+      } else {
+        const toHoldings = await base44.entities.CoinHolding.filter({ user_email: userEmail, symbol: toCoin });
+        if (toHoldings.length > 0) {
+          const updated = +(toHoldings[0].amount + netReceive).toFixed(8);
+          await base44.entities.CoinHolding.update(toHoldings[0].id, { amount: updated });
+        } else {
+          const toCoinData = getCoin(toCoin);
+          await base44.entities.CoinHolding.create({
+            user_email: userEmail,
+            symbol: toCoin,
+            name: toCoinData.name,
+            amount: netReceive,
+            color: toCoinData.color,
+            text: toCoinData.symbol.slice(0, 1),
+          });
+        }
+      }
+
+      // 3. Record transaction
+      await base44.entities.Transaction.create({
+        user_email: userEmail,
+        type: "convert",
+        amount: numAmt * getCoin(fromCoin).price, // approximate USD value
+        note: `Converted ${numAmt} ${fromCoin} → ${netReceive} ${toCoin}`,
+      });
+
+      // 4. Refresh local state
+      await refreshBalances();
+
+      toast.success(`Converted ${numAmt} ${fromCoin} → ${netReceive} ${toCoin}`);
+      return true;
+    } catch (err) {
+      toast.error("Conversion failed. Please try again.");
+      console.error(err);
+      return false;
+    } finally {
+      setConversionLoading(false);
+    }
+  }, [draft, userEmail, userBalance, getBalanceForCoin, refreshBalances]);
+
+  // Context value
+  const contextValue = {
+    draft,
+    updateDraft,
+    resetDraft,
+    convert,
+    conversionLoading,
+    userEmail,
+    getBalanceForCoin,
+    fromBalance: getBalanceForCoin(draft.fromCoin),
+    toBalance: getBalanceForCoin(draft.toCoin),
+  };
+
   return (
-    <ConvertContext.Provider value={{ draft, updateDraft, resetDraft }}>
+    <ConvertContext.Provider value={contextValue}>
       <div
         className={`fixed inset-0 z-50 overflow-x-hidden overflow-y-auto transition-opacity duration-300 ${
           mounted ? "opacity-100" : "opacity-0"
@@ -132,6 +276,7 @@ export default function Convert() {
   );
 }
 
+// ---------- Unchanged helper components ----------
 export function ConvertHeader({ title, onBack, onClose, right = null }) {
   const navigate = useNavigate();
   return (
@@ -178,7 +323,6 @@ export function GlassCard({ children, className = "" }) {
   );
 }
 
-/* Thick, pill-shaped primary button — matches the Transfer button style */
 export function PrimaryButton({ children, onClick, disabled = false, type = "button" }) {
   return (
     <button
