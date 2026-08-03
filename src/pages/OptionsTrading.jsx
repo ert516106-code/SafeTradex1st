@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import TradingViewWidget from "../components/trading/TradingViewWidget";
 import TradingModal from "../components/trading/TradingModal";
@@ -20,6 +20,7 @@ const indicators = ["MA", "EMA", "BOLL", "MACD", "RSI", "WR"];
 
 export default function OptionsTrading({ onBack }) {
   const navigate = useNavigate();
+
   const [selected, setSelected] = useState(pairs[0]);
   const [modal, setModal] = useState({ open: false, type: "long" });
   const [showPairs, setShowPairs] = useState(false);
@@ -43,7 +44,9 @@ export default function OptionsTrading({ onBack }) {
         `https://api.coingecko.com/api/v3/coins/${selected.coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`
       );
 
-      if (!response.ok) throw new Error("Market data unavailable");
+      if (!response.ok) {
+        throw new Error("Market data unavailable");
+      }
 
       const data = await response.json();
 
@@ -84,6 +87,11 @@ export default function OptionsTrading({ onBack }) {
     navigate(-1);
   };
 
+  const handleSelectPair = (pair) => {
+    setSelected(pair);
+    setShowPairs(false);
+  };
+
   const priceLabel = marketData.loading
     ? "---"
     : `$${marketData.price.toLocaleString("en-US", {
@@ -92,17 +100,25 @@ export default function OptionsTrading({ onBack }) {
       })}`;
 
   return (
-    <div className="min-h-screen bg-[#050816] px-3 py-3 pb-28 font-sans text-slate-100">
+    <div className="min-h-screen bg-[#050816] px-3 py-3 pb-8 font-sans text-slate-100">
       <main className="relative mx-auto w-full max-w-[520px]">
         <div className="rounded-[24px] border border-[#253553] bg-[#081126]/95 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.38)]">
           <header className="relative flex items-center justify-between pb-3">
             <button
               type="button"
               onClick={handleBack}
-              aria-label="Go back"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.09]"
+              aria-label="Back"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
             >
-              <ArrowLeft size={18} />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M15 5l-7 7 7 7"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
 
             <button
@@ -113,11 +129,13 @@ export default function OptionsTrading({ onBack }) {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f7931a] text-xs font-black text-[#17110a]">
                 ₿
               </span>
-              <span className="text-[15px] font-extrabold text-white">{selected.symbol}</span>
-              <ChevronDown size={15} className="text-slate-400" />
+              <span className="text-[17px] font-extrabold text-white">
+                {selected.symbol}
+              </span>
+              <ChevronDown size={16} className="text-slate-400" />
             </button>
 
-            <div className="h-9 w-9" />
+            <div className="h-10 w-10" />
           </header>
 
           {showPairs && (
@@ -126,18 +144,17 @@ export default function OptionsTrading({ onBack }) {
                 <button
                   key={pair.symbol}
                   type="button"
-                  onClick={() => {
-                    setSelected(pair);
-                    setShowPairs(false);
-                  }}
+                  onClick={() => handleSelectPair(pair)}
                   className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold transition ${
                     selected.symbol === pair.symbol
                       ? "bg-[#2f5fe8]/20 text-blue-300"
                       : "text-slate-300 hover:bg-white/[0.06]"
                   }`}
                 >
-                  {pair.symbol}
-                  <span className="text-xs font-medium text-slate-500">{pair.ticker}</span>
+                  <span>{pair.symbol}</span>
+                  <span className="text-xs font-medium text-slate-500">
+                    {pair.ticker}
+                  </span>
                 </button>
               ))}
             </div>
@@ -146,12 +163,15 @@ export default function OptionsTrading({ onBack }) {
           <section className="mb-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-[28px] font-black leading-none tracking-tight text-white">
+                <div className="text-[34px] font-black leading-none tracking-tight text-white sm:text-[38px]">
                   {priceLabel}
                 </div>
+
                 <div
-                  className={`mt-1 text-xs font-bold ${
-                    marketData.change24h >= 0 ? "text-emerald-400" : "text-rose-400"
+                  className={`mt-1.5 text-[13px] font-bold ${
+                    marketData.change24h >= 0
+                      ? "text-emerald-400"
+                      : "text-rose-400"
                   }`}
                 >
                   {marketData.change24h >= 0 ? "+" : ""}
@@ -167,12 +187,14 @@ export default function OptionsTrading({ onBack }) {
                     ${marketData.high24h.toLocaleString()}
                   </span>
                 </div>
+
                 <div>
                   <span className="block text-slate-500">Low</span>
                   <span className="text-rose-400">
                     ${marketData.low24h.toLocaleString()}
                   </span>
                 </div>
+
                 <div>
                   <span className="block text-slate-500">Vol</span>
                   <span className="text-slate-200">
@@ -189,7 +211,7 @@ export default function OptionsTrading({ onBack }) {
                 key={timeframe}
                 type="button"
                 onClick={() => setActiveTimeframe(timeframe)}
-                className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition ${
+                className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[12px] font-bold transition ${
                   activeTimeframe === timeframe
                     ? "bg-[#3848e8] text-white shadow-[0_3px_12px_rgba(56,72,232,0.4)]"
                     : "text-slate-500 hover:text-slate-200"
@@ -200,7 +222,10 @@ export default function OptionsTrading({ onBack }) {
             ))}
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-[#243451] bg-[#0a1222]" style={{ height: 280 }}>
+          <div
+            className="mt-3 overflow-hidden rounded-2xl border border-[#243451] bg-[#0a1222] shadow-[0_10px_26px_rgba(0,0,0,0.2)]"
+            style={{ height: 280 }}
+          >
             <TradingViewWidget
               symbol={selected.tv}
               height={280}
@@ -215,7 +240,7 @@ export default function OptionsTrading({ onBack }) {
                 key={indicator}
                 type="button"
                 onClick={() => setActiveIndicator(indicator)}
-                className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[10px] font-bold transition ${
+                className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition ${
                   activeIndicator === indicator
                     ? "bg-[#2f5fe8]/20 text-blue-300"
                     : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
@@ -231,7 +256,7 @@ export default function OptionsTrading({ onBack }) {
               <button
                 type="button"
                 onClick={() => setActiveTab("open")}
-                className={`border-b-2 pb-3 text-[12px] font-bold transition ${
+                className={`border-b-2 pb-3 text-[13px] font-bold transition ${
                   activeTab === "open"
                     ? "border-[#4b5cf4] text-white"
                     : "border-transparent text-slate-500 hover:text-slate-300"
@@ -239,10 +264,11 @@ export default function OptionsTrading({ onBack }) {
               >
                 Open Orders
               </button>
+
               <button
                 type="button"
                 onClick={() => setActiveTab("history")}
-                className={`border-b-2 pb-3 text-[12px] font-bold transition ${
+                className={`border-b-2 pb-3 text-[13px] font-bold transition ${
                   activeTab === "history"
                     ? "border-[#4b5cf4] text-white"
                     : "border-transparent text-slate-500 hover:text-slate-300"
@@ -254,34 +280,32 @@ export default function OptionsTrading({ onBack }) {
 
             <div className="min-h-[145px] p-3">{orderList}</div>
           </section>
+
+          <div className="mt-3 grid grid-cols-2 gap-3 pb-1">
+            <button
+              type="button"
+              onClick={() => setModal({ open: true, type: "long" })}
+              className="rounded-2xl bg-gradient-to-r from-[#10c6a4] to-[#08a98d] py-4 text-white shadow-[0_10px_22px_rgba(8,169,141,0.28)] transition active:scale-[0.98]"
+            >
+              <span className="block text-[15px] font-black">Buy Long</span>
+              <span className="mt-0.5 block text-[12px] font-bold opacity-90">
+                {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setModal({ open: true, type: "short" })}
+              className="rounded-2xl bg-gradient-to-r from-[#ff3d70] to-[#fa1f59] py-4 text-white shadow-[0_10px_22px_rgba(250,31,89,0.28)] transition active:scale-[0.98]"
+            >
+              <span className="block text-[15px] font-black">Sell Short</span>
+              <span className="mt-0.5 block text-[12px] font-bold opacity-90">
+                {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
+              </span>
+            </button>
+          </div>
         </div>
       </main>
-
-      <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-3">
-        <div className="flex w-full max-w-[520px] gap-3 rounded-2xl border border-white/10 bg-[#0a1222]/90 p-2 shadow-2xl backdrop-blur-xl">
-          <button
-            type="button"
-            onClick={() => setModal({ open: true, type: "long" })}
-            className="flex-1 rounded-xl bg-gradient-to-r from-[#0fbd9d] to-[#08a98d] py-2.5 text-white shadow-[0_8px_18px_rgba(8,169,141,0.25)] transition active:scale-[0.98]"
-          >
-            <span className="block text-xs font-black">Buy Long</span>
-            <span className="block text-[10px] font-bold opacity-90">
-              {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setModal({ open: true, type: "short" })}
-            className="flex-1 rounded-xl bg-gradient-to-r from-[#ff3d70] to-[#fa1f59] py-2.5 text-white shadow-[0_8px_18px_rgba(250,31,89,0.25)] transition active:scale-[0.98]"
-          >
-            <span className="block text-xs font-black">Sell Short</span>
-            <span className="block text-[10px] font-bold opacity-90">
-              {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
-            </span>
-          </button>
-        </div>
-      </div>
 
       <TradingModal
         open={modal.open}
