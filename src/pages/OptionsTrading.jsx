@@ -1,30 +1,31 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Menu, ChevronDown, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import TradingViewWidget from "../components/trading/TradingViewWidget";
 import TradingModal from "../components/trading/TradingModal";
 import OpenOrders from "../components/trading/Openorders";
 import OrderHistory from "../components/trading/Orderhistory";
 
 const pairs = [
-  { symbol: 'BTC/USDT', tv: 'BINANCE:BTCUSDT', coinId: 'bitcoin', ticker: 'BTC' },
-  { symbol: 'ETH/USDT', tv: 'BINANCE:ETHUSDT', coinId: 'ethereum', ticker: 'ETH' },
-  { symbol: 'XRP/USDT', tv: 'BINANCE:XRPUSDT', coinId: 'ripple', ticker: 'XRP' },
-  { symbol: 'SOL/USDT', tv: 'BINANCE:SOLUSDT', coinId: 'solana', ticker: 'SOL' },
-  { symbol: 'BNB/USDT', tv: 'BINANCE:BNBUSDT', coinId: 'binancecoin', ticker: 'BNB' },
-  { symbol: 'DOGE/USDT', tv: 'BINANCE:DOGEUSDT', coinId: 'dogecoin', ticker: 'DOGE' },
+  { symbol: "BTC/USDT", tv: "BINANCE:BTCUSDT", coinId: "bitcoin", ticker: "BTC" },
+  { symbol: "ETH/USDT", tv: "BINANCE:ETHUSDT", coinId: "ethereum", ticker: "ETH" },
+  { symbol: "XRP/USDT", tv: "BINANCE:XRPUSDT", coinId: "ripple", ticker: "XRP" },
+  { symbol: "SOL/USDT", tv: "BINANCE:SOLUSDT", coinId: "solana", ticker: "SOL" },
+  { symbol: "BNB/USDT", tv: "BINANCE:BNBUSDT", coinId: "binancecoin", ticker: "BNB" },
+  { symbol: "DOGE/USDT", tv: "BINANCE:DOGEUSDT", coinId: "dogecoin", ticker: "DOGE" },
 ];
 
-const timeframes = ['1m', '5m', '15m', '30m', '1h', '2h', '6h', '12h', '1D'];
+const timeframes = ["1m", "5m", "15m", "30m", "1h", "2h", "6h", "12h", "1D"];
+const indicators = ["MA", "EMA", "BOLL", "MACD", "RSI", "WR"];
 
-export default function OptionsTrading() {
+export default function OptionsTrading({ onBack }) {
   const navigate = useNavigate();
   const [selected, setSelected] = useState(pairs[0]);
-  const [modal, setModal] = useState({ open: false, type: 'long' });
+  const [modal, setModal] = useState({ open: false, type: "long" });
   const [showPairs, setShowPairs] = useState(false);
-  const [activeTab, setActiveTab] = useState('open');
-  const [activeTimeframe, setActiveTimeframe] = useState('1m');
-  const [activeIndicator, setActiveIndicator] = useState('MA');
+  const [activeTab, setActiveTab] = useState("open");
+  const [activeTimeframe, setActiveTimeframe] = useState("1m");
+  const [activeIndicator, setActiveIndicator] = useState("MA");
   const [balance, setBalance] = useState(10000);
 
   const [marketData, setMarketData] = useState({
@@ -33,7 +34,7 @@ export default function OptionsTrading() {
     high24h: 0,
     low24h: 0,
     volume24h: 0,
-    loading: true
+    loading: true,
   });
 
   const fetchCoinGeckoData = useCallback(async () => {
@@ -41,192 +42,243 @@ export default function OptionsTrading() {
       const response = await fetch(
         `https://api.coingecko.com/api/v3/coins/${selected.coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`
       );
-      if (!response.ok) throw new Error('CoinGecko API rate limit or error');
-      
+
+      if (!response.ok) throw new Error("Market data unavailable");
+
       const data = await response.json();
-      
-      if (data && data.market_data) {
+
+      if (data?.market_data) {
         setMarketData({
-          price: data.market_data.current_price.usd,
+          price: data.market_data.current_price.usd ?? 0,
           change24h: data.market_data.price_change_percentage_24h ?? 0,
           high24h: data.market_data.high_24h.usd ?? 0,
           low24h: data.market_data.low_24h.usd ?? 0,
           volume24h: data.market_data.total_volume.usd ?? 0,
-          loading: false
+          loading: false,
         });
       }
     } catch (error) {
-      console.warn("CoinGecko fetch failed, retrying on next tick:", error);
+      console.warn("Could not load market data:", error);
     }
   }, [selected.coinId]);
 
   useEffect(() => {
-    setMarketData((prev) => ({ ...prev, loading: true }));
+    setMarketData((previous) => ({ ...previous, loading: true }));
     fetchCoinGeckoData();
 
-    const ONE_MINUTE = 60000;
-    const interval = setInterval(fetchCoinGeckoData, ONE_MINUTE);
-
+    const interval = setInterval(fetchCoinGeckoData, 60000);
     return () => clearInterval(interval);
   }, [fetchCoinGeckoData]);
 
-  const handleSelectPair = useCallback((pair) => {
-    setSelected(pair);
-    setShowPairs(false);
-  }, []);
-
   const orderList = useMemo(
-    () => (activeTab === 'open' ? <OpenOrders /> : <OrderHistory />),
+    () => (activeTab === "open" ? <OpenOrders /> : <OrderHistory />),
     [activeTab]
   );
 
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+
+    navigate(-1);
+  };
+
+  const priceLabel = marketData.loading
+    ? "---"
+    : `$${marketData.price.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+
   return (
-    <div 
-      className="min-h-screen bg-[#050816] text-slate-100 font-sans pb-32 relative flex flex-col items-center"
-    >
-      {/* Card container with border and improved spacing */}
-      <div className="w-full max-w-[520px] px-4 pt-4 flex flex-col relative">
-        <div className="bg-[#0b1026]/80 backdrop-blur-sm border border-white/10 rounded-2xl shadow-2xl p-4 flex flex-col">
-          
-          {/* Header: Back button + Pair Selector */}
-          <header className="flex items-center justify-between border-b border-white/5 pb-4">
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => navigate(-1)} 
-                className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
-                aria-label="Back"
-              >
-                <ArrowLeft className="w-5 h-5 text-slate-400" />
-              </button>
-              <button onClick={() => setShowPairs(!showPairs)} className="flex items-center gap-3 group">
-                <div className="w-8 h-8 rounded-full bg-[#f7931a] text-black font-black text-sm flex items-center justify-center">
-                  ₿
-                </div>
-                <span className="text-xl font-extrabold text-white">{selected.symbol}</span>
-                <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-              </button>
-            </div>
-            <Menu className="w-5 h-5 text-slate-400" />
+    <div className="min-h-screen bg-[#050816] px-3 py-3 pb-28 font-sans text-slate-100">
+      <main className="relative mx-auto w-full max-w-[520px]">
+        <div className="rounded-[24px] border border-[#253553] bg-[#081126]/95 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.38)]">
+          <header className="relative flex items-center justify-between pb-3">
+            <button
+              type="button"
+              onClick={handleBack}
+              aria-label="Go back"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.09]"
+            >
+              <ArrowLeft size={18} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowPairs((visible) => !visible)}
+              className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-xl px-3 py-2 transition hover:bg-white/[0.05]"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f7931a] text-xs font-black text-[#17110a]">
+                ₿
+              </span>
+              <span className="text-[15px] font-extrabold text-white">{selected.symbol}</span>
+              <ChevronDown size={15} className="text-slate-400" />
+            </button>
+
+            <div className="h-9 w-9" />
           </header>
 
-          {/* Pair dropdown */}
           {showPairs && (
-            <div className="absolute top-20 left-4 right-4 z-50 bg-[#0b1026]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-2xl">
-              {pairs.map((p) => (
+            <div className="absolute left-3 right-3 top-14 z-50 rounded-2xl border border-white/10 bg-[#10182e]/95 p-2 shadow-2xl backdrop-blur-xl">
+              {pairs.map((pair) => (
                 <button
-                  key={p.symbol}
-                  onClick={() => handleSelectPair(p)}
-                  className={`w-full text-left px-4 py-3.5 rounded-xl text-sm font-bold flex justify-between items-center transition-all ${
-                    selected.symbol === p.symbol ? 'bg-blue-600/20 text-blue-300' : 'hover:bg-white/5 text-slate-300'
+                  key={pair.symbol}
+                  type="button"
+                  onClick={() => {
+                    setSelected(pair);
+                    setShowPairs(false);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold transition ${
+                    selected.symbol === pair.symbol
+                      ? "bg-[#2f5fe8]/20 text-blue-300"
+                      : "text-slate-300 hover:bg-white/[0.06]"
                   }`}
                 >
-                  <span>{p.symbol}</span>
-                  <span className="text-xs text-slate-500">{p.ticker}</span>
+                  {pair.symbol}
+                  <span className="text-xs font-medium text-slate-500">{pair.ticker}</span>
                 </button>
               ))}
             </div>
           )}
 
-          {/* Live Price and Stats */}
-          <section className="py-5 flex items-start justify-between border-b border-white/5">
-            <div>
-              <div className="text-4xl font-black text-white tracking-tight">
-                {marketData.loading ? "---" : `$${marketData.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+          <section className="mb-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[28px] font-black leading-none tracking-tight text-white">
+                  {priceLabel}
+                </div>
+                <div
+                  className={`mt-1 text-xs font-bold ${
+                    marketData.change24h >= 0 ? "text-emerald-400" : "text-rose-400"
+                  }`}
+                >
+                  {marketData.change24h >= 0 ? "+" : ""}
+                  {marketData.change24h.toFixed(2)}%
+                  <span className="ml-1 font-medium text-slate-500">24H</span>
+                </div>
               </div>
-              <div className={`text-sm font-bold mt-1.5 ${marketData.change24h >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
-                {marketData.change24h >= 0 ? '+' : ''}{marketData.change24h.toFixed(2)}% <span className="text-slate-500 font-medium text-xs">24H</span>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 text-right text-xs font-semibold">
-              <div><span className="text-slate-500 block">High</span><span className="text-emerald-400">${marketData.high24h.toLocaleString()}</span></div>
-              <div><span className="text-slate-500 block">Low</span><span className="text-rose-500">${marketData.low24h.toLocaleString()}</span></div>
-              <div><span className="text-slate-500 block">Vol</span><span className="text-white">${(marketData.volume24h / 1e6).toFixed(2)}M</span></div>
+              <div className="grid grid-cols-3 gap-x-3 text-right text-[10px] font-semibold">
+                <div>
+                  <span className="block text-slate-500">High</span>
+                  <span className="text-emerald-400">
+                    ${marketData.high24h.toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-slate-500">Low</span>
+                  <span className="text-rose-400">
+                    ${marketData.low24h.toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-slate-500">Vol</span>
+                  <span className="text-slate-200">
+                    ${(marketData.volume24h / 1000000).toFixed(1)}M
+                  </span>
+                </div>
+              </div>
             </div>
           </section>
 
-          {/* Timeframe */}
-          <div className="py-3 flex items-center justify-between border-b border-white/5">
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-              {timeframes.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setActiveTimeframe(t)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    activeTimeframe === t ? 'bg-white/10 text-white shadow-sm' : 'text-slate-500 hover:text-white'
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+          <div className="mb-2 flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-black/10 p-1 no-scrollbar">
+            {timeframes.map((timeframe) => (
+              <button
+                key={timeframe}
+                type="button"
+                onClick={() => setActiveTimeframe(timeframe)}
+                className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition ${
+                  activeTimeframe === timeframe
+                    ? "bg-[#3848e8] text-white shadow-[0_3px_12px_rgba(56,72,232,0.4)]"
+                    : "text-slate-500 hover:text-slate-200"
+                }`}
+              >
+                {timeframe}
+              </button>
+            ))}
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-[#243451] bg-[#0a1222]" style={{ height: 280 }}>
+            <TradingViewWidget
+              symbol={selected.tv}
+              height={280}
+              interval={activeTimeframe}
+              theme="dark"
+            />
+          </div>
+
+          <div className="mt-2 flex items-center gap-1 overflow-x-auto no-scrollbar">
+            {indicators.map((indicator) => (
+              <button
+                key={indicator}
+                type="button"
+                onClick={() => setActiveIndicator(indicator)}
+                className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[10px] font-bold transition ${
+                  activeIndicator === indicator
+                    ? "bg-[#2f5fe8]/20 text-blue-300"
+                    : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
+                }`}
+              >
+                {indicator}
+              </button>
+            ))}
+          </div>
+
+          <section className="mt-3 overflow-hidden rounded-2xl border border-[#243451] bg-[#0a1222]">
+            <div className="flex gap-6 border-b border-white/[0.07] px-4 pt-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab("open")}
+                className={`border-b-2 pb-3 text-[12px] font-bold transition ${
+                  activeTab === "open"
+                    ? "border-[#4b5cf4] text-white"
+                    : "border-transparent text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                Open Orders
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("history")}
+                className={`border-b-2 pb-3 text-[12px] font-bold transition ${
+                  activeTab === "history"
+                    ? "border-[#4b5cf4] text-white"
+                    : "border-transparent text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                Order History
+              </button>
             </div>
-          </div>
 
-          {/* Chart */}
-          <div className="w-full mt-3 mb-4 rounded-2xl overflow-hidden border border-white/5 shadow-xl" style={{ height: 340 }}>
-            <TradingViewWidget symbol={selected.tv} height={340} interval={activeTimeframe} theme="dark" />
-          </div>
-
-          {/* Indicators */}
-          <div className="py-2.5 mb-1 flex items-center justify-between text-xs font-bold border-b border-white/5">
-            <div className="flex items-center gap-1 text-slate-500">
-              {['MA', 'EMA', 'BOLL', 'MACD', 'RSI', 'WR'].map((i) => (
-                <button 
-                  key={i} 
-                  onClick={() => setActiveIndicator(i)}
-                  className={`px-2 py-1.5 rounded-md transition-colors ${
-                    activeIndicator === i ? 'bg-blue-600/20 text-blue-300' : 'hover:text-white'
-                  }`}
-                >
-                  {i}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-8 border-b border-white/5 text-sm font-bold mt-5 pb-3">
-            <button
-              onClick={() => setActiveTab('open')}
-              className={`pb-2.5 border-b-2 transition-all ${
-                activeTab === 'open' ? 'text-white border-white' : 'text-slate-500 border-transparent hover:text-slate-300'
-              }`}
-            >
-              Open Orders
-            </button>
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`pb-2.5 border-b-2 transition-all ${
-                activeTab === 'history' ? 'text-white border-white' : 'text-slate-500 border-transparent hover:text-slate-300'
-              }`}
-            >
-              Order History
-            </button>
-          </div>
-
-          {/* Order List Content */}
-          <div className="mt-4 flex-1">
-            {orderList}
-          </div>
+            <div className="min-h-[145px] p-3">{orderList}</div>
+          </section>
         </div>
-      </div>
+      </main>
 
-      {/* Floating Buy/Sell Buttons (unchanged, outside the card) */}
-      <div className="fixed bottom-6 left-0 right-0 px-4 flex justify-center z-40 pointer-events-none">
-        <div className="w-full max-w-[520px] flex gap-3 pointer-events-auto">
+      <div className="fixed bottom-4 left-0 right-0 z-40 flex justify-center px-3">
+        <div className="flex w-full max-w-[520px] gap-3 rounded-2xl border border-white/10 bg-[#0a1222]/90 p-2 shadow-2xl backdrop-blur-xl">
           <button
-            onClick={() => setModal({ open: true, type: 'long' })}
-            className="flex-1 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-white flex flex-col items-center shadow-xl shadow-emerald-900/50 transition-all"
+            type="button"
+            onClick={() => setModal({ open: true, type: "long" })}
+            className="flex-1 rounded-xl bg-gradient-to-r from-[#0fbd9d] to-[#08a98d] py-2.5 text-white shadow-[0_8px_18px_rgba(8,169,141,0.25)] transition active:scale-[0.98]"
           >
-            <span className="text-sm font-black flex items-center gap-1.5">Buy Long</span>
-            <span className="text-xs font-bold opacity-90 mt-0.5">${marketData.price.toFixed(2)}</span>
+            <span className="block text-xs font-black">Buy Long</span>
+            <span className="block text-[10px] font-bold opacity-90">
+              {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
+            </span>
           </button>
+
           <button
-            onClick={() => setModal({ open: true, type: 'short' })}
-            className="flex-1 py-4 rounded-2xl bg-rose-500 hover:bg-rose-400 active:scale-[0.98] text-white flex flex-col items-center shadow-xl shadow-rose-900/50 transition-all"
+            type="button"
+            onClick={() => setModal({ open: true, type: "short" })}
+            className="flex-1 rounded-xl bg-gradient-to-r from-[#ff3d70] to-[#fa1f59] py-2.5 text-white shadow-[0_8px_18px_rgba(250,31,89,0.25)] transition active:scale-[0.98]"
           >
-            <span className="text-sm font-black flex items-center gap-1.5">Sell Short</span>
-            <span className="text-xs font-bold opacity-90 mt-0.5">${marketData.price.toFixed(2)}</span>
+            <span className="block text-xs font-black">Sell Short</span>
+            <span className="block text-[10px] font-bold opacity-90">
+              {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
+            </span>
           </button>
         </div>
       </div>
@@ -237,7 +289,7 @@ export default function OptionsTrading() {
         coin={selected.ticker}
         balance={balance}
         currentPrice={marketData.price}
-        onClose={() => setModal({ open: false, type: 'long' })}
+        onClose={() => setModal({ open: false, type: "long" })}
         onBalanceChange={setBalance}
       />
     </div>
