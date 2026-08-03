@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { WithdrawHeader, GlowCard, PrimaryButton, useWithdraw, getCoin, getNetwork } from "../../pages/Withdraw";
+import { supabase } from "../../lib/supabase";
 
 export default function WithdrawReview() {
   const navigate = useNavigate();
-  const { draft } = useWithdraw();
+  const { draft, resetDraft } = useWithdraw();
   const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState("");
 
   const coin = getCoin(draft.coin);
   const network = draft.type === "external" ? getNetwork(draft.networkId) : null;
@@ -17,11 +19,37 @@ export default function WithdrawReview() {
     return value > 0 ? value : 0;
   }, [numericAmount, network]);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    setError("");
     setConfirming(true);
-    setTimeout(() => {
+    try {
+      if (draft.type === "internal") {
+        const { error: rpcError } = await supabase.rpc("submit_internal_withdrawal", {
+          p_recipient_input: draft.recipient,
+          p_coin: draft.coin,
+          p_amount: numericAmount,
+          p_note: draft.note || null,
+        });
+        if (rpcError) throw rpcError;
+      } else if (draft.type === "external") {
+        const { error: rpcError } = await supabase.rpc("submit_external_withdrawal", {
+          p_coin: draft.coin,
+          p_amount: numericAmount,
+          p_network: network ? network.id : draft.networkId,
+          p_wallet_address: draft.walletAddress,
+          p_fee: network ? network.fee : 0,
+        });
+        if (rpcError) throw rpcError;
+      } else {
+        throw new Error("Unknown withdrawal type");
+      }
+
+      resetDraft();
       navigate("/withdraw/success");
-    }, 900);
+    } catch (err) {
+      setError(err?.message || "Something went wrong. Please try again.");
+      setConfirming(false);
+    }
   };
 
   if (!draft.type) {
@@ -81,9 +109,22 @@ export default function WithdrawReview() {
           )}
         </GlowCard>
 
+        {draft.type === "internal" && (
+          <p className="px-1 text-center text-[12px] leading-relaxed text-white/40">
+            This request goes to admin review before funds are sent. You'll see its status
+            under Withdraw History.
+          </p>
+        )}
+
+        {error && (
+          <div className="rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-[13px] font-medium text-red-300">
+            {error}
+          </div>
+        )}
+
         <div className="mt-auto pt-2">
           <PrimaryButton onClick={handleConfirm} disabled={confirming}>
-            {confirming ? "Processing..." : "Confirm Withdraw"}
+            {confirming ? "Submitting..." : "Confirm Withdraw"}
           </PrimaryButton>
         </div>
       </div>
