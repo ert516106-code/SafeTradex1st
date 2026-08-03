@@ -7,7 +7,7 @@ export default function WithdrawHome() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col">
-      <WithdrawHeader title="Withdraw" onClose={() => navigate(-1)} showFlowSwitch />
+      <WithdrawHeader title="Withdraw" onClose={() => navigate(-1)} />
 
       <div className="px-4 pt-6 sm:px-6">
         <h2 className="text-[20px] font-extrabold text-white">Where to?</h2>
