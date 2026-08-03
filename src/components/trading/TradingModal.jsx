@@ -100,10 +100,10 @@ export default function TradingModal({
   useEffect(() => {
     async function loadUserAndBalance() {
       if (!open) return;
-      
+
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
-      
+
       if (user?.id) {
         // Force fetch the absolute latest balance from Supabase every time modal opens
         const { data: profile, error } = await supabase
@@ -111,7 +111,7 @@ export default function TradingModal({
           .select('usdt')
           .eq('id', user.id)
           .single();
-          
+
         if (!error && profile) {
           const newBalance = profile.usdt || 0;
           setRealUsdtBalance(newBalance);
@@ -151,6 +151,11 @@ export default function TradingModal({
   const priceRef = useRef(null);
   const mountedRef = useRef(true);
   const animatedPriceRef = useRef(currentPrice);
+  // Settlement timer is intentionally separate from timerRef. It must NOT be
+  // cleared when the modal is closed — a trade in progress has to resolve
+  // (write to Supabase, clear the open order) whether or not the user is
+  // still looking at this modal.
+  const settleTimeoutRef = useRef(null);
 
   useEffect(() => {
     animatedPriceRef.current = animatedPrice;
@@ -159,7 +164,7 @@ export default function TradingModal({
   const isLong = type === 'long';
   // Use Real Balance fetched from DB
   const effectiveBalance = realUsdtBalance || balance || balanceUSDT;
-  
+
   const numAmount = parseFloat(amount) || 0;
   const fee = useMemo(() => +(numAmount * 0.005).toFixed(4), [numAmount]);
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
@@ -193,18 +198,21 @@ export default function TradingModal({
     return () => { mountedRef.current = false; };
   }, []);
 
+  // Only true component unmount clears the settlement timer — modal close
+  // (open=false) must not.
   useEffect(() => {
     return () => {
       clearInterval(timerRef.current);
       clearInterval(priceRef.current);
+      clearTimeout(settleTimeoutRef.current);
     };
   }, []);
 
-  const persistTrade = useCallback(async ({ transaction, balanceBefore, balanceAfter }) => {
-    if (!currentUser?.id) return;
+  const persistTrade = useCallback(async ({ transaction, balanceBefore, balanceAfter, userId }) => {
+    if (!userId) return;
     try {
       await tradeService.createTrade({
-        userId: currentUser.id,
+        userId,
         coin: transaction.coin,
         direction: transaction.isLong ? 'long' : 'short',
         timeframe: transaction.period,
@@ -221,7 +229,7 @@ export default function TradingModal({
       const { error: balanceError } = await supabase
         .from('profiles')
         .update({ usdt: balanceAfter })
-        .eq('id', currentUser.id);
+        .eq('id', userId);
 
       if (balanceError) {
         throw new Error(balanceError.message);
@@ -229,9 +237,12 @@ export default function TradingModal({
     } catch (err) {
       console.error('Failed to save trade:', err);
     }
-  }, [currentUser, period]);
+  }, [period]);
 
   const resetModal = useCallback(() => {
+    // Clears the UI-only display interval and price animation. Deliberately
+    // does NOT touch settleTimeoutRef — a pending trade keeps resolving even
+    // after the modal is closed.
     clearInterval(timerRef.current);
     clearInterval(priceRef.current);
     setPhase('idle');
@@ -261,6 +272,8 @@ export default function TradingModal({
     setCountdown(period.seconds);
 
     const orderId = `order_${Date.now()}`;
+    const tradeUserId = currentUser?.id;
+
     addActiveOrder({
       id: orderId,
       coin,
@@ -273,97 +286,97 @@ export default function TradingModal({
       potentialWin,
     });
 
-    timerRef.current = setInterval(async () => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          
-          const checkAndSettle = async () => {
-            removeActiveOrder(orderId);
-
-            let adminMode = 'neutral';
-            let activeUserId = currentUser?.id;
-            
-            try {
-              if (!activeUserId) {
-                  const { data: { user } } = await supabase.auth.getUser();
-                  activeUserId = user?.id;
-              }
-
-              if (activeUserId) {
-                const { data: profileData, error } = await supabase
-                  .from('profiles')
-                  .select('mode')
-                  .eq('id', activeUserId)
-                  .single();
-
-                if (!error && profileData) {
-                  adminMode = profileData.mode || 'neutral';
-                }
-              }
-            } catch (err) {
-              console.error("Error checking admin mode:", err);
-            }
-
-            let win = false;
-            
-            if (adminMode === 'win') {
-              win = true;
-            } else if (adminMode === 'lose') {
-              win = false;
-            } else {
-              if (systemSettings?.auto_win) {
-                win = true;
-              } else if (systemSettings?.auto_lose) {
-                win = false;
-              } else {
-                win = Math.random() > 0.5;
-              }
-            }
-
-            const profit = win ? potentialWin : numAmount;
-            const updatedBalance = win 
-              ? +(balanceAfterDeduction + numAmount + potentialWin).toFixed(2)
-              : balanceAfterDeduction;
-            const exitPrice = animatedPriceRef.current;
-
-            const transaction = {
-              coin,
-              isLong,
-              period: period.label,
-              amount: numAmount,
-              entryPrice: snapEntryPrice,
-              exitPrice,
-              win,
-              profit,
-              timestamp: Date.now(),
-            };
-
-            onBalanceChange?.(updatedBalance);
-            onTradeComplete?.(transaction);
-            onOrderComplete?.(transaction);
-
-            if (activeUserId) {
-              await persistTrade({
-                transaction,
-                balanceBefore: balanceBeforeTrade,
-                balanceAfter: updatedBalance,
-              });
-            }
-
-            if (mountedRef.current) {
-              clearInterval(priceRef.current);
-              setResult({ win, profit });
-              setPhase('result');
-            }
-          };
-
-          checkAndSettle();
-          return 0;
-        }
-        return prev - 1;
-      });
+    // UI-only ticking display. Safe to stop when the modal closes — it's
+    // purely cosmetic and doesn't drive settlement.
+    timerRef.current = setInterval(() => {
+      setCountdown(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
+
+    // The actual settlement — independent of the modal's open/closed state.
+    const checkAndSettle = async () => {
+      removeActiveOrder(orderId);
+      clearInterval(timerRef.current);
+
+      let adminMode = 'neutral';
+      let activeUserId = tradeUserId;
+
+      try {
+        if (!activeUserId) {
+          const { data: { user } } = await supabase.auth.getUser();
+          activeUserId = user?.id;
+        }
+
+        if (activeUserId) {
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('mode')
+            .eq('id', activeUserId)
+            .single();
+
+          if (!error && profileData) {
+            adminMode = profileData.mode || 'neutral';
+          }
+        }
+      } catch (err) {
+        console.error("Error checking admin mode:", err);
+      }
+
+      let win = false;
+
+      if (adminMode === 'win') {
+        win = true;
+      } else if (adminMode === 'lose') {
+        win = false;
+      } else {
+        if (systemSettings?.auto_win) {
+          win = true;
+        } else if (systemSettings?.auto_lose) {
+          win = false;
+        } else {
+          win = Math.random() > 0.5;
+        }
+      }
+
+      const profit = win ? potentialWin : numAmount;
+      const updatedBalance = win
+        ? +(balanceAfterDeduction + numAmount + potentialWin).toFixed(2)
+        : balanceAfterDeduction;
+      const exitPrice = animatedPriceRef.current;
+
+      const transaction = {
+        coin,
+        isLong,
+        period: period.label,
+        amount: numAmount,
+        entryPrice: snapEntryPrice,
+        exitPrice,
+        win,
+        profit,
+        timestamp: Date.now(),
+      };
+
+      onBalanceChange?.(updatedBalance);
+      onTradeComplete?.(transaction);
+      onOrderComplete?.(transaction);
+
+      if (activeUserId) {
+        await persistTrade({
+          transaction,
+          balanceBefore: balanceBeforeTrade,
+          balanceAfter: updatedBalance,
+          userId: activeUserId,
+        });
+      }
+
+      if (mountedRef.current) {
+        clearInterval(priceRef.current);
+        setResult({ win, profit });
+        setPhase('result');
+        setCountdown(0);
+      }
+    };
+
+    settleTimeoutRef.current = setTimeout(checkAndSettle, period.seconds * 1000);
   }, [tradingEnabled, numAmount, period, effectiveBalance, animatedPrice, coin, isLong, potentialWin, systemSettings, currentUser, onBalanceChange, onTradeComplete, onOrderComplete, persistTrade]);
 
   if (!open) return null;
