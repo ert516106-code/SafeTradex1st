@@ -174,7 +174,7 @@ export default function Deposit() {
           style={{ background: FLOW_THEME.blueDeep }}
         />
 
-        <div className="relative z-10">
+        <div className="relative z-10 mx-auto w-full max-w-[520px]">
           {!settingsLoading && !settings.deposits ? (
             <DepositDisabledScreen />
           ) : (
