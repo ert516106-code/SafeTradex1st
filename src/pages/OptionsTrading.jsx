@@ -76,41 +76,44 @@ export default function OptionsTrading() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050816', color: '#f1f5f9', fontFamily: 'sans-serif', paddingBottom: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div style={{ minHeight: '100vh', background: '#050816', color: '#f1f5f9', fontFamily: 'sans-serif', paddingBottom: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       
-      <div style={{ width: '100%', maxWidth: '520px', padding: '16px', margin: '0 auto' }}>
+      <div style={{ width: '100%', maxWidth: '520px', padding: '18px', margin: '0 auto' }}>
         {/* CARD CONTAINER with visible border and background */}
         <div style={{
-          background: 'rgba(11, 16, 38, 0.9)',
+          background: 'rgba(10, 14, 32, 0.95)',
           backdropFilter: 'blur(4px)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '24px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
-          padding: '20px',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '28px',
+          boxShadow: '0 24px 70px rgba(0,0,0,0.85)',
+          padding: '22px',
           display: 'flex',
           flexDirection: 'column'
         }}>
           
           {/* Header with back button */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '18px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button onClick={() => navigate(-1)} style={{ padding: '8px', borderRadius: '50%', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                 <ArrowLeft size={20} />
               </button>
-              <button onClick={() => setShowPairs(!showPairs)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f7931a', color: 'black', fontWeight: '900', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>₿</div>
-                <span style={{ fontSize: '20px', fontWeight: '800' }}>{selected.symbol}</span>
-                <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+              <button onClick={() => setShowPairs(!showPairs)} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#f7931a', color: 'black', fontWeight: '600', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>₿</div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '16px', fontWeight: '600', lineHeight: 1.2 }}>{selected.symbol}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>Perpetual</div>
+                </div>
+                <ChevronDown size={15} style={{ color: '#64748b' }} />
               </button>
             </div>
-            <Menu size={20} style={{ color: '#94a3b8', cursor: 'pointer' }} />
+            <Menu size={19} style={{ color: '#64748b', cursor: 'pointer' }} />
           </div>
 
           {/* Pair dropdown */}
           {showPairs && (
-            <div style={{ position: 'absolute', top: '80px', left: '20px', right: '20px', zIndex: 50, background: 'rgba(11, 16, 38, 0.95)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '8px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}>
+            <div style={{ position: 'absolute', top: '80px', left: '20px', right: '20px', zIndex: 50, background: 'rgba(11, 16, 38, 0.97)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', padding: '10px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}>
               {pairs.map((p) => (
-                <button key={p.symbol} onClick={() => handleSelectPair(p)} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '700', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: selected.symbol === p.symbol ? 'rgba(37, 99, 235, 0.2)' : 'transparent', color: selected.symbol === p.symbol ? '#93c5fd' : '#cbd5e1', border: 'none', cursor: 'pointer' }}>
+                <button key={p.symbol} onClick={() => handleSelectPair(p)} style={{ width: '100%', textAlign: 'left', padding: '13px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: selected.symbol === p.symbol ? 'rgba(37, 99, 235, 0.18)' : 'transparent', color: selected.symbol === p.symbol ? '#93c5fd' : '#cbd5e1', border: 'none', cursor: 'pointer' }}>
                   <span>{p.symbol}</span>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>{p.ticker}</span>
                 </button>
@@ -119,33 +122,47 @@ export default function OptionsTrading() {
           )}
 
           {/* Price and stats */}
-          <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div style={{ background: '#0d1420', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '18px', padding: '18px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '30px', fontWeight: '600', letterSpacing: '-0.5px' }}>
+                {marketData.loading ? "---" : `$${marketData.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              </span>
+              <span style={{
+                fontSize: '13px',
+                fontWeight: '600',
+                color: marketData.change24h >= 0 ? '#4ade80' : '#f87171',
+                background: marketData.change24h >= 0 ? 'rgba(74, 222, 128, 0.12)' : 'rgba(248, 113, 113, 0.12)',
+                padding: '3px 9px',
+                borderRadius: '7px'
+              }}>
+                {marketData.change24h >= 0 ? '+' : ''}{marketData.change24h.toFixed(2)}%
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '22px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               <div>
-                <div style={{ fontSize: '32px', fontWeight: '900', letterSpacing: '-0.5px' }}>
-                  {marketData.loading ? "---" : `$${marketData.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-                </div>
-                <div style={{ fontSize: '14px', fontWeight: '700', marginTop: '4px', color: marketData.change24h >= 0 ? '#34d399' : '#f87171' }}>
-                  {marketData.change24h >= 0 ? '+' : ''}{marketData.change24h.toFixed(2)}% <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>24H</span>
-                </div>
+                <div style={{ color: '#64748b', fontSize: '11px', marginBottom: '3px' }}>24h high</div>
+                <div style={{ color: '#4ade80', fontSize: '13px', fontWeight: '600' }}>${marketData.high24h.toLocaleString()}</div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: '16px 20px', textAlign: 'right', fontSize: '12px', fontWeight: '600' }}>
-                <div><div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>High</div><span style={{ color: '#34d399' }}>${marketData.high24h.toLocaleString()}</span></div>
-                <div><div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Low</div><span style={{ color: '#f87171' }}>${marketData.low24h.toLocaleString()}</span></div>
-                <div><div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vol</div><span style={{ color: 'white' }}>${(marketData.volume24h / 1e6).toFixed(2)}M</span></div>
+              <div>
+                <div style={{ color: '#64748b', fontSize: '11px', marginBottom: '3px' }}>24h low</div>
+                <div style={{ color: '#f87171', fontSize: '13px', fontWeight: '600' }}>${marketData.low24h.toLocaleString()}</div>
+              </div>
+              <div>
+                <div style={{ color: '#64748b', fontSize: '11px', marginBottom: '3px' }}>24h vol</div>
+                <div style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: '600' }}>${(marketData.volume24h / 1e6).toFixed(2)}M</div>
               </div>
             </div>
           </div>
 
           {/* Timeframes */}
-          <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '2px 2px 16px' }}>
             {timeframes.map((t) => (
               <button key={t} onClick={() => setActiveTimeframe(t)} style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
+                padding: '7px 13px',
+                borderRadius: '9px',
                 fontSize: '12px',
-                fontWeight: '700',
-                background: activeTimeframe === t ? 'rgba(255,255,255,0.1)' : 'transparent',
+                fontWeight: '600',
+                background: activeTimeframe === t ? '#2563eb' : 'transparent',
                 color: activeTimeframe === t ? 'white' : '#64748b',
                 border: 'none',
                 cursor: 'pointer',
@@ -158,23 +175,26 @@ export default function OptionsTrading() {
           </div>
 
           {/* Chart */}
-          <div style={{ width: '100%', height: '340px', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '16px' }}>
-            <TradingViewWidget symbol={selected.tv} height={340} interval={activeTimeframe} theme="dark" />
+          <div style={{ background: '#0d1420', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '18px', padding: '10px', marginBottom: '18px' }}>
+            <div style={{ width: '100%', height: '340px', borderRadius: '12px', overflow: 'hidden' }}>
+              <TradingViewWidget symbol={selected.tv} height={340} interval={activeTimeframe} theme="dark" />
+            </div>
           </div>
 
           {/* Indicators */}
-          <div style={{ display: 'flex', gap: '4px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', gap: '6px', padding: '2px 2px 16px', overflowX: 'auto' }}>
             {['MA', 'EMA', 'BOLL', 'MACD', 'RSI', 'WR'].map((i) => (
               <button key={i} onClick={() => setActiveIndicator(i)} style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
+                padding: '7px 13px',
+                borderRadius: '9px',
                 fontSize: '12px',
-                fontWeight: '700',
-                background: activeIndicator === i ? 'rgba(37, 99, 235, 0.2)' : 'transparent',
+                fontWeight: '600',
+                background: activeIndicator === i ? 'rgba(37, 99, 235, 0.18)' : 'transparent',
                 color: activeIndicator === i ? '#93c5fd' : '#64748b',
                 border: 'none',
                 cursor: 'pointer',
-                transition: '0.2s'
+                transition: '0.2s',
+                whiteSpace: 'nowrap'
               }}>
                 {i}
               </button>
@@ -182,11 +202,11 @@ export default function OptionsTrading() {
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '14px', fontWeight: '700', paddingBottom: '12px', marginTop: '4px' }}>
+          <div style={{ display: 'flex', gap: '26px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '14px', fontWeight: '600', marginTop: '4px' }}>
             <button onClick={() => setActiveTab('open')} style={{
-              paddingBottom: '10px',
+              paddingBottom: '12px',
               borderBottom: '2px solid',
-              borderColor: activeTab === 'open' ? 'white' : 'transparent',
+              borderColor: activeTab === 'open' ? '#2563eb' : 'transparent',
               color: activeTab === 'open' ? 'white' : '#64748b',
               background: 'none',
               cursor: 'pointer',
@@ -195,9 +215,9 @@ export default function OptionsTrading() {
               Open Orders
             </button>
             <button onClick={() => setActiveTab('history')} style={{
-              paddingBottom: '10px',
+              paddingBottom: '12px',
               borderBottom: '2px solid',
-              borderColor: activeTab === 'history' ? 'white' : 'transparent',
+              borderColor: activeTab === 'history' ? '#2563eb' : 'transparent',
               color: activeTab === 'history' ? 'white' : '#64748b',
               background: 'none',
               cursor: 'pointer',
@@ -208,7 +228,7 @@ export default function OptionsTrading() {
           </div>
 
           {/* Order list */}
-          <div style={{ marginTop: '16px' }}>
+          <div style={{ marginTop: '18px' }}>
             {orderList}
           </div>
 
@@ -216,15 +236,15 @@ export default function OptionsTrading() {
       </div>
 
       {/* Bottom buttons */}
-      <div style={{ position: 'fixed', bottom: '24px', left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '0 16px', pointerEvents: 'none' }}>
-        <div style={{ maxWidth: '520px', width: '100%', display: 'flex', gap: '12px', pointerEvents: 'auto' }}>
-          <button onClick={() => setModal({ open: true, type: 'long' })} style={{ flex: 1, padding: '16px', borderRadius: '16px', background: '#34d399', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 8px 30px rgba(52, 211, 153, 0.4)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
-            <span style={{ fontSize: '14px', fontWeight: '900' }}>Buy Long</span>
-            <span style={{ fontSize: '12px', fontWeight: '700', opacity: 0.9, marginTop: '2px' }}>${marketData.price.toFixed(2)}</span>
+      <div style={{ position: 'fixed', bottom: '32px', left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '0 18px', pointerEvents: 'none' }}>
+        <div style={{ maxWidth: '520px', width: '100%', display: 'flex', gap: '14px', pointerEvents: 'auto' }}>
+          <button onClick={() => setModal({ open: true, type: 'long' })} style={{ flex: 1, padding: '18px', borderRadius: '18px', background: '#16a34a', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 10px 32px rgba(22, 163, 74, 0.4)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
+            <span style={{ fontSize: '15px', fontWeight: '600' }}>Buy Long</span>
+            <span style={{ fontSize: '12px', fontWeight: '500', opacity: 0.85, marginTop: '3px' }}>${marketData.price.toFixed(2)}</span>
           </button>
-          <button onClick={() => setModal({ open: true, type: 'short' })} style={{ flex: 1, padding: '16px', borderRadius: '16px', background: '#f87171', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 8px 30px rgba(248, 113, 113, 0.4)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
-            <span style={{ fontSize: '14px', fontWeight: '900' }}>Sell Short</span>
-            <span style={{ fontSize: '12px', fontWeight: '700', opacity: 0.9, marginTop: '2px' }}>${marketData.price.toFixed(2)}</span>
+          <button onClick={() => setModal({ open: true, type: 'short' })} style={{ flex: 1, padding: '18px', borderRadius: '18px', background: '#dc2626', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 10px 32px rgba(220, 38, 38, 0.4)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
+            <span style={{ fontSize: '15px', fontWeight: '600' }}>Sell Short</span>
+            <span style={{ fontSize: '12px', fontWeight: '500', opacity: 0.85, marginTop: '3px' }}>${marketData.price.toFixed(2)}</span>
           </button>
         </div>
       </div>
