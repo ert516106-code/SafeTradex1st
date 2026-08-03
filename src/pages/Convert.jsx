@@ -5,7 +5,23 @@ import SelectCoin from "../components/convert/SelectCoin";
 import ConvertReview from "../components/convert/ConvertReview";
 import ConvertLoading from "../components/convert/ConvertLoading";
 import ConvertSuccess from "../components/convert/ConvertSuccess";
-import { toast } from "sonner";
+
+// Simple toast replacement for sonner
+const toast = {
+  success: (message) => {
+    console.log('✅ Success:', message);
+    // You can replace this with a proper toast UI
+    alert(message);
+  },
+  error: (message) => {
+    console.error('❌ Error:', message);
+    alert(message);
+  },
+  info: (message) => {
+    console.info('ℹ️ Info:', message);
+    alert(message);
+  }
+};
 
 export const COINS = [
   { symbol: "BTC", name: "Bitcoin", price: 63200, balance: 0.5842, color: "#F7931A" },
@@ -93,9 +109,7 @@ export default function Convert() {
   const [mounted, setMounted] = useState(false);
   const [conversionLoading, setConversionLoading] = useState(false);
   
-  // User's balances - these would come from your backend in production
   const [userBalances, setUserBalances] = useState(() => {
-    // Initialize from COINS data
     const balances = {};
     COINS.forEach(coin => {
       balances[coin.symbol] = coin.balance;
@@ -116,8 +130,6 @@ export default function Convert() {
   }, [userBalances]);
 
   const refreshBalances = useCallback(() => {
-    // In production, this would fetch from your backend
-    // For now, it just keeps the local state
     return Promise.resolve();
   }, []);
 
@@ -147,23 +159,15 @@ export default function Convert() {
     setConversionLoading(true);
     
     try {
-      // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Update balances locally
       const newBalances = { ...userBalances };
-      
-      // Deduct from source
       newBalances[fromCoin] = Math.max(0, newBalances[fromCoin] - numAmt);
-      
-      // Add to destination
       newBalances[toCoin] = (newBalances[toCoin] || 0) + netReceive;
       
       setUserBalances(newBalances);
       
       toast.success(`Successfully converted ${numAmt} ${fromCoin} → ${netReceive.toFixed(8)} ${toCoin}`);
-      
-      // Reset form after successful conversion
       resetDraft();
       
       return true;
@@ -185,7 +189,6 @@ export default function Convert() {
     getBalanceForCoin,
     fromBalance: getBalanceForCoin(draft.fromCoin),
     toBalance: getBalanceForCoin(draft.toCoin),
-    // Add these for the components that might need them
     userBalances,
     setUserBalances,
     refreshBalances,
