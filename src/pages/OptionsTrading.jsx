@@ -161,7 +161,7 @@ export default function OptionsTrading({ onBack }) {
       })}`;
 
   return (
-    <div className="min-h-screen bg-[#050816] pb-28 font-sans text-slate-100">
+    <div className="min-h-screen bg-[#050816] pb-6 font-sans text-slate-100">
       <main className="relative mx-auto w-full max-w-[520px] px-3 pt-2">
         <header className="relative flex items-center justify-between pb-3">
           <button
@@ -248,14 +248,12 @@ export default function OptionsTrading({ onBack }) {
                   ${marketData.high24h.toLocaleString()}
                 </span>
               </div>
-
               <div>
                 <span className="block text-slate-500">Low</span>
                 <span className="text-rose-400">
                   ${marketData.low24h.toLocaleString()}
                 </span>
               </div>
-
               <div>
                 <span className="block text-slate-500">Vol</span>
                 <span className="text-slate-200">
@@ -339,12 +337,10 @@ export default function OptionsTrading({ onBack }) {
             </button>
           </div>
 
-          <div className="min-h-[145px] p-3">{orderList}</div>
+          <div className="min-h-[270px] p-4">{orderList}</div>
         </section>
-      </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#243451] bg-[#081126]/95 px-3 pb-4 pt-3 backdrop-blur-xl">
-        <div className="mx-auto grid w-full max-w-[520px] grid-cols-2 gap-3">
+        <div className="mx-1 mt-3 grid grid-cols-2 gap-3 pb-2">
           <button
             type="button"
             onClick={() => setModal({ open: true, type: "long" })}
@@ -367,7 +363,7 @@ export default function OptionsTrading({ onBack }) {
             </span>
           </button>
         </div>
-      </div>
+      </main>
 
       <TradingModal
         open={modal.open}
