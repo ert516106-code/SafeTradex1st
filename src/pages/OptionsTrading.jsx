@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Menu, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TradingViewWidget from "../components/trading/TradingViewWidget";
 import TradingModal from "../components/trading/TradingModal";
 import OpenOrders from "../components/trading/Openorders";
 import OrderHistory from "../components/trading/Orderhistory";
+import { useMarket } from "../contexts/MarketContext";
 
 const pairs = [
   { symbol: 'BTC/USDT', tv: 'BINANCE:BTCUSDT', coinId: 'bitcoin', ticker: 'BTC' },
@@ -17,8 +18,56 @@ const pairs = [
 
 const timeframes = ['1m', '5m', '15m', '30m', '1h', '2h', '6h', '12h', '1D'];
 
+// Real coin logos, hosted — with a colored letter-circle fallback if the image ever fails
+const COIN_ICON_URL = (ticker) =>
+  `https://assets.coincap.io/assets/icons/${ticker.toLowerCase()}@2x.png`;
+
+const COIN_COLORS = {
+  BTC: '#F7931A',
+  ETH: '#627EEA',
+  XRP: '#23292F',
+  SOL: '#9945FF',
+  BNB: '#F3BA2F',
+  DOGE: '#C2A633',
+};
+
+function CoinLogo({ ticker, size = 30 }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: COIN_COLORS[ticker] || '#475569',
+        color: 'black',
+        fontWeight: '600',
+        fontSize: size * 0.43,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        {ticker.charAt(0)}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={COIN_ICON_URL(ticker)}
+      alt={ticker}
+      width={size}
+      height={size}
+      style={{ borderRadius: '50%', display: 'block' }}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export default function OptionsTrading() {
   const navigate = useNavigate();
+  const { coins, loading: marketLoading } = useMarket();
   const [selected, setSelected] = useState(pairs[0]);
   const [modal, setModal] = useState({ open: false, type: 'long' });
   const [showPairs, setShowPairs] = useState(false);
@@ -27,48 +76,23 @@ export default function OptionsTrading() {
   const [activeIndicator, setActiveIndicator] = useState('MA');
   const [balance, setBalance] = useState(10000);
 
-  const [marketData, setMarketData] = useState({
-    price: 0,
-    change24h: 0,
-    high24h: 0,
-    low24h: 0,
-    volume24h: 0,
-    loading: true
-  });
+  // Pull live data for the selected pair from the shared, cached market feed
+  const marketData = useMemo(() => {
+    const live = coins.find((c) => c.id === selected.coinId);
+    return {
+      price: live?.price ?? 0,
+      change24h: live?.change ?? 0,
+      high24h: live?.high24h ?? 0,
+      low24h: live?.low24h ?? 0,
+      volume24h: live?.volume24h ?? 0,
+      loading: marketLoading || !live,
+    };
+  }, [coins, marketLoading, selected.coinId]);
 
-  const fetchCoinGeckoData = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `https://api.coingecko.com/api/v3/coins/${selected.coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`
-      );
-      if (!response.ok) throw new Error('CoinGecko API rate limit or error');
-      const data = await response.json();
-      if (data && data.market_data) {
-        setMarketData({
-          price: data.market_data.current_price.usd,
-          change24h: data.market_data.price_change_percentage_24h ?? 0,
-          high24h: data.market_data.high_24h.usd ?? 0,
-          low24h: data.market_data.low_24h.usd ?? 0,
-          volume24h: data.market_data.total_volume.usd ?? 0,
-          loading: false
-        });
-      }
-    } catch (error) {
-      console.warn("CoinGecko fetch failed:", error);
-    }
-  }, [selected.coinId]);
-
-  useEffect(() => {
-    setMarketData((prev) => ({ ...prev, loading: true }));
-    fetchCoinGeckoData();
-    const interval = setInterval(fetchCoinGeckoData, 60000);
-    return () => clearInterval(interval);
-  }, [fetchCoinGeckoData]);
-
-  const handleSelectPair = useCallback((pair) => {
+  const handleSelectPair = (pair) => {
     setSelected(pair);
     setShowPairs(false);
-  }, []);
+  };
 
   const orderList = useMemo(
     () => (activeTab === 'open' ? <OpenOrders /> : <OrderHistory />),
@@ -98,11 +122,8 @@ export default function OptionsTrading() {
                 <ArrowLeft size={20} />
               </button>
               <button onClick={() => setShowPairs(!showPairs)} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
-                <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#f7931a', color: 'black', fontWeight: '600', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>₿</div>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '16px', fontWeight: '600', lineHeight: 1.2 }}>{selected.symbol}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>Perpetual</div>
-                </div>
+                <CoinLogo ticker={selected.ticker} size={30} />
+                <span style={{ fontSize: '16px', fontWeight: '600' }}>{selected.symbol}</span>
                 <ChevronDown size={15} style={{ color: '#64748b' }} />
               </button>
             </div>
@@ -113,8 +134,9 @@ export default function OptionsTrading() {
           {showPairs && (
             <div style={{ position: 'absolute', top: '80px', left: '20px', right: '20px', zIndex: 50, background: 'rgba(11, 16, 38, 0.97)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', padding: '10px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}>
               {pairs.map((p) => (
-                <button key={p.symbol} onClick={() => handleSelectPair(p)} style={{ width: '100%', textAlign: 'left', padding: '13px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: selected.symbol === p.symbol ? 'rgba(37, 99, 235, 0.18)' : 'transparent', color: selected.symbol === p.symbol ? '#93c5fd' : '#cbd5e1', border: 'none', cursor: 'pointer' }}>
-                  <span>{p.symbol}</span>
+                <button key={p.symbol} onClick={() => handleSelectPair(p)} style={{ width: '100%', textAlign: 'left', padding: '13px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px', background: selected.symbol === p.symbol ? 'rgba(37, 99, 235, 0.18)' : 'transparent', color: selected.symbol === p.symbol ? '#93c5fd' : '#cbd5e1', border: 'none', cursor: 'pointer' }}>
+                  <CoinLogo ticker={p.ticker} size={22} />
+                  <span style={{ flex: 1 }}>{p.symbol}</span>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>{p.ticker}</span>
                 </button>
               ))}
