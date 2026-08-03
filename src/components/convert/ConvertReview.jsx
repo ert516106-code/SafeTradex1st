@@ -1,10 +1,11 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ConvertHeader, GlassCard, PrimaryButton, CoinLogo, computeQuote, useConvert, formatAmount } from "../../pages/Convert";
+import { toast } from "sonner"; // or your existing toast library
 
 export default function ConvertReview() {
   const navigate = useNavigate();
-  const { draft } = useConvert();
+  const { draft, fromBalance } = useConvert(); // now includes real balance
 
   const quote = useMemo(
     () => computeQuote(draft.fromCoin, draft.toCoin, draft.amount),
@@ -14,6 +15,15 @@ export default function ConvertReview() {
   const { from, to, amount, rate, fee, netReceive } = quote;
 
   const handleConfirm = () => {
+    // Check that the amount doesn't exceed the real balance
+    if (parseFloat(amount) > fromBalance) {
+      toast.error(`Insufficient ${draft.fromCoin} balance`);
+      return;
+    }
+    if (parseFloat(amount) <= 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
     navigate("/convert/processing");
   };
 
@@ -56,6 +66,7 @@ export default function ConvertReview() {
           <Row label="From" value={`${from.name} (${from.symbol})`} />
           <Row label="To" value={`${to.name} (${to.symbol})`} />
           <Row label="Amount" value={`${formatAmount(amount, 6)} ${from.symbol}`} />
+          <Row label="Available" value={`${formatAmount(fromBalance, 2)} ${from.symbol}`} />
           <Row label="Exchange Rate" value={`1 ${from.symbol} = ${formatAmount(rate, 2)} ${to.symbol}`} />
           <Row label="Fee" value={`${formatAmount(fee, 6)} ${to.symbol}`} />
           <Row label="Estimated Receive" value={`${formatAmount(netReceive, 6)} ${to.symbol}`} highlight />
