@@ -5,6 +5,7 @@ import TradingHeader from './TradingHeader';
 import TradingChart from './TradingChart';
 import { supabase } from "../../lib/supabase";
 import * as tradeService from "../../services/tradeService";
+import { addActiveOrder, removeActiveOrder } from '../../lib/orderStore';
 
 const periods = [
   { label: '1m', seconds: 60, profit: '+30.00%', rate: 0.30, minAmount: 100 },
@@ -259,12 +260,27 @@ export default function TradingModal({
     setPhase('countdown');
     setCountdown(period.seconds);
 
+    const orderId = `order_${Date.now()}`;
+    addActiveOrder({
+      id: orderId,
+      coin,
+      direction: isLong ? 'Long' : 'Short',
+      period: period.label,
+      totalSeconds: period.seconds,
+      startTime: Date.now(),
+      amount: numAmount,
+      entryPrice: snapEntryPrice,
+      potentialWin,
+    });
+
     timerRef.current = setInterval(async () => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
           
           const checkAndSettle = async () => {
+            removeActiveOrder(orderId);
+
             let adminMode = 'neutral';
             let activeUserId = currentUser?.id;
             
