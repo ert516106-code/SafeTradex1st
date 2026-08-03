@@ -90,7 +90,7 @@ export default function Transfer() {
           style={{ background: "#2563EB" }}
         />
 
-        <div className="relative z-10">
+        <div className="relative z-10 mx-auto w-full max-w-[520px]">
           <Routes>
             <Route index element={<TransferForm />} />
             <Route path="select-coin" element={<TransferCoinSelector />} />
