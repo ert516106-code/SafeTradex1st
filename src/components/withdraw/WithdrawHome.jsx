@@ -7,7 +7,28 @@ export default function WithdrawHome() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col">
-      <WithdrawHeader title="Withdraw" onClose={() => navigate(-1)} />
+      <WithdrawHeader
+        title="Withdraw"
+        onClose={() => navigate(-1)}
+        right={
+          <button
+            type="button"
+            onClick={() => navigate("/withdraw/history")}
+            aria-label="Withdraw history"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 8v4l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        }
+      />
 
       <div className="px-4 pt-6 sm:px-6">
         <h2 className="text-[20px] font-extrabold text-white">Where to?</h2>
