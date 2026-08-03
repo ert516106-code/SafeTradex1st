@@ -7,9 +7,10 @@ const STEP_MS = 700;
 
 export default function ConvertLoading() {
   const navigate = useNavigate();
-  const { draft } = useConvert();
+  const { draft, convert } = useConvert(); // now has `convert` function
   const [stepIndex, setStepIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState(false);
 
   const quote = useMemo(
     () => computeQuote(draft.fromCoin, draft.toCoin, draft.amount),
@@ -22,18 +23,39 @@ export default function ConvertLoading() {
     return () => clearTimeout(t);
   }, []);
 
+  // Step animation
   useEffect(() => {
+    if (error) return;
     const interval = setInterval(() => {
       setStepIndex((prev) => Math.min(prev + 1, STEPS.length - 1));
     }, STEP_MS);
-    const finish = setTimeout(() => {
-      navigate("/convert/success", { replace: true });
-    }, STEP_MS * STEPS.length + 300);
-    return () => {
-      clearInterval(interval);
-      clearTimeout(finish);
+    return () => clearInterval(interval);
+  }, [error]);
+
+  // Actual conversion call
+  useEffect(() => {
+    let cancelled = false;
+    const runConversion = async () => {
+      try {
+        const success = await convert(); // the real API conversion
+        if (cancelled) return;
+        if (success) {
+          navigate("/convert/success", { replace: true });
+        } else {
+          // conversion returned false (shouldn't happen often because we already validated)
+          setError(true);
+          setTimeout(() => navigate(-1), 2000);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(true);
+          setTimeout(() => navigate(-1), 2000);
+        }
+      }
     };
-  }, [navigate]);
+    runConversion();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-6 text-center">
@@ -87,20 +109,28 @@ export default function ConvertLoading() {
           </div>
         </div>
 
-        {/* Core */}
+        {/* Core (can show error state) */}
         <div
-          className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#7C3AED] to-[#2563EB] shadow-[0_0_40px_rgba(124,58,237,0.6)]"
-          style={{ animation: "cvPulseCore 1.6s ease-in-out infinite" }}
+          className={`flex h-20 w-20 items-center justify-center rounded-full shadow-[0_0_40px_rgba(124,58,237,0.6)] ${
+            error ? "bg-red-500/80" : "bg-gradient-to-br from-[#7C3AED] to-[#2563EB]"
+          }`}
+          style={{ animation: error ? "none" : "cvPulseCore 1.6s ease-in-out infinite" }}
         >
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M7 10l-3-3 3-3M4 7h11a4 4 0 014 4M17 14l3 3-3 3M20 17H9a4 4 0 01-4-4"
-              stroke="#fff"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          {error ? (
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+              <path d="M6 6l12 12M18 6L6 18" stroke="white" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M7 10l-3-3 3-3M4 7h11a4 4 0 014 4M17 14l3 3-3 3M20 17H9a4 4 0 01-4-4"
+                stroke="#fff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
         </div>
       </div>
 
@@ -108,16 +138,22 @@ export default function ConvertLoading() {
         className="text-[19px] font-extrabold text-white transition-all duration-500"
         style={{ opacity: mounted ? 1 : 0, transform: mounted ? "translateY(0)" : "translateY(8px)" }}
       >
-        Converting {from.symbol} → {to.symbol}
+        {error ? "Conversion Failed" : `Converting ${from.symbol} → ${to.symbol}`}
       </h1>
 
-      <p
-        key={stepIndex}
-        className="mt-3 text-[13.5px] text-[#A78BFA] transition-all duration-300"
-        style={{ animation: "cvPulseCore 0.4s ease" }}
-      >
-        {STEPS[stepIndex]}
-      </p>
+      {!error && (
+        <p
+          key={stepIndex}
+          className="mt-3 text-[13.5px] text-[#A78BFA] transition-all duration-300"
+          style={{ animation: "cvPulseCore 0.4s ease" }}
+        >
+          {STEPS[stepIndex]}
+        </p>
+      )}
+
+      {error && (
+        <p className="mt-3 text-[13.5px] text-red-300">Returning to review...</p>
+      )}
 
       <div className="mt-8 flex gap-1.5">
         {STEPS.map((_, i) => (
@@ -125,8 +161,12 @@ export default function ConvertLoading() {
             key={i}
             className="h-1.5 rounded-full transition-all duration-300"
             style={{
-              width: i <= stepIndex ? 22 : 8,
-              background: i <= stepIndex ? "linear-gradient(90deg, #7C3AED, #2563EB)" : "rgba(255,255,255,0.1)",
+              width: error ? 8 : i <= stepIndex ? 22 : 8,
+              background: error
+                ? "rgba(255,255,255,0.15)"
+                : i <= stepIndex
+                ? "linear-gradient(90deg, #7C3AED, #2563EB)"
+                : "rgba(255,255,255,0.1)",
             }}
           />
         ))}
