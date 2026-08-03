@@ -1,95 +1,30 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronDown } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Menu, ChevronDown, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import TradingViewWidget from "../components/trading/TradingViewWidget";
 import TradingModal from "../components/trading/TradingModal";
 import OpenOrders from "../components/trading/Openorders";
 import OrderHistory from "../components/trading/Orderhistory";
 
 const pairs = [
-  {
-    symbol: "BTC/USDT",
-    tv: "BINANCE:BTCUSDT",
-    coinId: "bitcoin",
-    ticker: "BTC",
-    logo: "https://assets.coincap.io/assets/icons/btc@2x.png",
-  },
-  {
-    symbol: "ETH/USDT",
-    tv: "BINANCE:ETHUSDT",
-    coinId: "ethereum",
-    ticker: "ETH",
-    logo: "https://assets.coincap.io/assets/icons/eth@2x.png",
-  },
-  {
-    symbol: "XRP/USDT",
-    tv: "BINANCE:XRPUSDT",
-    coinId: "ripple",
-    ticker: "XRP",
-    logo: "https://assets.coincap.io/assets/icons/xrp@2x.png",
-  },
-  {
-    symbol: "SOL/USDT",
-    tv: "BINANCE:SOLUSDT",
-    coinId: "solana",
-    ticker: "SOL",
-    logo: "https://assets.coincap.io/assets/icons/sol@2x.png",
-  },
-  {
-    symbol: "BNB/USDT",
-    tv: "BINANCE:BNBUSDT",
-    coinId: "binancecoin",
-    ticker: "BNB",
-    logo: "https://assets.coincap.io/assets/icons/bnb@2x.png",
-  },
-  {
-    symbol: "DOGE/USDT",
-    tv: "BINANCE:DOGEUSDT",
-    coinId: "dogecoin",
-    ticker: "DOGE",
-    logo: "https://assets.coincap.io/assets/icons/doge@2x.png",
-  },
+  { symbol: 'BTC/USDT', tv: 'BINANCE:BTCUSDT', coinId: 'bitcoin', ticker: 'BTC' },
+  { symbol: 'ETH/USDT', tv: 'BINANCE:ETHUSDT', coinId: 'ethereum', ticker: 'ETH' },
+  { symbol: 'XRP/USDT', tv: 'BINANCE:XRPUSDT', coinId: 'ripple', ticker: 'XRP' },
+  { symbol: 'SOL/USDT', tv: 'BINANCE:SOLUSDT', coinId: 'solana', ticker: 'SOL' },
+  { symbol: 'BNB/USDT', tv: 'BINANCE:BNBUSDT', coinId: 'binancecoin', ticker: 'BNB' },
+  { symbol: 'DOGE/USDT', tv: 'BINANCE:DOGEUSDT', coinId: 'dogecoin', ticker: 'DOGE' },
 ];
 
-const timeframes = ["1m", "5m", "15m", "30m", "1h", "2h", "6h", "12h", "1D"];
-const indicators = ["MA", "EMA", "BOLL", "MACD", "RSI", "WR"];
+const timeframes = ['1m', '5m', '15m', '30m', '1h', '2h', '6h', '12h', '1D'];
 
-function CoinLogo({ pair, size = 32 }) {
-  const [failed, setFailed] = useState(false);
-
-  if (failed) {
-    return (
-      <span
-        className="flex items-center justify-center rounded-full bg-[#f7931a] font-black text-[#17110a]"
-        style={{ width: size, height: size, fontSize: size * 0.42 }}
-      >
-        {pair.ticker.slice(0, 1)}
-      </span>
-    );
-  }
-
-  return (
-    <img
-      src={pair.logo}
-      alt={pair.ticker}
-      width={size}
-      height={size}
-      onError={() => setFailed(true)}
-      className="rounded-full object-cover"
-      style={{ width: size, height: size }}
-    />
-  );
-}
-
-export default function OptionsTrading({ onBack }) {
+export default function OptionsTrading() {
   const navigate = useNavigate();
-
   const [selected, setSelected] = useState(pairs[0]);
-  const [modal, setModal] = useState({ open: false, type: "long" });
+  const [modal, setModal] = useState({ open: false, type: 'long' });
   const [showPairs, setShowPairs] = useState(false);
-  const [activeTab, setActiveTab] = useState("open");
-  const [activeTimeframe, setActiveTimeframe] = useState("1m");
-  const [activeIndicator, setActiveIndicator] = useState("MA");
+  const [activeTab, setActiveTab] = useState('open');
+  const [activeTimeframe, setActiveTimeframe] = useState('1m');
+  const [activeIndicator, setActiveIndicator] = useState('MA');
   const [balance, setBalance] = useState(10000);
 
   const [marketData, setMarketData] = useState({
@@ -98,7 +33,7 @@ export default function OptionsTrading({ onBack }) {
     high24h: 0,
     low24h: 0,
     volume24h: 0,
-    loading: true,
+    loading: true
   });
 
   const fetchCoinGeckoData = useCallback(async () => {
@@ -106,264 +41,193 @@ export default function OptionsTrading({ onBack }) {
       const response = await fetch(
         `https://api.coingecko.com/api/v3/coins/${selected.coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false`
       );
-
-      if (!response.ok) throw new Error("Market data unavailable");
-
+      if (!response.ok) throw new Error('CoinGecko API rate limit or error');
       const data = await response.json();
-
-      if (data?.market_data) {
+      if (data && data.market_data) {
         setMarketData({
-          price: data.market_data.current_price.usd ?? 0,
+          price: data.market_data.current_price.usd,
           change24h: data.market_data.price_change_percentage_24h ?? 0,
           high24h: data.market_data.high_24h.usd ?? 0,
           low24h: data.market_data.low_24h.usd ?? 0,
           volume24h: data.market_data.total_volume.usd ?? 0,
-          loading: false,
+          loading: false
         });
       }
     } catch (error) {
-      console.warn("Could not load market data:", error);
+      console.warn("CoinGecko fetch failed:", error);
     }
   }, [selected.coinId]);
 
   useEffect(() => {
-    setMarketData((previous) => ({ ...previous, loading: true }));
+    setMarketData((prev) => ({ ...prev, loading: true }));
     fetchCoinGeckoData();
-
     const interval = setInterval(fetchCoinGeckoData, 60000);
     return () => clearInterval(interval);
   }, [fetchCoinGeckoData]);
 
+  const handleSelectPair = useCallback((pair) => {
+    setSelected(pair);
+    setShowPairs(false);
+  }, []);
+
   const orderList = useMemo(
-    () => (activeTab === "open" ? <OpenOrders /> : <OrderHistory />),
+    () => (activeTab === 'open' ? <OpenOrders /> : <OrderHistory />),
     [activeTab]
   );
 
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-      return;
-    }
-
-    navigate(-1);
-  };
-
-  const handleSelectPair = (pair) => {
-    setSelected(pair);
-    setShowPairs(false);
-  };
-
-  const priceLabel = marketData.loading
-    ? "---"
-    : `$${marketData.price.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}`;
-
   return (
-    <div className="min-h-screen bg-[#050816] pb-6 font-sans text-slate-100">
-      <main className="relative mx-auto w-full max-w-[520px] px-3 pt-2">
-        <header className="relative flex items-center justify-between pb-3">
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-label="Back"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M15 5l-7 7 7 7"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+    <div style={{ minHeight: '100vh', background: '#050816', color: '#f1f5f9', fontFamily: 'sans-serif', paddingBottom: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      
+      <div style={{ width: '100%', maxWidth: '520px', padding: '16px', margin: '0 auto' }}>
+        {/* CARD CONTAINER with visible border and background */}
+        <div style={{
+          background: 'rgba(11, 16, 38, 0.9)',
+          backdropFilter: 'blur(4px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '24px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+          padding: '20px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          
+          {/* Header with back button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button onClick={() => navigate(-1)} style={{ padding: '8px', borderRadius: '50%', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                <ArrowLeft size={20} />
+              </button>
+              <button onClick={() => setShowPairs(!showPairs)} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f7931a', color: 'black', fontWeight: '900', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>₿</div>
+                <span style={{ fontSize: '20px', fontWeight: '800' }}>{selected.symbol}</span>
+                <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+              </button>
+            </div>
+            <Menu size={20} style={{ color: '#94a3b8', cursor: 'pointer' }} />
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setShowPairs((visible) => !visible)}
-            className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-xl px-3 py-2 transition hover:bg-white/[0.05]"
-          >
-            <CoinLogo pair={selected} size={32} />
-            <span className="text-[17px] font-extrabold text-white">
-              {selected.symbol}
-            </span>
-            <ChevronDown size={16} className="text-slate-400" />
-          </button>
+          {/* Pair dropdown */}
+          {showPairs && (
+            <div style={{ position: 'absolute', top: '80px', left: '20px', right: '20px', zIndex: 50, background: 'rgba(11, 16, 38, 0.95)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '8px', boxShadow: '0 20px 40px rgba(0,0,0,0.6)' }}>
+              {pairs.map((p) => (
+                <button key={p.symbol} onClick={() => handleSelectPair(p)} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '700', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: selected.symbol === p.symbol ? 'rgba(37, 99, 235, 0.2)' : 'transparent', color: selected.symbol === p.symbol ? '#93c5fd' : '#cbd5e1', border: 'none', cursor: 'pointer' }}>
+                  <span>{p.symbol}</span>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>{p.ticker}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
-          <div className="h-10 w-10" />
-        </header>
+          {/* Price and stats */}
+          <div style={{ padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <div>
+                <div style={{ fontSize: '32px', fontWeight: '900', letterSpacing: '-0.5px' }}>
+                  {marketData.loading ? "---" : `$${marketData.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: '700', marginTop: '4px', color: marketData.change24h >= 0 ? '#34d399' : '#f87171' }}>
+                  {marketData.change24h >= 0 ? '+' : ''}{marketData.change24h.toFixed(2)}% <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>24H</span>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: '16px 20px', textAlign: 'right', fontSize: '12px', fontWeight: '600' }}>
+                <div><div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>High</div><span style={{ color: '#34d399' }}>${marketData.high24h.toLocaleString()}</span></div>
+                <div><div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Low</div><span style={{ color: '#f87171' }}>${marketData.low24h.toLocaleString()}</span></div>
+                <div><div style={{ color: '#94a3b8', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vol</div><span style={{ color: 'white' }}>${(marketData.volume24h / 1e6).toFixed(2)}M</span></div>
+              </div>
+            </div>
+          </div>
 
-        {showPairs && (
-          <div className="absolute left-3 right-3 top-14 z-50 rounded-2xl border border-white/10 bg-[#10182e]/95 p-2 shadow-2xl backdrop-blur-xl">
-            {pairs.map((pair) => (
-              <button
-                key={pair.symbol}
-                type="button"
-                onClick={() => handleSelectPair(pair)}
-                className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-bold transition ${
-                  selected.symbol === pair.symbol
-                    ? "bg-[#2f5fe8]/20 text-blue-300"
-                    : "text-slate-300 hover:bg-white/[0.06]"
-                }`}
-              >
-                <span className="flex items-center gap-3">
-                  <CoinLogo pair={pair} size={27} />
-                  {pair.symbol}
-                </span>
-                <span className="text-xs font-medium text-slate-500">
-                  {pair.ticker}
-                </span>
+          {/* Timeframes */}
+          <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+            {timeframes.map((t) => (
+              <button key={t} onClick={() => setActiveTimeframe(t)} style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: '700',
+                background: activeTimeframe === t ? 'rgba(255,255,255,0.1)' : 'transparent',
+                color: activeTimeframe === t ? 'white' : '#64748b',
+                border: 'none',
+                cursor: 'pointer',
+                transition: '0.2s',
+                whiteSpace: 'nowrap'
+              }}>
+                {t}
               </button>
             ))}
           </div>
-        )}
 
-        <section className="rounded-2xl border border-[#243451] bg-[#081126] px-4 py-3 shadow-[0_10px_26px_rgba(0,0,0,0.18)]">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-[34px] font-black leading-none tracking-tight text-white sm:text-[38px]">
-                {priceLabel}
-              </div>
-
-              <div
-                className={`mt-1.5 text-[13px] font-bold ${
-                  marketData.change24h >= 0
-                    ? "text-emerald-400"
-                    : "text-rose-400"
-                }`}
-              >
-                {marketData.change24h >= 0 ? "+" : ""}
-                {marketData.change24h.toFixed(2)}%
-                <span className="ml-1 font-medium text-slate-500">24H</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-x-3 text-right text-[10px] font-semibold">
-              <div>
-                <span className="block text-slate-500">High</span>
-                <span className="text-emerald-400">
-                  ${marketData.high24h.toLocaleString()}
-                </span>
-              </div>
-              <div>
-                <span className="block text-slate-500">Low</span>
-                <span className="text-rose-400">
-                  ${marketData.low24h.toLocaleString()}
-                </span>
-              </div>
-              <div>
-                <span className="block text-slate-500">Vol</span>
-                <span className="text-slate-200">
-                  ${(marketData.volume24h / 1000000).toFixed(1)}M
-                </span>
-              </div>
-            </div>
+          {/* Chart */}
+          <div style={{ width: '100%', height: '340px', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '16px' }}>
+            <TradingViewWidget symbol={selected.tv} height={340} interval={activeTimeframe} theme="dark" />
           </div>
-        </section>
 
-        <div className="mt-3 flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-[#081126] p-1 no-scrollbar">
-          {timeframes.map((timeframe) => (
-            <button
-              key={timeframe}
-              type="button"
-              onClick={() => setActiveTimeframe(timeframe)}
-              className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[12px] font-bold transition ${
-                activeTimeframe === timeframe
-                  ? "bg-[#3848e8] text-white shadow-[0_3px_12px_rgba(56,72,232,0.4)]"
-                  : "text-slate-500 hover:text-slate-200"
-              }`}
-            >
-              {timeframe}
-            </button>
-          ))}
-        </div>
+          {/* Indicators */}
+          <div style={{ display: 'flex', gap: '4px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' }}>
+            {['MA', 'EMA', 'BOLL', 'MACD', 'RSI', 'WR'].map((i) => (
+              <button key={i} onClick={() => setActiveIndicator(i)} style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: '700',
+                background: activeIndicator === i ? 'rgba(37, 99, 235, 0.2)' : 'transparent',
+                color: activeIndicator === i ? '#93c5fd' : '#64748b',
+                border: 'none',
+                cursor: 'pointer',
+                transition: '0.2s'
+              }}>
+                {i}
+              </button>
+            ))}
+          </div>
 
-        <div
-          className="mx-1 mt-3 overflow-hidden rounded-2xl border border-[#243451] bg-[#0a1222] shadow-[0_10px_26px_rgba(0,0,0,0.24)]"
-          style={{ height: 280 }}
-        >
-          <TradingViewWidget
-            symbol={selected.tv}
-            height={280}
-            interval={activeTimeframe}
-            theme="dark"
-          />
-        </div>
-
-        <div className="mx-1 mt-2 flex items-center gap-1 overflow-x-auto no-scrollbar">
-          {indicators.map((indicator) => (
-            <button
-              key={indicator}
-              type="button"
-              onClick={() => setActiveIndicator(indicator)}
-              className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition ${
-                activeIndicator === indicator
-                  ? "bg-[#2f5fe8]/20 text-blue-300"
-                  : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"
-              }`}
-            >
-              {indicator}
-            </button>
-          ))}
-        </div>
-
-        <section className="mx-1 mt-3 overflow-hidden rounded-2xl border border-[#243451] bg-[#0a1222]">
-          <div className="flex gap-6 border-b border-white/[0.07] px-4 pt-3">
-            <button
-              type="button"
-              onClick={() => setActiveTab("open")}
-              className={`border-b-2 pb-3 text-[13px] font-bold transition ${
-                activeTab === "open"
-                  ? "border-[#4b5cf4] text-white"
-                  : "border-transparent text-slate-500 hover:text-slate-300"
-              }`}
-            >
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '14px', fontWeight: '700', paddingBottom: '12px', marginTop: '4px' }}>
+            <button onClick={() => setActiveTab('open')} style={{
+              paddingBottom: '10px',
+              borderBottom: '2px solid',
+              borderColor: activeTab === 'open' ? 'white' : 'transparent',
+              color: activeTab === 'open' ? 'white' : '#64748b',
+              background: 'none',
+              cursor: 'pointer',
+              transition: '0.2s'
+            }}>
               Open Orders
             </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("history")}
-              className={`border-b-2 pb-3 text-[13px] font-bold transition ${
-                activeTab === "history"
-                  ? "border-[#4b5cf4] text-white"
-                  : "border-transparent text-slate-500 hover:text-slate-300"
-              }`}
-            >
+            <button onClick={() => setActiveTab('history')} style={{
+              paddingBottom: '10px',
+              borderBottom: '2px solid',
+              borderColor: activeTab === 'history' ? 'white' : 'transparent',
+              color: activeTab === 'history' ? 'white' : '#64748b',
+              background: 'none',
+              cursor: 'pointer',
+              transition: '0.2s'
+            }}>
               Order History
             </button>
           </div>
 
-          <div className="min-h-[270px] p-4">{orderList}</div>
-        </section>
+          {/* Order list */}
+          <div style={{ marginTop: '16px' }}>
+            {orderList}
+          </div>
 
-        <div className="mx-1 mt-3 grid grid-cols-2 gap-3 pb-2">
-          <button
-            type="button"
-            onClick={() => setModal({ open: true, type: "long" })}
-            className="rounded-2xl bg-gradient-to-r from-[#10c6a4] to-[#08a98d] py-4 text-white shadow-[0_10px_22px_rgba(8,169,141,0.28)] transition active:scale-[0.98]"
-          >
-            <span className="block text-[15px] font-black">Buy Long</span>
-            <span className="mt-0.5 block text-[12px] font-bold opacity-90">
-              {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
-            </span>
+        </div>
+      </div>
+
+      {/* Bottom buttons */}
+      <div style={{ position: 'fixed', bottom: '24px', left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '0 16px', pointerEvents: 'none' }}>
+        <div style={{ maxWidth: '520px', width: '100%', display: 'flex', gap: '12px', pointerEvents: 'auto' }}>
+          <button onClick={() => setModal({ open: true, type: 'long' })} style={{ flex: 1, padding: '16px', borderRadius: '16px', background: '#34d399', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 8px 30px rgba(52, 211, 153, 0.4)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
+            <span style={{ fontSize: '14px', fontWeight: '900' }}>Buy Long</span>
+            <span style={{ fontSize: '12px', fontWeight: '700', opacity: 0.9, marginTop: '2px' }}>${marketData.price.toFixed(2)}</span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => setModal({ open: true, type: "short" })}
-            className="rounded-2xl bg-gradient-to-r from-[#ff3d70] to-[#fa1f59] py-4 text-white shadow-[0_10px_22px_rgba(250,31,89,0.28)] transition active:scale-[0.98]"
-          >
-            <span className="block text-[15px] font-black">Sell Short</span>
-            <span className="mt-0.5 block text-[12px] font-bold opacity-90">
-              {marketData.loading ? "---" : `$${marketData.price.toFixed(2)}`}
-            </span>
+          <button onClick={() => setModal({ open: true, type: 'short' })} style={{ flex: 1, padding: '16px', borderRadius: '16px', background: '#f87171', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 8px 30px rgba(248, 113, 113, 0.4)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
+            <span style={{ fontSize: '14px', fontWeight: '900' }}>Sell Short</span>
+            <span style={{ fontSize: '12px', fontWeight: '700', opacity: 0.9, marginTop: '2px' }}>${marketData.price.toFixed(2)}</span>
           </button>
         </div>
-      </main>
+      </div>
 
       <TradingModal
         open={modal.open}
@@ -371,7 +235,7 @@ export default function OptionsTrading({ onBack }) {
         coin={selected.ticker}
         balance={balance}
         currentPrice={marketData.price}
-        onClose={() => setModal({ open: false, type: "long" })}
+        onClose={() => setModal({ open: false, type: 'long' })}
         onBalanceChange={setBalance}
       />
     </div>
