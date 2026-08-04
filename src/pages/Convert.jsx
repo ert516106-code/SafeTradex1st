@@ -1,78 +1,99 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 import ConvertForm from "../components/convert/ConvertForm";
 import SelectCoin from "../components/convert/SelectCoin";
 import ConvertReview from "../components/convert/ConvertReview";
 import ConvertLoading from "../components/convert/ConvertLoading";
 import ConvertSuccess from "../components/convert/ConvertSuccess";
 
-// Simple toast replacement for sonner
+// ─── SIMPLE TOAST ───
 const toast = {
-  success: (message) => {
-    console.log('✅ Success:', message);
-    alert(message);
-  },
-  error: (message) => {
-    console.error('❌ Error:', message);
-    alert(message);
-  },
-  info: (message) => {
-    console.info('ℹ️ Info:', message);
-    alert(message);
-  }
+  success: (message) => { console.log('✅', message); alert(message); },
+  error: (message) => { console.error('❌', message); alert(message); },
+  info: (message) => { console.info('ℹ️', message); alert(message); }
 };
 
+// ─── COIN CONFIGURATION ───
 export const COINS = [
-  { symbol: "BTC", name: "Bitcoin", price: 63200, balance: 0.5842, color: "#F7931A" },
-  { symbol: "ETH", name: "Ethereum", price: 1880, balance: 3.221, color: "#627EEA" },
-  { symbol: "SOL", name: "Solana", price: 73.5, balance: 42.5, color: "#9945FF" },
-  { symbol: "BNB", name: "BNB", price: 587.67, balance: 6.8, color: "#F3BA2F" },
-  { symbol: "USDT", name: "Tether", price: 1, balance: 12500, color: "#26A17B" },
-  { symbol: "USDC", name: "USD Coin", price: 1, balance: 8000, color: "#2775CA" },
-  { symbol: "XRP", name: "XRP", price: 1.09, balance: 4200, color: "#00A4E4" },
-  { symbol: "DOGE", name: "Dogecoin", price: 0.35, balance: 15000, color: "#C2A633" },
-  { symbol: "ADA", name: "Cardano", price: 0.85, balance: 3200, color: "#0033AD" },
-  { symbol: "TRX", name: "TRON", price: 0.28, balance: 9000, color: "#EF0027" },
-  { symbol: "AVAX", name: "Avalanche", price: 42, balance: 85, color: "#E84142" },
-  { symbol: "LINK", name: "Chainlink", price: 24, balance: 210, color: "#2A5ADA" },
-  { symbol: "DOT", name: "Polkadot", price: 8.5, balance: 340, color: "#E6007A" },
-  { symbol: "MATIC", name: "Polygon", price: 0.75, balance: 5200, color: "#8247E5" },
-  { symbol: "LTC", name: "Litecoin", price: 115, balance: 22, color: "#345D9D" },
-  { symbol: "SHIB", name: "Shiba Inu", price: 0.000025, balance: 500000000, color: "#FFA409" },
-  { symbol: "UNI", name: "Uniswap", price: 9.5, balance: 150, color: "#FF007A" },
-  { symbol: "ATOM", name: "Cosmos", price: 7.8, balance: 220, color: "#5064FB" },
-  { symbol: "NEAR", name: "NEAR Protocol", price: 5.2, balance: 400, color: "#00EC97" },
-  { symbol: "APT", name: "Aptos", price: 9.8, balance: 180, color: "#2DD8A7" },
-  { symbol: "ARB", name: "Arbitrum", price: 0.85, balance: 3000, color: "#28A0F0" },
-  { symbol: "OP", name: "Optimism", price: 2.1, balance: 1200, color: "#FF0420" },
-  { symbol: "FIL", name: "Filecoin", price: 5.4, balance: 300, color: "#0090FF" },
-  { symbol: "ICP", name: "Internet Computer", price: 10.2, balance: 150, color: "#29ABE2" },
-  { symbol: "ETC", name: "Ethereum Classic", price: 26, balance: 90, color: "#328332" },
-  { symbol: "BCH", name: "Bitcoin Cash", price: 480, balance: 12, color: "#8DC351" },
-  { symbol: "ALGO", name: "Algorand", price: 0.18, balance: 8000, color: "#00C2A8" },
-  { symbol: "VET", name: "VeChain", price: 0.045, balance: 40000, color: "#15BDFF" },
-  { symbol: "SAND", name: "The Sandbox", price: 0.42, balance: 6000, color: "#00ADEF" },
-  { symbol: "MANA", name: "Decentraland", price: 0.38, balance: 5000, color: "#FF2D55" },
+  { symbol: "BTC", name: "Bitcoin", color: "#F7931A", coingeckoId: "bitcoin" },
+  { symbol: "ETH", name: "Ethereum", color: "#627EEA", coingeckoId: "ethereum" },
+  { symbol: "SOL", name: "Solana", color: "#9945FF", coingeckoId: "solana" },
+  { symbol: "BNB", name: "BNB", color: "#F3BA2F", coingeckoId: "binancecoin" },
+  { symbol: "USDT", name: "Tether", color: "#26A17B", coingeckoId: "tether" },
+  { symbol: "USDC", name: "USD Coin", color: "#2775CA", coingeckoId: "usd-coin" },
+  { symbol: "XRP", name: "XRP", color: "#00A4E4", coingeckoId: "ripple" },
+  { symbol: "DOGE", name: "Dogecoin", color: "#C2A633", coingeckoId: "dogecoin" },
+  { symbol: "ADA", name: "Cardano", color: "#0033AD", coingeckoId: "cardano" },
+  { symbol: "TRX", name: "TRON", color: "#EF0027", coingeckoId: "tron" },
+  { symbol: "AVAX", name: "Avalanche", color: "#E84142", coingeckoId: "avalanche-2" },
+  { symbol: "LINK", name: "Chainlink", color: "#2A5ADA", coingeckoId: "chainlink" },
+  { symbol: "DOT", name: "Polkadot", color: "#E6007A", coingeckoId: "polkadot" },
+  { symbol: "MATIC", name: "Polygon", color: "#8247E5", coingeckoId: "matic-network" },
+  { symbol: "LTC", name: "Litecoin", color: "#345D9D", coingeckoId: "litecoin" },
+  { symbol: "SHIB", name: "Shiba Inu", color: "#FFA409", coingeckoId: "shiba-inu" },
+  { symbol: "UNI", name: "Uniswap", color: "#FF007A", coingeckoId: "uniswap" },
+  { symbol: "ATOM", name: "Cosmos", color: "#5064FB", coingeckoId: "cosmos" },
+  { symbol: "NEAR", name: "NEAR Protocol", color: "#00EC97", coingeckoId: "near" },
+  { symbol: "APT", name: "Aptos", color: "#2DD8A7", coingeckoId: "aptos" },
+  { symbol: "ARB", name: "Arbitrum", color: "#28A0F0", coingeckoId: "arbitrum" },
+  { symbol: "OP", name: "Optimism", color: "#FF0420", coingeckoId: "optimism" },
+  { symbol: "FIL", name: "Filecoin", color: "#0090FF", coingeckoId: "filecoin" },
+  { symbol: "ICP", name: "Internet Computer", color: "#29ABE2", coingeckoId: "internet-computer" },
+  { symbol: "ETC", name: "Ethereum Classic", color: "#328332", coingeckoId: "ethereum-classic" },
+  { symbol: "BCH", name: "Bitcoin Cash", color: "#8DC351", coingeckoId: "bitcoin-cash" },
+  { symbol: "ALGO", name: "Algorand", color: "#00C2A8", coingeckoId: "algorand" },
+  { symbol: "VET", name: "VeChain", color: "#15BDFF", coingeckoId: "vechain" },
+  { symbol: "SAND", name: "The Sandbox", color: "#00ADEF", coingeckoId: "the-sandbox" },
+  { symbol: "MANA", name: "Decentraland", color: "#FF2D55", coingeckoId: "decentraland" },
 ];
 
 export function getCoin(symbol) {
   return COINS.find((c) => c.symbol === symbol) || COINS[0];
 }
 
+// ─── FETCH PRICES FROM COINGECKO ───
+export async function fetchCoinPrices() {
+  try {
+    const ids = COINS.map(c => c.coingeckoId).join(',');
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`
+    );
+    
+    if (!response.ok) throw new Error('Failed to fetch prices');
+    
+    const data = await response.json();
+    
+    // Map prices to coin symbols
+    const prices = {};
+    COINS.forEach(coin => {
+      prices[coin.symbol] = data[coin.coingeckoId]?.usd || 0;
+    });
+    
+    return prices;
+  } catch (error) {
+    console.error('Error fetching prices:', error);
+    return null;
+  }
+}
+
 const FEE_RATE = 0.001;
 const SLIPPAGE = 0.5;
 
-export function computeQuote(fromSymbol, toSymbol, amountInput) {
+export function computeQuote(fromSymbol, toSymbol, amountInput, prices) {
   const from = getCoin(fromSymbol);
   const to = getCoin(toSymbol);
   const amount = parseFloat(amountInput) || 0;
+  
+  const fromPrice = prices[fromSymbol] || 0;
+  const toPrice = prices[toSymbol] || 0;
 
-  const rate = to.price > 0 ? from.price / to.price : 0;
+  const rate = toPrice > 0 ? fromPrice / toPrice : 0;
   const grossReceive = amount * rate;
   const fee = grossReceive * FEE_RATE;
   const netReceive = grossReceive - fee > 0 ? grossReceive - fee : 0;
 
-  const notional = amount * from.price;
+  const notional = amount * fromPrice;
   const priceImpact = Math.min(0.35, notional / 4_000_000);
 
   return {
@@ -86,6 +107,8 @@ export function computeQuote(fromSymbol, toSymbol, amountInput) {
     priceImpact,
     grossReceive,
     netReceive,
+    fromPrice,
+    toPrice,
   };
 }
 
@@ -107,14 +130,70 @@ export default function Convert() {
   const [draft, setDraft] = useState(initialDraft);
   const [mounted, setMounted] = useState(false);
   const [conversionLoading, setConversionLoading] = useState(false);
-  
-  const [userBalances, setUserBalances] = useState(() => {
-    const balances = {};
-    COINS.forEach(coin => {
-      balances[coin.symbol] = coin.balance;
-    });
-    return balances;
-  });
+  const [userBalances, setUserBalances] = useState({});
+  const [prices, setPrices] = useState({});
+  const [loadingBalances, setLoadingBalances] = useState(true);
+  const [loadingPrices, setLoadingPrices] = useState(true);
+  const [userId, setUserId] = useState(null);
+
+  // ─── FETCH USER AND PRICES ───
+  useEffect(() => {
+    async function fetchUserAndPrices() {
+      try {
+        // 1. Get user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoadingBalances(false);
+          setLoadingPrices(false);
+          return;
+        }
+        setUserId(user.id);
+
+        // 2. Fetch user balances
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('btc, eth, sol, xrp, bnb, usdt, usdc, ada, doge, trx, avax, link, dot, matic, ltc, shib, uni, atom, near, apt, arb, op, fil, icp, etc, bch, algo, vet, sand, mana')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching balances:', profileError);
+        } else if (profile) {
+          const balances = {};
+          const balanceMap = {
+            btc: 'BTC', eth: 'ETH', sol: 'SOL', xrp: 'XRP', bnb: 'BNB',
+            usdt: 'USDT', usdc: 'USDC', ada: 'ADA', doge: 'DOGE', trx: 'TRX',
+            avax: 'AVAX', link: 'LINK', dot: 'DOT', matic: 'MATIC', ltc: 'LTC',
+            shib: 'SHIB', uni: 'UNI', atom: 'ATOM', near: 'NEAR', apt: 'APT',
+            arb: 'ARB', op: 'OP', fil: 'FIL', icp: 'ICP', etc: 'ETC',
+            bch: 'BCH', algo: 'ALGO', vet: 'VET', sand: 'SAND', mana: 'MANA'
+          };
+          
+          Object.keys(balanceMap).forEach((dbField) => {
+            const symbol = balanceMap[dbField];
+            balances[symbol] = profile[dbField] || 0;
+          });
+          
+          setUserBalances(balances);
+        }
+        setLoadingBalances(false);
+
+        // 3. Fetch prices from CoinGecko
+        const priceData = await fetchCoinPrices();
+        if (priceData) {
+          setPrices(priceData);
+        }
+        setLoadingPrices(false);
+
+      } catch (err) {
+        console.error('Error:', err);
+        setLoadingBalances(false);
+        setLoadingPrices(false);
+      }
+    }
+
+    fetchUserAndPrices();
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 20);
@@ -128,10 +207,39 @@ export default function Convert() {
     return userBalances[symbol] || 0;
   }, [userBalances]);
 
-  const refreshBalances = useCallback(() => {
-    return Promise.resolve();
-  }, []);
+  const refreshBalances = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('btc, eth, sol, xrp, bnb, usdt, usdc, ada, doge, trx, avax, link, dot, matic, ltc, shib, uni, atom, near, apt, arb, op, fil, icp, etc, bch, algo, vet, sand, mana')
+        .eq('id', userId)
+        .single();
 
+      if (profile) {
+        const balances = {};
+        const balanceMap = {
+          btc: 'BTC', eth: 'ETH', sol: 'SOL', xrp: 'XRP', bnb: 'BNB',
+          usdt: 'USDT', usdc: 'USDC', ada: 'ADA', doge: 'DOGE', trx: 'TRX',
+          avax: 'AVAX', link: 'LINK', dot: 'DOT', matic: 'MATIC', ltc: 'LTC',
+          shib: 'SHIB', uni: 'UNI', atom: 'ATOM', near: 'NEAR', apt: 'APT',
+          arb: 'ARB', op: 'OP', fil: 'FIL', icp: 'ICP', etc: 'ETC',
+          bch: 'BCH', algo: 'ALGO', vet: 'VET', sand: 'SAND', mana: 'MANA'
+        };
+        
+        Object.keys(balanceMap).forEach((dbField) => {
+          const symbol = balanceMap[dbField];
+          balances[symbol] = profile[dbField] || 0;
+        });
+        
+        setUserBalances(balances);
+      }
+    } catch (err) {
+      console.error('Error refreshing balances:', err);
+    }
+  }, [userId]);
+
+  // ─── CONVERT FUNCTION ───
   const convert = useCallback(async () => {
     const { fromCoin, toCoin, amount } = draft;
     const numAmt = parseFloat(amount) || 0;
@@ -147,7 +255,7 @@ export default function Convert() {
       return false;
     }
 
-    const quote = computeQuote(fromCoin, toCoin, amount);
+    const quote = computeQuote(fromCoin, toCoin, amount, prices);
     const netReceive = quote.netReceive;
     
     if (netReceive <= 0) {
@@ -158,26 +266,52 @@ export default function Convert() {
     setConversionLoading(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Update balances in Supabase
+      const fromField = fromCoin.toLowerCase();
+      const toField = toCoin.toLowerCase();
       
+      const { data: profile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError) throw new Error('Failed to fetch profile');
+
+      const newFromBalance = Math.max(0, (profile[fromField] || 0) - numAmt);
+      const newToBalance = (profile[toField] || 0) + netReceive;
+
+      const updates = {
+        [fromField]: newFromBalance,
+        [toField]: newToBalance,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId);
+
+      if (updateError) throw new Error('Failed to update balances');
+
+      // Update local state
       const newBalances = { ...userBalances };
-      newBalances[fromCoin] = Math.max(0, newBalances[fromCoin] - numAmt);
-      newBalances[toCoin] = (newBalances[toCoin] || 0) + netReceive;
-      
+      newBalances[fromCoin] = newFromBalance;
+      newBalances[toCoin] = newToBalance;
       setUserBalances(newBalances);
-      
-      toast.success(`Successfully converted ${numAmt} ${fromCoin} → ${netReceive.toFixed(8)} ${toCoin}`);
+
+      toast.success(`✅ Successfully converted ${numAmt} ${fromCoin} → ${netReceive.toFixed(8)} ${toCoin}`);
       resetDraft();
       
       return true;
     } catch (err) {
-      toast.error("Conversion failed. Please try again.");
-      console.error(err);
+      toast.error(err.message || "Conversion failed. Please try again.");
+      console.error('Conversion error:', err);
       return false;
     } finally {
       setConversionLoading(false);
     }
-  }, [draft, userBalances, getBalanceForCoin]);
+  }, [draft, userId, userBalances, prices, getBalanceForCoin]);
 
   const contextValue = {
     draft,
@@ -189,7 +323,9 @@ export default function Convert() {
     fromBalance: getBalanceForCoin(draft.fromCoin),
     toBalance: getBalanceForCoin(draft.toCoin),
     userBalances,
-    setUserBalances,
+    loadingBalances,
+    loadingPrices,
+    prices,
     refreshBalances,
   };
 
@@ -210,7 +346,6 @@ export default function Convert() {
           style={{ background: "#2563EB" }}
         />
 
-        {/* FIXED: Added inline style for centering */}
         <div className="relative z-10 mx-auto w-full max-w-[520px]" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "520px", width: "100%" }}>
           <Routes>
             <Route index element={<ConvertForm />} />
@@ -227,7 +362,7 @@ export default function Convert() {
   );
 }
 
-// ---------- Helper Components ----------
+// ─── HELPER COMPONENTS ───
 export function ConvertHeader({ title, onBack, onClose, right = null }) {
   const navigate = useNavigate();
   return (
@@ -244,9 +379,7 @@ export function ConvertHeader({ title, onBack, onClose, right = null }) {
 
       <h1 className="text-[17px] font-bold text-white">{title}</h1>
 
-      {right ? (
-        right
-      ) : onClose ? (
+      {right ? right : onClose ? (
         <button
           onClick={onClose}
           className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
