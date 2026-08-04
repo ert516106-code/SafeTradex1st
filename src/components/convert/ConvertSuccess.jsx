@@ -20,7 +20,7 @@ export default function ConvertSuccess() {
 
   const handleDone = () => {
     resetDraft();
-    navigate("/assets");
+    navigate("/assets"); // ← Changed from "/home" to "/assets"
   };
 
   return (
