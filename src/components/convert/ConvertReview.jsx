@@ -33,40 +33,25 @@ export default function ConvertReview() {
   const netReceive = grossReceive - fee > 0 ? grossReceive - fee : 0;
 
   const handleConfirm = async () => {
-    // Check if user is authenticated
     if (!userId) {
       toast.error("You must be logged in to convert");
       return;
     }
 
-    // Check if amount is valid
     if (numAmount <= 0) {
       toast.error("Please enter a valid amount");
       return;
     }
 
-    // Check if user has enough balance
     if (numAmount > availableBalance) {
       toast.error(`Insufficient ${fromCoin} balance. Available: ${formatAmount(availableBalance)} ${fromCoin}`);
       return;
     }
 
-    // Check if conversion would result in something useful
     if (netReceive <= 0) {
       toast.error("Conversion amount too low. Please try a larger amount.");
       return;
     }
-
-    console.log("🚀 Starting conversion with:", {
-      fromCoin,
-      toCoin,
-      amount: numAmount,
-      fromPrice,
-      toPrice,
-      rate,
-      netReceive,
-      userId
-    });
 
     const success = await convert();
     if (success) {
@@ -78,7 +63,6 @@ export default function ConvertReview() {
     navigate("/convert");
   };
 
-  // Show loading state if data isn't ready
   if (!prices || Object.keys(prices).length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
