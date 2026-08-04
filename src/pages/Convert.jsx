@@ -76,41 +76,6 @@ export async function fetchCoinPrices() {
   }
 }
 
-// ─── UPDATE BALANCES IN SUPABASE ───
-async function updateUserBalances(userId, fromCoin, toCoin, fromAmount, toAmount) {
-  const fromField = fromCoin.toLowerCase();
-  const toField = toCoin.toLowerCase();
-  
-  // Get current profile
-  const { data: profile, error: fetchError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (fetchError) throw new Error('Failed to fetch profile');
-
-  // Calculate new balances
-  const newFromBalance = Math.max(0, (profile[fromField] || 0) - fromAmount);
-  const newToBalance = (profile[toField] || 0) + toAmount;
-
-  // Update profile
-  const updates = {
-    [fromField]: newFromBalance,
-    [toField]: newToBalance,
-    updated_at: new Date().toISOString()
-  };
-
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', userId);
-
-  if (updateError) throw new Error('Failed to update balances');
-
-  return { newFromBalance, newToBalance };
-}
-
 const FEE_RATE = 0.001;
 const SLIPPAGE = 0.5;
 
@@ -161,6 +126,7 @@ export function useConvert() {
 }
 
 export default function Convert() {
+  const navigate = useNavigate();
   const [draft, setDraft] = useState(initialDraft);
   const [mounted, setMounted] = useState(false);
   const [conversionLoading, setConversionLoading] = useState(false);
@@ -278,7 +244,7 @@ export default function Convert() {
     }
   }, [userId]);
 
-  // ─── CONVERT FUNCTION ───
+  // ─── CONVERT FUNCTION - UPDATES SUPABASE ───
   const convert = useCallback(async () => {
     const { fromCoin, toCoin, amount } = draft;
     const numAmt = parseFloat(amount) || 0;
@@ -305,19 +271,44 @@ export default function Convert() {
     setConversionLoading(true);
     
     try {
-      // Update balances in Supabase
-      const result = await updateUserBalances(
-        userId,
-        fromCoin,
-        toCoin,
-        numAmt,
-        netReceive
-      );
+      // ─── UPDATE SUPABASE ───
+      const fromField = fromCoin.toLowerCase();
+      const toField = toCoin.toLowerCase();
+      
+      // Get current profile
+      const { data: profile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError) throw new Error('Failed to fetch profile');
+
+      // Calculate new balances
+      const newFromBalance = Math.max(0, (profile[fromField] || 0) - numAmt);
+      const newToBalance = (profile[toField] || 0) + netReceive;
+
+      // Update profile in Supabase
+      const updates = {
+        [fromField]: newFromBalance,
+        [toField]: newToBalance,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId);
+
+      if (updateError) throw new Error('Failed to update balances');
+
+      // ─── THIS TRIGGERS THE REAL-TIME SUBSCRIPTION IN ASSETS PAGE ───
+      // Your Assets page will automatically update!
 
       // Update local state
       const newBalances = { ...userBalances };
-      newBalances[fromCoin] = result.newFromBalance;
-      newBalances[toCoin] = result.newToBalance;
+      newBalances[fromCoin] = newFromBalance;
+      newBalances[toCoin] = newToBalance;
       setUserBalances(newBalances);
 
       toast.success(`✅ Successfully converted ${numAmt} ${fromCoin} → ${netReceive.toFixed(8)} ${toCoin}`);
@@ -334,7 +325,7 @@ export default function Convert() {
     } finally {
       setConversionLoading(false);
     }
-  }, [draft, userId, userBalances, prices, getBalanceForCoin]);
+  }, [draft, userId, userBalances, prices, getBalanceForCoin, navigate]);
 
   const contextValue = {
     draft,
