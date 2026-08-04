@@ -14,7 +14,7 @@ const toast = {
   info: (message) => { console.info('ℹ️', message); alert(message); }
 };
 
-// ─── COIN CONFIGURATION ───
+// ─── COIN CONFIGURATION (NO BALANCE HERE) ───
 export const COINS = [
   { symbol: "BTC", name: "Bitcoin", color: "#F7931A", coingeckoId: "bitcoin" },
   { symbol: "ETH", name: "Ethereum", color: "#627EEA", coingeckoId: "ethereum" },
@@ -141,7 +141,6 @@ export default function Convert() {
   useEffect(() => {
     async function fetchUserData() {
       try {
-        // 1. Get authenticated user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (userError || !user) {
@@ -154,7 +153,6 @@ export default function Convert() {
         
         setUserId(user.id);
 
-        // 2. Fetch user balances from profiles table
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -169,7 +167,6 @@ export default function Convert() {
           return;
         }
 
-        // 3. Map profile fields to coin balances
         if (profile) {
           const balances = {};
           const balanceFields = [
@@ -188,16 +185,21 @@ export default function Convert() {
         }
         setLoadingBalances(false);
 
-        // 4. Fetch prices from CoinGecko
         const priceData = await fetchCoinPrices();
         if (priceData) {
           setPrices(priceData);
         } else {
-          // Use fallback prices if API fails
-          const fallbackPrices = {};
-          COINS.forEach(coin => {
-            fallbackPrices[coin.symbol] = coin.price || 0;
-          });
+          // Fallback prices
+          const fallbackPrices = {
+            BTC: 63200, ETH: 1880, SOL: 73.5, BNB: 587.67,
+            USDT: 1, USDC: 1, XRP: 1.09, DOGE: 0.35,
+            ADA: 0.85, TRX: 0.28, AVAX: 42, LINK: 24,
+            DOT: 8.5, MATIC: 0.75, LTC: 115, SHIB: 0.000025,
+            UNI: 9.5, ATOM: 7.8, NEAR: 5.2, APT: 9.8,
+            ARB: 0.85, OP: 2.1, FIL: 5.4, ICP: 10.2,
+            ETC: 26, BCH: 480, ALGO: 0.18, VET: 0.045,
+            SAND: 0.42, MANA: 0.38
+          };
           setPrices(fallbackPrices);
         }
         setLoadingPrices(false);
@@ -255,7 +257,6 @@ export default function Convert() {
     }
   }, [userId]);
 
-  // ─── CONVERT FUNCTION - UPDATES SUPABASE ───
   const convert = useCallback(async () => {
     const { fromCoin, toCoin, amount } = draft;
     const numAmt = parseFloat(amount) || 0;
@@ -285,7 +286,6 @@ export default function Convert() {
       const fromField = fromCoin.toLowerCase();
       const toField = toCoin.toLowerCase();
       
-      // Get current profile
       const { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
@@ -294,11 +294,9 @@ export default function Convert() {
 
       if (fetchError) throw new Error('Failed to fetch profile');
 
-      // Calculate new balances
       const newFromBalance = Math.max(0, (profile[fromField] || 0) - numAmt);
       const newToBalance = (profile[toField] || 0) + netReceive;
 
-      // Update profile in Supabase
       const updates = {
         [fromField]: newFromBalance,
         [toField]: newToBalance,
@@ -312,7 +310,6 @@ export default function Convert() {
 
       if (updateError) throw new Error('Failed to update balances');
 
-      // Update local state
       const newBalances = { ...userBalances };
       newBalances[fromCoin] = newFromBalance;
       newBalances[toCoin] = newToBalance;
@@ -321,7 +318,6 @@ export default function Convert() {
       toast.success(`✅ Successfully converted ${numAmt} ${fromCoin} → ${netReceive.toFixed(8)} ${toCoin}`);
       resetDraft();
       
-      // Navigate to success page
       navigate('/convert/success');
       
       return true;
@@ -350,7 +346,6 @@ export default function Convert() {
     refreshBalances,
   };
 
-  // If there's an error, show it
   if (error) {
     return (
       <div style={{ 
