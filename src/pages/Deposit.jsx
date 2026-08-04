@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 import DepositHome from "../components/deposit/DepositHome";
 import CoinSelector from "../components/deposit/CoinSelector";
 import NetworkSelector from "../components/deposit/NetworkSelector";
@@ -93,15 +94,6 @@ export const BUY_PROVIDERS = [
   { id: "guardarian", name: "Guardarian", url: "https://guardarian.com", color: "#2CC97C" },
 ];
 
-export const MOCK_DEPOSIT_HISTORY = [
-  { id: "d1", coin: "USDT", network: "TRC20", amount: "500.00", status: "Completed", date: "2026-07-18T14:32:00Z" },
-  { id: "d2", coin: "BTC", network: "Bitcoin", amount: "0.0125", status: "Completed", date: "2026-07-16T09:10:00Z" },
-  { id: "d3", coin: "ETH", network: "ERC20", amount: "1.2400", status: "Pending", date: "2026-07-15T20:47:00Z" },
-  { id: "d4", coin: "USDC", network: "Polygon", amount: "250.00", status: "Completed", date: "2026-07-12T11:05:00Z" },
-  { id: "d5", coin: "SOL", network: "Solana", amount: "8.5000", status: "Failed", date: "2026-07-09T17:22:00Z" },
-  { id: "d6", coin: "XRP", network: "XRP Ledger", amount: "1200.00", status: "Completed", date: "2026-07-03T06:58:00Z" },
-];
-
 const initialSelection = {
   coin: null,
   networkId: null,
@@ -173,7 +165,6 @@ export default function Deposit() {
           style={{ background: FLOW_THEME.blueDeep }}
         />
 
-        {/* FIXED: Added inline style for centering */}
         <div className="relative z-10 mx-auto w-full max-w-[520px]" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "520px", width: "100%" }}>
           {!settingsLoading && !settings.deposits ? (
             <DepositDisabledScreen />
