@@ -109,7 +109,6 @@ export default function Withdraw() {
           style={{ background: FLOW_THEME.purpleDeep }}
         />
 
-        {/* FIXED: Added inline style for centering */}
         <div className="relative z-10 mx-auto w-full max-w-[520px]" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "520px", width: "100%" }}>
           {!settingsLoading && !settings.withdrawals ? (
             <WithdrawDisabledScreen />
@@ -336,4 +335,5 @@ export function CoinSelector({ value, onChange }) {
         ))}
       </div>
     </div>
- 
+  );
+}
