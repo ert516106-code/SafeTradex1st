@@ -135,6 +135,7 @@ export default function Convert() {
   const [loadingBalances, setLoadingBalances] = useState(true);
   const [loadingPrices, setLoadingPrices] = useState(true);
   const [userId, setUserId] = useState(null);
+  const [error, setError] = useState(null);
 
   // ─── FETCH USER BALANCES AND PRICES ───
   useEffect(() => {
@@ -147,6 +148,7 @@ export default function Convert() {
           console.error('No authenticated user found');
           setLoadingBalances(false);
           setLoadingPrices(false);
+          setError('Please log in to convert coins');
           return;
         }
         
@@ -163,6 +165,7 @@ export default function Convert() {
           console.error('Error fetching profile:', profileError);
           setLoadingBalances(false);
           setLoadingPrices(false);
+          setError('Failed to load your balances');
           return;
         }
 
@@ -189,6 +192,13 @@ export default function Convert() {
         const priceData = await fetchCoinPrices();
         if (priceData) {
           setPrices(priceData);
+        } else {
+          // Use fallback prices if API fails
+          const fallbackPrices = {};
+          COINS.forEach(coin => {
+            fallbackPrices[coin.symbol] = coin.price || 0;
+          });
+          setPrices(fallbackPrices);
         }
         setLoadingPrices(false);
 
@@ -196,6 +206,7 @@ export default function Convert() {
         console.error('Error in fetchUserData:', err);
         setLoadingBalances(false);
         setLoadingPrices(false);
+        setError('Failed to load data');
       }
     }
 
@@ -271,7 +282,6 @@ export default function Convert() {
     setConversionLoading(true);
     
     try {
-      // ─── UPDATE SUPABASE ───
       const fromField = fromCoin.toLowerCase();
       const toField = toCoin.toLowerCase();
       
@@ -301,9 +311,6 @@ export default function Convert() {
         .eq('id', userId);
 
       if (updateError) throw new Error('Failed to update balances');
-
-      // ─── THIS TRIGGERS THE REAL-TIME SUBSCRIPTION IN ASSETS PAGE ───
-      // Your Assets page will automatically update!
 
       // Update local state
       const newBalances = { ...userBalances };
@@ -342,6 +349,50 @@ export default function Convert() {
     prices,
     refreshBalances,
   };
+
+  // If there's an error, show it
+  if (error) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        background: 'radial-gradient(circle at top, #18254b 0%, #050816 70%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}>
+        <div style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '16px',
+          padding: '32px',
+          textAlign: 'center',
+          maxWidth: '400px'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+          <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: '700', marginBottom: '8px' }}>
+            {error}
+          </h2>
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              marginTop: '16px',
+              background: 'linear-gradient(135deg, #7C3AED, #2563EB)',
+              border: 'none',
+              color: '#fff',
+              padding: '12px 24px',
+              borderRadius: '12px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ConvertContext.Provider value={contextValue}>
