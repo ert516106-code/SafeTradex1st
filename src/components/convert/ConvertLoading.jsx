@@ -7,7 +7,7 @@ const STEP_MS = 700;
 
 export default function ConvertLoading() {
   const navigate = useNavigate();
-  const { draft, convert } = useConvert(); // now has `convert` function
+  const { draft, convert } = useConvert();
   const [stepIndex, setStepIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState(false);
@@ -37,12 +37,11 @@ export default function ConvertLoading() {
     let cancelled = false;
     const runConversion = async () => {
       try {
-        const success = await convert(); // the real API conversion
+        const success = await convert();
         if (cancelled) return;
         if (success) {
           navigate("/convert/success", { replace: true });
         } else {
-          // conversion returned false (shouldn't happen often because we already validated)
           setError(true);
           setTimeout(() => navigate(-1), 2000);
         }
@@ -55,7 +54,7 @@ export default function ConvertLoading() {
     };
     runConversion();
     return () => { cancelled = true; };
-  }, []);
+  }, [convert, navigate]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center px-6 text-center">
@@ -109,7 +108,7 @@ export default function ConvertLoading() {
           </div>
         </div>
 
-        {/* Core (can show error state) */}
+        {/* Core */}
         <div
           className={`flex h-20 w-20 items-center justify-center rounded-full shadow-[0_0_40px_rgba(124,58,237,0.6)] ${
             error ? "bg-red-500/80" : "bg-gradient-to-br from-[#7C3AED] to-[#2563EB]"
