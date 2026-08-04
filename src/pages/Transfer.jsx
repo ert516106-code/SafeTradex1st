@@ -90,7 +90,8 @@ export default function Transfer() {
           style={{ background: "#2563EB" }}
         />
 
-        <div className="relative z-10 mx-auto w-full max-w-[520px]">
+        {/* FIXED: Added inline style for centering */}
+        <div className="relative z-10 mx-auto w-full max-w-[520px]" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "520px", width: "100%" }}>
           <Routes>
             <Route index element={<TransferForm />} />
             <Route path="select-coin" element={<TransferCoinSelector />} />
@@ -144,7 +145,7 @@ export function AccountBadge({ account, size = 44 }) {
           {account.name.slice(0, 1)}
         </span>
       )}
-    </span>
+    </button>
   );
 }
 
