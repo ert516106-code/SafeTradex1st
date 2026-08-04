@@ -2,16 +2,9 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useConvert, ConvertHeader, GlassCard, PrimaryButton, formatAmount, getCoin } from "../../pages/Convert";
 
-// Simple toast replacement
 const toast = {
-  success: (message) => {
-    console.log('✅ Success:', message);
-    alert(message);
-  },
-  error: (message) => {
-    console.error('❌ Error:', message);
-    alert(message);
-  }
+  success: (message) => { console.log('✅', message); alert(message); },
+  error: (message) => { console.error('❌', message); alert(message); }
 };
 
 export default function ConvertReview() {
@@ -21,7 +14,8 @@ export default function ConvertReview() {
     convert, 
     conversionLoading, 
     getBalanceForCoin,
-    prices 
+    prices,
+    userId
   } = useConvert();
   
   const { fromCoin, toCoin, amount } = draft;
@@ -29,21 +23,51 @@ export default function ConvertReview() {
   const numAmount = parseFloat(amount) || 0;
   const fromCoinData = getCoin(fromCoin);
   const toCoinData = getCoin(toCoin);
-  
-  // Get REAL balance from Supabase
   const availableBalance = getBalanceForCoin(fromCoin);
-  
-  // Get REAL prices
   const fromPrice = prices[fromCoin] || 0;
   const toPrice = prices[toCoin] || 0;
 
-  // Calculate conversion details using real prices
   const rate = toPrice > 0 ? fromPrice / toPrice : 0;
   const grossReceive = numAmount * rate;
   const fee = grossReceive * 0.001;
   const netReceive = grossReceive - fee > 0 ? grossReceive - fee : 0;
 
   const handleConfirm = async () => {
+    // Check if user is authenticated
+    if (!userId) {
+      toast.error("You must be logged in to convert");
+      return;
+    }
+
+    // Check if amount is valid
+    if (numAmount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    // Check if user has enough balance
+    if (numAmount > availableBalance) {
+      toast.error(`Insufficient ${fromCoin} balance. Available: ${formatAmount(availableBalance)} ${fromCoin}`);
+      return;
+    }
+
+    // Check if conversion would result in something useful
+    if (netReceive <= 0) {
+      toast.error("Conversion amount too low. Please try a larger amount.");
+      return;
+    }
+
+    console.log("🚀 Starting conversion with:", {
+      fromCoin,
+      toCoin,
+      amount: numAmount,
+      fromPrice,
+      toPrice,
+      rate,
+      netReceive,
+      userId
+    });
+
     const success = await convert();
     if (success) {
       navigate("/convert/success");
@@ -53,6 +77,15 @@ export default function ConvertReview() {
   const handleBack = () => {
     navigate("/convert");
   };
+
+  // Show loading state if data isn't ready
+  if (!prices || Object.keys(prices).length === 0) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <div className="text-white">Loading prices...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -113,7 +146,7 @@ export default function ConvertReview() {
 
         <PrimaryButton
           onClick={handleConfirm}
-          disabled={conversionLoading || numAmount <= 0 || netReceive <= 0}
+          disabled={conversionLoading || numAmount <= 0 || netReceive <= 0 || !userId}
         >
           {conversionLoading ? (
             <span className="flex items-center gap-2">
