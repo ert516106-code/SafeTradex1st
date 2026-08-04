@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { COINS, CoinLogo, ConvertHeader, useConvert } from "../../pages/Convert";
+import { COINS, CoinLogo, ConvertHeader, useConvert, formatAmount } from "../../pages/Convert";
 
 export default function SelectCoin({ field }) {
   const navigate = useNavigate();
-  const { draft, updateDraft } = useConvert();
+  const { draft, updateDraft, getBalanceForCoin } = useConvert();
   const [search, setSearch] = useState("");
 
   const excludeSymbol = field === "from" ? draft.toCoin : draft.fromCoin;
@@ -50,26 +50,29 @@ export default function SelectCoin({ field }) {
         )}
 
         <div className="flex flex-col gap-1.5">
-          {filtered.map((c) => (
-            <button
-              key={c.symbol}
-              onClick={() => handleSelect(c.symbol)}
-              className={`flex w-full items-center justify-between rounded-2xl px-4 py-4 text-left transition-all duration-150 active:scale-[0.98] ${
-                c.symbol === currentValue
-                  ? "bg-[#7C3AED]/12 ring-1 ring-[#7C3AED]/30"
-                  : "hover:bg-white/[0.05]"
-              }`}
-            >
-              <span className="flex items-center gap-4">
-                <CoinLogo coin={c} size={42} />
-                <span>
-                  <span className="block text-[15px] font-semibold text-white">{c.name}</span>
-                  <span className="block text-[12.5px] text-white/40">{c.symbol}</span>
+          {filtered.map((c) => {
+            const balance = getBalanceForCoin(c.symbol);
+            return (
+              <button
+                key={c.symbol}
+                onClick={() => handleSelect(c.symbol)}
+                className={`flex w-full items-center justify-between rounded-2xl px-4 py-4 text-left transition-all duration-150 active:scale-[0.98] ${
+                  c.symbol === currentValue
+                    ? "bg-[#7C3AED]/12 ring-1 ring-[#7C3AED]/30"
+                    : "hover:bg-white/[0.05]"
+                }`}
+              >
+                <span className="flex items-center gap-4">
+                  <CoinLogo coin={c} size={42} />
+                  <span>
+                    <span className="block text-[15px] font-semibold text-white">{c.name}</span>
+                    <span className="block text-[12.5px] text-white/40">{c.symbol}</span>
+                  </span>
                 </span>
-              </span>
-              <span className="text-[13px] font-medium text-white/45">{c.balance}</span>
-            </button>
-          ))}
+                <span className="text-[13px] font-medium text-white/45">{formatAmount(balance)}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
