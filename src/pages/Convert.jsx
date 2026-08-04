@@ -64,7 +64,6 @@ export async function fetchCoinPrices() {
     
     const data = await response.json();
     
-    // Map prices to coin symbols
     const prices = {};
     COINS.forEach(coin => {
       prices[coin.symbol] = data[coin.coingeckoId]?.usd || 0;
@@ -75,6 +74,41 @@ export async function fetchCoinPrices() {
     console.error('Error fetching prices:', error);
     return null;
   }
+}
+
+// ─── UPDATE BALANCES IN SUPABASE ───
+async function updateUserBalances(userId, fromCoin, toCoin, fromAmount, toAmount) {
+  const fromField = fromCoin.toLowerCase();
+  const toField = toCoin.toLowerCase();
+  
+  // Get current profile
+  const { data: profile, error: fetchError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (fetchError) throw new Error('Failed to fetch profile');
+
+  // Calculate new balances
+  const newFromBalance = Math.max(0, (profile[fromField] || 0) - fromAmount);
+  const newToBalance = (profile[toField] || 0) + toAmount;
+
+  // Update profile
+  const updates = {
+    [fromField]: newFromBalance,
+    [toField]: newToBalance,
+    updated_at: new Date().toISOString()
+  };
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId);
+
+  if (updateError) throw new Error('Failed to update balances');
+
+  return { newFromBalance, newToBalance };
 }
 
 const FEE_RATE = 0.001;
@@ -136,49 +170,56 @@ export default function Convert() {
   const [loadingPrices, setLoadingPrices] = useState(true);
   const [userId, setUserId] = useState(null);
 
-  // ─── FETCH USER AND PRICES ───
+  // ─── FETCH USER BALANCES AND PRICES ───
   useEffect(() => {
-    async function fetchUserAndPrices() {
+    async function fetchUserData() {
       try {
-        // 1. Get user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        // 1. Get authenticated user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+          console.error('No authenticated user found');
           setLoadingBalances(false);
           setLoadingPrices(false);
           return;
         }
+        
         setUserId(user.id);
 
-        // 2. Fetch user balances
+        // 2. Fetch user balances from profiles table
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('btc, eth, sol, xrp, bnb, usdt, usdc, ada, doge, trx, avax, link, dot, matic, ltc, shib, uni, atom, near, apt, arb, op, fil, icp, etc, bch, algo, vet, sand, mana')
+          .select('*')
           .eq('id', user.id)
           .single();
 
         if (profileError) {
-          console.error('Error fetching balances:', profileError);
-        } else if (profile) {
+          console.error('Error fetching profile:', profileError);
+          setLoadingBalances(false);
+          setLoadingPrices(false);
+          return;
+        }
+
+        // 3. Map profile fields to coin balances
+        if (profile) {
           const balances = {};
-          const balanceMap = {
-            btc: 'BTC', eth: 'ETH', sol: 'SOL', xrp: 'XRP', bnb: 'BNB',
-            usdt: 'USDT', usdc: 'USDC', ada: 'ADA', doge: 'DOGE', trx: 'TRX',
-            avax: 'AVAX', link: 'LINK', dot: 'DOT', matic: 'MATIC', ltc: 'LTC',
-            shib: 'SHIB', uni: 'UNI', atom: 'ATOM', near: 'NEAR', apt: 'APT',
-            arb: 'ARB', op: 'OP', fil: 'FIL', icp: 'ICP', etc: 'ETC',
-            bch: 'BCH', algo: 'ALGO', vet: 'VET', sand: 'SAND', mana: 'MANA'
-          };
+          const balanceFields = [
+            'btc', 'eth', 'sol', 'xrp', 'bnb', 'usdt', 'usdc',
+            'ada', 'doge', 'trx', 'avax', 'link', 'dot', 'matic',
+            'ltc', 'shib', 'uni', 'atom', 'near', 'apt', 'arb',
+            'op', 'fil', 'icp', 'etc', 'bch', 'algo', 'vet', 'sand', 'mana'
+          ];
           
-          Object.keys(balanceMap).forEach((dbField) => {
-            const symbol = balanceMap[dbField];
-            balances[symbol] = profile[dbField] || 0;
+          balanceFields.forEach((field) => {
+            const symbol = field.toUpperCase();
+            balances[symbol] = profile[field] || 0;
           });
           
           setUserBalances(balances);
         }
         setLoadingBalances(false);
 
-        // 3. Fetch prices from CoinGecko
+        // 4. Fetch prices from CoinGecko
         const priceData = await fetchCoinPrices();
         if (priceData) {
           setPrices(priceData);
@@ -186,13 +227,13 @@ export default function Convert() {
         setLoadingPrices(false);
 
       } catch (err) {
-        console.error('Error:', err);
+        console.error('Error in fetchUserData:', err);
         setLoadingBalances(false);
         setLoadingPrices(false);
       }
     }
 
-    fetchUserAndPrices();
+    fetchUserData();
   }, []);
 
   useEffect(() => {
@@ -212,24 +253,22 @@ export default function Convert() {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('btc, eth, sol, xrp, bnb, usdt, usdc, ada, doge, trx, avax, link, dot, matic, ltc, shib, uni, atom, near, apt, arb, op, fil, icp, etc, bch, algo, vet, sand, mana')
+        .select('*')
         .eq('id', userId)
         .single();
 
       if (profile) {
         const balances = {};
-        const balanceMap = {
-          btc: 'BTC', eth: 'ETH', sol: 'SOL', xrp: 'XRP', bnb: 'BNB',
-          usdt: 'USDT', usdc: 'USDC', ada: 'ADA', doge: 'DOGE', trx: 'TRX',
-          avax: 'AVAX', link: 'LINK', dot: 'DOT', matic: 'MATIC', ltc: 'LTC',
-          shib: 'SHIB', uni: 'UNI', atom: 'ATOM', near: 'NEAR', apt: 'APT',
-          arb: 'ARB', op: 'OP', fil: 'FIL', icp: 'ICP', etc: 'ETC',
-          bch: 'BCH', algo: 'ALGO', vet: 'VET', sand: 'SAND', mana: 'MANA'
-        };
+        const balanceFields = [
+          'btc', 'eth', 'sol', 'xrp', 'bnb', 'usdt', 'usdc',
+          'ada', 'doge', 'trx', 'avax', 'link', 'dot', 'matic',
+          'ltc', 'shib', 'uni', 'atom', 'near', 'apt', 'arb',
+          'op', 'fil', 'icp', 'etc', 'bch', 'algo', 'vet', 'sand', 'mana'
+        ];
         
-        Object.keys(balanceMap).forEach((dbField) => {
-          const symbol = balanceMap[dbField];
-          balances[symbol] = profile[dbField] || 0;
+        balanceFields.forEach((field) => {
+          const symbol = field.toUpperCase();
+          balances[symbol] = profile[field] || 0;
         });
         
         setUserBalances(balances);
@@ -267,41 +306,25 @@ export default function Convert() {
     
     try {
       // Update balances in Supabase
-      const fromField = fromCoin.toLowerCase();
-      const toField = toCoin.toLowerCase();
-      
-      const { data: profile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (fetchError) throw new Error('Failed to fetch profile');
-
-      const newFromBalance = Math.max(0, (profile[fromField] || 0) - numAmt);
-      const newToBalance = (profile[toField] || 0) + netReceive;
-
-      const updates = {
-        [fromField]: newFromBalance,
-        [toField]: newToBalance,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', userId);
-
-      if (updateError) throw new Error('Failed to update balances');
+      const result = await updateUserBalances(
+        userId,
+        fromCoin,
+        toCoin,
+        numAmt,
+        netReceive
+      );
 
       // Update local state
       const newBalances = { ...userBalances };
-      newBalances[fromCoin] = newFromBalance;
-      newBalances[toCoin] = newToBalance;
+      newBalances[fromCoin] = result.newFromBalance;
+      newBalances[toCoin] = result.newToBalance;
       setUserBalances(newBalances);
 
       toast.success(`✅ Successfully converted ${numAmt} ${fromCoin} → ${netReceive.toFixed(8)} ${toCoin}`);
       resetDraft();
+      
+      // Navigate to success page
+      navigate('/convert/success');
       
       return true;
     } catch (err) {
