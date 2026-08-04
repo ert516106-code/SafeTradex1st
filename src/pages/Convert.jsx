@@ -14,7 +14,7 @@ const toast = {
   info: (message) => { console.info('ℹ️', message); alert(message); }
 };
 
-// ─── COIN CONFIGURATION (NO BALANCE HERE) ───
+// ─── COIN CONFIGURATION ───
 export const COINS = [
   { symbol: "BTC", name: "Bitcoin", color: "#F7931A", coingeckoId: "bitcoin" },
   { symbol: "ETH", name: "Ethereum", color: "#627EEA", coingeckoId: "ethereum" },
@@ -152,6 +152,7 @@ export default function Convert() {
         }
         
         setUserId(user.id);
+        console.log('User ID:', user.id);
 
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -163,9 +164,11 @@ export default function Convert() {
           console.error('Error fetching profile:', profileError);
           setLoadingBalances(false);
           setLoadingPrices(false);
-          setError('Failed to load your balances');
+          setError('Failed to load your balances. Please refresh.');
           return;
         }
+
+        console.log('Profile data:', profile);
 
         if (profile) {
           const balances = {};
@@ -182,12 +185,14 @@ export default function Convert() {
           });
           
           setUserBalances(balances);
+          console.log('User balances:', balances);
         }
         setLoadingBalances(false);
 
         const priceData = await fetchCoinPrices();
         if (priceData) {
           setPrices(priceData);
+          console.log('Prices loaded:', priceData);
         } else {
           // Fallback prices
           const fallbackPrices = {
@@ -257,9 +262,12 @@ export default function Convert() {
     }
   }, [userId]);
 
+  // ─── CONVERT FUNCTION - UPDATES SUPABASE ───
   const convert = useCallback(async () => {
     const { fromCoin, toCoin, amount } = draft;
     const numAmt = parseFloat(amount) || 0;
+    
+    console.log('Starting conversion:', { fromCoin, toCoin, amount: numAmt, userId });
     
     if (numAmt <= 0) {
       toast.error("Enter an amount");
@@ -267,6 +275,8 @@ export default function Convert() {
     }
 
     const available = getBalanceForCoin(fromCoin);
+    console.log(`Available ${fromCoin}:`, available);
+    
     if (numAmt > available) {
       toast.error(`Insufficient ${fromCoin} balance. Available: ${available.toFixed(8)} ${fromCoin}`);
       return false;
@@ -274,6 +284,7 @@ export default function Convert() {
 
     const quote = computeQuote(fromCoin, toCoin, amount, prices);
     const netReceive = quote.netReceive;
+    console.log('Quote:', quote);
     
     if (netReceive <= 0) {
       toast.error("Conversion amount too low");
@@ -286,30 +297,53 @@ export default function Convert() {
       const fromField = fromCoin.toLowerCase();
       const toField = toCoin.toLowerCase();
       
+      console.log('Updating fields:', { fromField, toField });
+      
+      // Get current profile
       const { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (fetchError) throw new Error('Failed to fetch profile');
+      if (fetchError) {
+        console.error('Fetch error:', fetchError);
+        throw new Error(`Failed to fetch profile: ${fetchError.message}`);
+      }
 
-      const newFromBalance = Math.max(0, (profile[fromField] || 0) - numAmt);
-      const newToBalance = (profile[toField] || 0) + netReceive;
+      console.log('Current profile:', profile);
 
+      // Calculate new balances
+      const currentFromBalance = profile[fromField] || 0;
+      const currentToBalance = profile[toField] || 0;
+      
+      const newFromBalance = Math.max(0, currentFromBalance - numAmt);
+      const newToBalance = currentToBalance + netReceive;
+
+      console.log('New balances:', { newFromBalance, newToBalance });
+
+      // Update profile in Supabase
       const updates = {
         [fromField]: newFromBalance,
         [toField]: newToBalance,
         updated_at: new Date().toISOString()
       };
 
+      console.log('Updates to send:', updates);
+
       const { error: updateError } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', userId);
 
-      if (updateError) throw new Error('Failed to update balances');
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw new Error(`Failed to update balances: ${updateError.message}`);
+      }
 
+      console.log('Update successful!');
+
+      // Update local state
       const newBalances = { ...userBalances };
       newBalances[fromCoin] = newFromBalance;
       newBalances[toCoin] = newToBalance;
@@ -318,12 +352,13 @@ export default function Convert() {
       toast.success(`✅ Successfully converted ${numAmt} ${fromCoin} → ${netReceive.toFixed(8)} ${toCoin}`);
       resetDraft();
       
+      // Navigate to success page
       navigate('/convert/success');
       
       return true;
     } catch (err) {
-      toast.error(err.message || "Conversion failed. Please try again.");
       console.error('Conversion error:', err);
+      toast.error(err.message || "Conversion failed. Please try again.");
       return false;
     } finally {
       setConversionLoading(false);
