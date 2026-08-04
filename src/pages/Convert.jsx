@@ -404,7 +404,7 @@ export default function Convert() {
             {error}
           </h2>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/assets')}
             style={{
               marginTop: '16px',
               background: 'linear-gradient(135deg, #7C3AED, #2563EB)',
@@ -417,7 +417,7 @@ export default function Convert() {
               cursor: 'pointer'
             }}
           >
-            Go Home
+            Go to Assets
           </button>
         </div>
       </div>
@@ -463,7 +463,7 @@ export function ConvertHeader({ title, onBack, onClose, right = null }) {
   return (
     <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-[#050816]/60 px-4 py-4 backdrop-blur-md sm:px-6">
       <button
-        onClick={onBack ? onBack : () => navigate(-1)}
+        onClick={onBack ? onBack : () => navigate('/assets')}
         className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white transition active:scale-90"
         aria-label="Back"
       >
