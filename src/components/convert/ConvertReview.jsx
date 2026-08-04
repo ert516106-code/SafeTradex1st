@@ -16,16 +16,29 @@ const toast = {
 
 export default function ConvertReview() {
   const navigate = useNavigate();
-  const { draft, convert, conversionLoading, getBalanceForCoin } = useConvert();
+  const { 
+    draft, 
+    convert, 
+    conversionLoading, 
+    getBalanceForCoin,
+    prices 
+  } = useConvert();
+  
   const { fromCoin, toCoin, amount } = draft;
 
   const numAmount = parseFloat(amount) || 0;
   const fromCoinData = getCoin(fromCoin);
   const toCoinData = getCoin(toCoin);
+  
+  // Get REAL balance from Supabase
   const availableBalance = getBalanceForCoin(fromCoin);
+  
+  // Get REAL prices
+  const fromPrice = prices[fromCoin] || 0;
+  const toPrice = prices[toCoin] || 0;
 
-  // Calculate conversion details
-  const rate = toCoinData.price > 0 ? fromCoinData.price / toCoinData.price : 0;
+  // Calculate conversion details using real prices
+  const rate = toPrice > 0 ? fromPrice / toPrice : 0;
   const grossReceive = numAmount * rate;
   const fee = grossReceive * 0.001;
   const netReceive = grossReceive - fee > 0 ? grossReceive - fee : 0;
@@ -72,7 +85,14 @@ export default function ConvertReview() {
             </div>
 
             <div className="flex items-center justify-between border-b border-white/5 pb-3">
-              <span className="text-sm text-slate-400">Fee</span>
+              <span className="text-sm text-slate-400">Price</span>
+              <span className="font-semibold text-white">
+                1 {fromCoin} = ${formatAmount(fromPrice, 2)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <span className="text-sm text-slate-400">Fee (0.1%)</span>
               <span className="font-semibold text-rose-400">{formatAmount(fee)} {toCoin}</span>
             </div>
 
