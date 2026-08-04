@@ -10,7 +10,6 @@ import ConvertSuccess from "../components/convert/ConvertSuccess";
 const toast = {
   success: (message) => {
     console.log('✅ Success:', message);
-    // You can replace this with a proper toast UI
     alert(message);
   },
   error: (message) => {
@@ -211,7 +210,8 @@ export default function Convert() {
           style={{ background: "#2563EB" }}
         />
 
-        <div className="relative z-10 mx-auto w-full max-w-[520px]">
+        {/* FIXED: Added inline style for centering */}
+        <div className="relative z-10 mx-auto w-full max-w-[520px]" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "520px", width: "100%" }}>
           <Routes>
             <Route index element={<ConvertForm />} />
             <Route path="select-from" element={<SelectCoin field="from" />} />
