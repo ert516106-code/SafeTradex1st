@@ -1,92 +1,113 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ConvertHeader, GlassCard, PrimaryButton, CoinLogo, computeQuote, useConvert, formatAmount } from "../../pages/Convert";
-import { toast } from "sonner"; // or your existing toast library
+import { useConvert, ConvertHeader, GlassCard, PrimaryButton, formatAmount, getCoin } from "../../pages/Convert";
+
+// Simple toast replacement
+const toast = {
+  success: (message) => {
+    console.log('✅ Success:', message);
+    alert(message);
+  },
+  error: (message) => {
+    console.error('❌ Error:', message);
+    alert(message);
+  }
+};
 
 export default function ConvertReview() {
   const navigate = useNavigate();
-  const { draft, fromBalance } = useConvert(); // now includes real balance
+  const { draft, convert, conversionLoading, getBalanceForCoin } = useConvert();
+  const { fromCoin, toCoin, amount } = draft;
 
-  const quote = useMemo(
-    () => computeQuote(draft.fromCoin, draft.toCoin, draft.amount),
-    [draft.fromCoin, draft.toCoin, draft.amount]
-  );
+  const numAmount = parseFloat(amount) || 0;
+  const fromCoinData = getCoin(fromCoin);
+  const toCoinData = getCoin(toCoin);
+  const availableBalance = getBalanceForCoin(fromCoin);
 
-  const { from, to, amount, rate, fee, netReceive } = quote;
+  // Calculate conversion details
+  const rate = toCoinData.price > 0 ? fromCoinData.price / toCoinData.price : 0;
+  const grossReceive = numAmount * rate;
+  const fee = grossReceive * 0.001;
+  const netReceive = grossReceive - fee > 0 ? grossReceive - fee : 0;
 
-  const handleConfirm = () => {
-    // Check that the amount doesn't exceed the real balance
-    if (parseFloat(amount) > fromBalance) {
-      toast.error(`Insufficient ${draft.fromCoin} balance`);
-      return;
+  const handleConfirm = async () => {
+    const success = await convert();
+    if (success) {
+      navigate("/convert/success");
     }
-    if (parseFloat(amount) <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
-    navigate("/convert/processing");
   };
 
-  if (!draft.amount) {
-    return (
-      <div className="mx-auto flex min-h-full max-w-lg flex-col">
-        <ConvertHeader title="Review Convert" />
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-          <p className="text-[14px] text-white/50">No conversion details found.</p>
-          <button onClick={() => navigate("/convert")} className="text-[13px] font-semibold text-[#A78BFA]">
-            Start a new conversion
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleBack = () => {
+    navigate("/convert");
+  };
 
   return (
-    <div className="mx-auto flex min-h-full max-w-lg flex-col">
-      <ConvertHeader title="Review Convert" />
+    <div className="flex min-h-screen flex-col">
+      <ConvertHeader title="Review Conversion" onBack={handleBack} />
 
-      <div className="flex flex-1 flex-col gap-5 px-4 pb-8 pt-6 sm:px-6">
-        <div className="flex flex-col items-center gap-2 py-2">
-          <div className="flex items-center gap-2">
-            <CoinLogo coin={from} size={40} />
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white/30">
-              <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <CoinLogo coin={to} size={40} />
+      <div className="flex-1 px-4 py-6">
+        <GlassCard className="mb-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <span className="text-sm text-slate-400">From</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white">{formatAmount(numAmount)}</span>
+                <span className="text-sm font-semibold text-slate-300">{fromCoin}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <span className="text-sm text-slate-400">To</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-emerald-400">{formatAmount(netReceive)}</span>
+                <span className="text-sm font-semibold text-slate-300">{toCoin}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <span className="text-sm text-slate-400">Rate</span>
+              <span className="font-semibold text-white">
+                1 {fromCoin} ≈ {formatAmount(rate)} {toCoin}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <span className="text-sm text-slate-400">Fee</span>
+              <span className="font-semibold text-rose-400">{formatAmount(fee)} {toCoin}</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-400">Available Balance</span>
+              <span className="font-semibold text-white">
+                {formatAmount(availableBalance)} {fromCoin}
+              </span>
+            </div>
           </div>
-          <p className="text-[26px] font-extrabold text-white">
-            {formatAmount(amount, 6)} <span className="text-white/40">{from.symbol}</span>
-          </p>
-          <span className="rounded-full bg-white/5 px-3 py-1 text-[11.5px] font-semibold text-white/50">
-            {from.symbol} → {to.symbol}
-          </span>
-        </div>
-
-        <GlassCard className="flex flex-col gap-3 !p-4">
-          <Row label="From" value={`${from.name} (${from.symbol})`} />
-          <Row label="To" value={`${to.name} (${to.symbol})`} />
-          <Row label="Amount" value={`${formatAmount(amount, 6)} ${from.symbol}`} />
-          <Row label="Available" value={`${formatAmount(fromBalance, 2)} ${from.symbol}`} />
-          <Row label="Exchange Rate" value={`1 ${from.symbol} = ${formatAmount(rate, 2)} ${to.symbol}`} />
-          <Row label="Fee" value={`${formatAmount(fee, 6)} ${to.symbol}`} />
-          <Row label="Estimated Receive" value={`${formatAmount(netReceive, 6)} ${to.symbol}`} highlight />
         </GlassCard>
 
-        <div className="mt-auto pt-2">
-          <PrimaryButton onClick={handleConfirm}>Confirm Convert</PrimaryButton>
+        <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-4 mb-6">
+          <p className="text-sm text-yellow-400">
+            ⚠️ Please review the details carefully. This conversion cannot be undone.
+          </p>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function Row({ label, value, highlight = false }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-white/5 pb-3 last:border-0 last:pb-0">
-      <span className="shrink-0 text-[12.5px] text-white/45">{label}</span>
-      <span className={`text-right text-[13px] font-semibold ${highlight ? "text-[#A78BFA]" : "text-white/85"}`}>
-        {value}
-      </span>
+        <PrimaryButton
+          onClick={handleConfirm}
+          disabled={conversionLoading || numAmount <= 0 || netReceive <= 0}
+        >
+          {conversionLoading ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing...
+            </span>
+          ) : (
+            `Confirm Conversion`
+          )}
+        </PrimaryButton>
+      </div>
     </div>
   );
 }
