@@ -322,11 +322,10 @@ export default function Convert() {
 
       console.log('New balances:', { newFromBalance, newToBalance });
 
-      // Update profile in Supabase
+      // Update profile in Supabase - REMOVED updated_at column
       const updates = {
         [fromField]: newFromBalance,
         [toField]: newToBalance,
-        updated_at: new Date().toISOString()
       };
 
       console.log('Updates to send:', updates);
