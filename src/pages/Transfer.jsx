@@ -7,13 +7,6 @@ import TransferCoinSelector from "../components/transfer/TransferCoinSelector";
 import TransferSuccess from "../components/transfer/TransferSuccess";
 import TransferHistory from "../components/transfer/TransferHistory";
 
-/* ------------------------------------------------------------------ */
-/*  Internal account-to-account transfer (Funding / Spot / Futures /   */
-/*  Earn). Not a blockchain transfer — no address, network, or fee.    */
-/*  Mount as: <Route path="/transfer/*" element={<Transfer />} />      */
-/*  Future-ready to be wired to real account balances/backend.          */
-/* ------------------------------------------------------------------ */
-
 export const ACCOUNTS = [
   { id: "funding", name: "Funding", description: "Deposits & external funds", color: "#2563EB", icon: Wallet },
   { id: "spot", name: "Spot", description: "Trade on the spot market", color: "#7C3AED", icon: CandlestickChart },
@@ -25,18 +18,14 @@ export function getAccount(id) {
   return ACCOUNTS.find((a) => a.id === id) || ACCOUNTS[0];
 }
 
-/* Deterministic mock balance per account + coin, so numbers stay stable  */
-/* across re-renders without needing a backend yet.                       */
 export function getMockBalance(accountId, coinSymbol) {
   const seed = `${accountId}-${coinSymbol}`
     .split("")
     .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const base = ((seed * 37) % 5000) / 100; // 0 - 50.00 range
+  const base = ((seed * 37) % 5000) / 100;
   return Math.round(base * 10000) / 10000;
 }
 
-/* Mock transfer history. Future-ready to be replaced with real data      */
-/* from the backend / Admin Dashboard.                                     */
 export const MOCK_TRANSFER_HISTORY = [
   { id: "t1", coinSymbol: "USDT", fromAccount: "funding", toAccount: "spot", amount: "250.00", date: "2026-07-19T16:42:00Z", status: "Completed" },
   { id: "t2", coinSymbol: "BTC", fromAccount: "spot", toAccount: "futures", amount: "0.0350", date: "2026-07-18T09:15:00Z", status: "Completed" },
@@ -90,7 +79,6 @@ export default function Transfer() {
           style={{ background: "#2563EB" }}
         />
 
-        {/* FIXED: Added inline style for centering */}
         <div className="relative z-10 mx-auto w-full max-w-[520px]" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "520px", width: "100%" }}>
           <Routes>
             <Route index element={<TransferForm />} />
@@ -145,7 +133,7 @@ export function AccountBadge({ account, size = 44 }) {
           {account.name.slice(0, 1)}
         </span>
       )}
-    </button>
+    </span>
   );
 }
 
