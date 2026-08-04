@@ -8,7 +8,7 @@ export default function ConvertSuccess() {
   const [mounted, setMounted] = useState(false);
 
   const quote = useMemo(
-    () => computeQuote(draft.fromCoin, draft.toCoin, draft.amount),
+    () => computeQuote(draft.fromCoin, draft.toCoin, draft.amount, {}),
     [draft.fromCoin, draft.toCoin, draft.amount]
   );
   const { from, to, amount, netReceive } = quote;
@@ -20,7 +20,7 @@ export default function ConvertSuccess() {
 
   const handleDone = () => {
     resetDraft();
-    navigate("/home");
+    navigate("/assets");
   };
 
   return (
