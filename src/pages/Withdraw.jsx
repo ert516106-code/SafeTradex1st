@@ -51,7 +51,6 @@ export function useWithdraw() {
   return ctx;
 }
 
-// ---- Shared design tokens (kept identical in Deposit.jsx — update both together) ----
 export const FLOW_THEME = {
   purple: "#8B5CF6",
   purpleDeep: "#7C3AED",
@@ -110,7 +109,8 @@ export default function Withdraw() {
           style={{ background: FLOW_THEME.purpleDeep }}
         />
 
-        <div className="relative z-10 mx-auto w-full max-w-[520px]">
+        {/* FIXED: Added inline style for centering */}
+        <div className="relative z-10 mx-auto w-full max-w-[520px]" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "520px", width: "100%" }}>
           {!settingsLoading && !settings.withdrawals ? (
             <WithdrawDisabledScreen />
           ) : (
@@ -130,8 +130,6 @@ export default function Withdraw() {
   );
 }
 
-// Shared pill switcher between Deposit / Withdraw — the signature glow element.
-// Duplicated (not imported) from Deposit.jsx so each route file has zero cross-deps.
 export function FlowTabs({ active = "withdraw" }) {
   const navigate = useNavigate();
   const isDeposit = active === "deposit";
@@ -217,10 +215,8 @@ export function GlassCard({ children, className = "", accent = "purple" }) {
   );
 }
 
-// Kept as an alias so any component still importing `GlowCard` from here doesn't break.
 export const GlowCard = GlassCard;
 
-// Gradient icon square used inside action cards (Internal / External withdraw, etc.)
 export function IconBadge({ children, accent = "purple", size = 52 }) {
   const bg =
     accent === "blue"
@@ -340,5 +336,4 @@ export function CoinSelector({ value, onChange }) {
         ))}
       </div>
     </div>
-  );
-}
+ 
