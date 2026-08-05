@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import safetradeLogo from "../../assets/safetrade-logo.png";
+import safetradeLogo from "../../assets/logo/safetrade-logo.png"; // Fixed path
 
 export default function Logo() {
   const navigate = useNavigate();
