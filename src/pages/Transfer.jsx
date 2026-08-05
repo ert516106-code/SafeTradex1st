@@ -7,6 +7,13 @@ import TransferCoinSelector from "../components/transfer/TransferCoinSelector";
 import TransferSuccess from "../components/transfer/TransferSuccess";
 import TransferHistory from "../components/transfer/TransferHistory";
 
+/* ------------------------------------------------------------------ */
+/*  Internal account-to-account transfer (Funding / Spot / Futures /   */
+/*  Earn). Not a blockchain transfer — no address, network, or fee.    */
+/*  Mount as: <Route path="/transfer/*" element={<Transfer />} />      */
+/*  Balances and history are not yet wired to a backend.               */
+/* ------------------------------------------------------------------ */
+
 export const ACCOUNTS = [
   { id: "funding", name: "Funding", description: "Deposits & external funds", color: "#2563EB", icon: Wallet },
   { id: "spot", name: "Spot", description: "Trade on the spot market", color: "#7C3AED", icon: CandlestickChart },
@@ -18,22 +25,8 @@ export function getAccount(id) {
   return ACCOUNTS.find((a) => a.id === id) || ACCOUNTS[0];
 }
 
-export function getMockBalance(accountId, coinSymbol) {
-  const seed = `${accountId}-${coinSymbol}`
-    .split("")
-    .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const base = ((seed * 37) % 5000) / 100;
-  return Math.round(base * 10000) / 10000;
-}
-
-export const MOCK_TRANSFER_HISTORY = [
-  { id: "t1", coinSymbol: "USDT", fromAccount: "funding", toAccount: "spot", amount: "250.00", date: "2026-07-19T16:42:00Z", status: "Completed" },
-  { id: "t2", coinSymbol: "BTC", fromAccount: "spot", toAccount: "futures", amount: "0.0350", date: "2026-07-18T09:15:00Z", status: "Completed" },
-  { id: "t3", coinSymbol: "ETH", fromAccount: "futures", toAccount: "funding", amount: "1.1200", date: "2026-07-16T21:03:00Z", status: "Completed" },
-  { id: "t4", coinSymbol: "USDT", fromAccount: "earn", toAccount: "spot", amount: "500.00", date: "2026-07-14T12:27:00Z", status: "Completed" },
-  { id: "t5", coinSymbol: "SOL", fromAccount: "spot", toAccount: "earn", amount: "6.4000", date: "2026-07-11T07:58:00Z", status: "Pending" },
-  { id: "t6", coinSymbol: "USDC", fromAccount: "funding", toAccount: "futures", amount: "120.00", date: "2026-07-08T18:34:00Z", status: "Completed" },
-];
+/* Transfer history — empty until wired to a real backend. */
+export const MOCK_TRANSFER_HISTORY = [];
 
 const initialDraft = {
   fromAccount: "funding",
@@ -79,7 +72,7 @@ export default function Transfer() {
           style={{ background: "#2563EB" }}
         />
 
-        <div className="relative z-10 mx-auto w-full max-w-[520px]" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "520px", width: "100%" }}>
+        <div className="relative z-10 mx-auto w-full max-w-[520px]">
           <Routes>
             <Route index element={<TransferForm />} />
             <Route path="select-coin" element={<TransferCoinSelector />} />
