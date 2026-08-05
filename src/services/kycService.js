@@ -10,8 +10,9 @@ export async function uploadKycFile(userId, file, label) {
 
   if (error) throw new Error(error.message);
 
-  const { data } = supabase.storage.from("kyc-documents").getPublicUrl(path);
-  return data.publicUrl;
+  // Private bucket — store the raw storage path, not a public URL.
+  // Signed URLs are generated on read, by whoever is authorized to view it.
+  return path;
 }
 
 export async function submitKyc({
@@ -23,7 +24,7 @@ export async function submitKyc({
   idBackFile,
   handheldFile,
 }) {
-  const [idFrontUrl, idBackUrl, handheldUrl] = await Promise.all([
+  const [idFrontPath, idBackPath, handheldPath] = await Promise.all([
     uploadKycFile(userId, idFrontFile, "id-front"),
     uploadKycFile(userId, idBackFile, "id-back"),
     uploadKycFile(userId, handheldFile, "handheld"),
@@ -36,9 +37,9 @@ export async function submitKyc({
       full_name: fullName,
       document_type: documentType,
       id_number: idNumber,
-      id_front_url: idFrontUrl,
-      id_back_url: idBackUrl,
-      handheld_photo_url: handheldUrl,
+      id_front_url: idFrontPath,
+      id_back_url: idBackPath,
+      handheld_photo_url: handheldPath,
       status: "pending",
     })
     .select()
