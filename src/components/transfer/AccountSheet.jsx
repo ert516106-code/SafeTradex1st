@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { ACCOUNTS, AccountBadge, getMockBalance, formatAmount } from "../../pages/Transfer";
+import { ACCOUNTS, AccountBadge, formatAmount } from "../../pages/Transfer";
 
 export default function AccountSheet({ open, field, currentValue, excludeId, coinSymbol, onSelect, onClose }) {
   const [visible, setVisible] = useState(false);
-
   useEffect(() => {
     if (open) {
       const t = setTimeout(() => setVisible(true), 10);
@@ -11,11 +10,8 @@ export default function AccountSheet({ open, field, currentValue, excludeId, coi
     }
     setVisible(false);
   }, [open]);
-
   if (!open) return null;
-
   const title = field === "from" ? "Select From Account" : "Select To Account";
-
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
       <div
@@ -24,18 +20,15 @@ export default function AccountSheet({ open, field, currentValue, excludeId, coi
           visible ? "opacity-100" : "opacity-0"
         }`}
       />
-
       <div
         className={`relative mx-auto w-full max-w-lg overflow-hidden rounded-t-[28px] border-t border-white/10 bg-[#0c1226] shadow-[0_-24px_60px_-12px_rgba(0,0,0,0.6)] transition-transform duration-300 ease-out ${
           visible ? "translate-y-0" : "translate-y-full"
         }`}
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#A78BFA]/50 to-transparent" />
-
         <div className="flex justify-center pt-3">
           <span className="h-1.5 w-10 rounded-full bg-white/15" />
         </div>
-
         <div className="flex items-center justify-between px-5 pb-2 pt-4">
           <h2 className="text-[16px] font-bold text-white">{title}</h2>
           <button
@@ -48,13 +41,11 @@ export default function AccountSheet({ open, field, currentValue, excludeId, coi
             </svg>
           </button>
         </div>
-
         <div className="flex flex-col gap-2 px-4 pb-8 pt-2">
           {ACCOUNTS.map((account, i) => {
             const isSelected = account.id === currentValue;
             const isDisabled = account.id === excludeId;
-            const balance = getMockBalance(account.id, coinSymbol);
-
+            const balance = 0;
             return (
               <button
                 key={account.id}
