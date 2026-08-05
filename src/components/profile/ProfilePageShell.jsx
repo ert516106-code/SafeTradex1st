@@ -1,14 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-
 export default function ProfilePageShell({ title, subtitle, children }) {
   const navigate = useNavigate();
-
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "radial-gradient(circle at top,#1E3170 0%,#091120 70%)",
+        background: "radial-gradient(circle at top,#18254b 0%,#050816 70%)",
         color: "#FFFFFF",
         padding: 20,
         paddingBottom: 60,
@@ -39,7 +37,6 @@ export default function ProfilePageShell({ title, subtitle, children }) {
           ) : null}
         </div>
       </div>
-
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {children}
       </div>
