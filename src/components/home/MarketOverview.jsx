@@ -2,12 +2,36 @@ import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
+// CoinGecko IDs mapping
 const COINS = [
-  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' },
-  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
-  { id: 'binancecoin', symbol: 'BNB', name: 'BNB' },
-  { id: 'solana', symbol: 'SOL', name: 'Solana' },
-  { id: 'ripple', symbol: 'XRP', name: 'XRP' },
+  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', logo: 'https://assets.coincap.io/assets/icons/btc@2x.png' },
+  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', logo: 'https://assets.coincap.io/assets/icons/eth@2x.png' },
+  { id: 'binancecoin', symbol: 'BNB', name: 'BNB', logo: 'https://assets.coincap.io/assets/icons/bnb@2x.png' },
+  { id: 'solana', symbol: 'SOL', name: 'Solana', logo: 'https://assets.coincap.io/assets/icons/sol@2x.png' },
+  { id: 'ripple', symbol: 'XRP', name: 'XRP', logo: 'https://assets.coincap.io/assets/icons/xrp@2x.png' },
+  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', logo: 'https://assets.coincap.io/assets/icons/doge@2x.png' },
+  { id: 'cardano', symbol: 'ADA', name: 'Cardano', logo: 'https://assets.coincap.io/assets/icons/ada@2x.png' },
+  { id: 'tron', symbol: 'TRX', name: 'TRON', logo: 'https://assets.coincap.io/assets/icons/trx@2x.png' },
+  { id: 'avalanche-2', symbol: 'AVAX', name: 'Avalanche', logo: 'https://assets.coincap.io/assets/icons/avax@2x.png' },
+  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', logo: 'https://assets.coincap.io/assets/icons/link@2x.png' },
+  { id: 'polkadot', symbol: 'DOT', name: 'Polkadot', logo: 'https://assets.coincap.io/assets/icons/dot@2x.png' },
+  { id: 'matic-network', symbol: 'MATIC', name: 'Polygon', logo: 'https://assets.coincap.io/assets/icons/matic@2x.png' },
+  { id: 'litecoin', symbol: 'LTC', name: 'Litecoin', logo: 'https://assets.coincap.io/assets/icons/ltc@2x.png' },
+  { id: 'shiba-inu', symbol: 'SHIB', name: 'Shiba Inu', logo: 'https://assets.coincap.io/assets/icons/shib@2x.png' },
+  { id: 'uniswap', symbol: 'UNI', name: 'Uniswap', logo: 'https://assets.coincap.io/assets/icons/uni@2x.png' },
+  { id: 'cosmos', symbol: 'ATOM', name: 'Cosmos', logo: 'https://assets.coincap.io/assets/icons/atom@2x.png' },
+  { id: 'near', symbol: 'NEAR', name: 'NEAR Protocol', logo: 'https://assets.coincap.io/assets/icons/near@2x.png' },
+  { id: 'aptos', symbol: 'APT', name: 'Aptos', logo: 'https://assets.coincap.io/assets/icons/apt@2x.png' },
+  { id: 'arbitrum', symbol: 'ARB', name: 'Arbitrum', logo: 'https://assets.coincap.io/assets/icons/arb@2x.png' },
+  { id: 'optimism', symbol: 'OP', name: 'Optimism', logo: 'https://assets.coincap.io/assets/icons/op@2x.png' },
+  { id: 'filecoin', symbol: 'FIL', name: 'Filecoin', logo: 'https://assets.coincap.io/assets/icons/fil@2x.png' },
+  { id: 'internet-computer', symbol: 'ICP', name: 'Internet Computer', logo: 'https://assets.coincap.io/assets/icons/icp@2x.png' },
+  { id: 'ethereum-classic', symbol: 'ETC', name: 'Ethereum Classic', logo: 'https://assets.coincap.io/assets/icons/etc@2x.png' },
+  { id: 'bitcoin-cash', symbol: 'BCH', name: 'Bitcoin Cash', logo: 'https://assets.coincap.io/assets/icons/bch@2x.png' },
+  { id: 'algorand', symbol: 'ALGO', name: 'Algorand', logo: 'https://assets.coincap.io/assets/icons/algo@2x.png' },
+  { id: 'vechain', symbol: 'VET', name: 'VeChain', logo: 'https://assets.coincap.io/assets/icons/vet@2x.png' },
+  { id: 'the-sandbox', symbol: 'SAND', name: 'The Sandbox', logo: 'https://assets.coincap.io/assets/icons/sand@2x.png' },
+  { id: 'decentraland', symbol: 'MANA', name: 'Decentraland', logo: 'https://assets.coincap.io/assets/icons/mana@2x.png' },
 ];
 
 // Fetch price from CoinGecko
@@ -113,7 +137,7 @@ export default function MarketOverview() {
           <ChevronRight size={18} />
         </button>
       </div>
-      {coins.map((coin) => {
+      {coins.slice(0, 5).map((coin) => {
         const isPositive = coin.change >= 0;
         return (
           <div
@@ -138,21 +162,29 @@ export default function MarketOverview() {
                 gap: 14,
               }}
             >
-              <div style={{
-                width: 42,
-                height: 42,
-                borderRadius: '50%',
-                background: `linear-gradient(135deg, ${getColor(coin.symbol)}33, ${getColor(coin.symbol)}11)`,
-                border: `1px solid ${getColor(coin.symbol)}44`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 16,
-                fontWeight: 'bold',
-                color: '#fff'
-              }}>
-                {coin.symbol.charAt(0)}
-              </div>
+              <img
+                src={coin.logo}
+                alt={coin.symbol}
+                width={42}
+                height={42}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = `
+                    <div style="
+                      width: 42px;
+                      height: 42px;
+                      border-radius: 50%;
+                      background: linear-gradient(135deg, #7C3AED33, #2563EB33);
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-weight: bold;
+                      color: #A78BFA;
+                      font-size: 16px;
+                    ">${coin.symbol.charAt(0)}</div>
+                  `;
+                }}
+              />
               <div>
                 <div
                   style={{
@@ -168,7 +200,7 @@ export default function MarketOverview() {
                     fontSize: 13,
                   }}
                 >
-                  {coin.symbol}/USDT
+                  {coin.symbol}
                 </div>
               </div>
             </div>
@@ -208,15 +240,4 @@ export default function MarketOverview() {
       })}
     </div>
   );
-}
-
-function getColor(symbol) {
-  const colors = {
-    BTC: '#F7931A',
-    ETH: '#627EEA',
-    BNB: '#F3BA2F',
-    SOL: '#9945FF',
-    XRP: '#00A4E4',
-  };
-  return colors[symbol] || '#7C3AED';
 }
