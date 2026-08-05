@@ -25,6 +25,7 @@ import HelpCenter from "./pages/HelpCenter";
 import TermsPrivacy from "./pages/TermsPrivacy";
 import AboutSafeTrade from "./pages/AboutSafeTrade";
 import RewardsCenter from "./pages/RewardsCenter";
+import KycVerification from "./pages/KycVerification"; // ← ADDED
 
 import OptionsTrading from "./pages/OptionsTrading";
 
@@ -83,6 +84,7 @@ export default function App() {
               <Route path="/terms-privacy" element={<ProtectedRoute><TermsPrivacy /></ProtectedRoute>} />
               <Route path="/about-safetrade" element={<ProtectedRoute><AboutSafeTrade /></ProtectedRoute>} />
               <Route path="/rewards-center" element={<ProtectedRoute><RewardsCenter /></ProtectedRoute>} />
+              <Route path="/kyc-verification" element={<ProtectedRoute><KycVerification /></ProtectedRoute>} /> {/* ← ADDED */}
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
