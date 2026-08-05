@@ -4,7 +4,7 @@ import {
   X,
   ShieldCheck,
   BadgeCheck,
-  Wallet,
+  ShieldQuestion,
   Gift,
   Bell,
   Globe,
@@ -20,6 +20,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { getMyKycStatus } from "../services/kycService";
 
 const menuGroups = [
   {
@@ -27,7 +28,7 @@ const menuGroups = [
     items: [
       { key: "security", label: "Security Center", icon: ShieldCheck, desc: "2FA, password, devices", path: "/security-center" },
       { key: "personal", label: "Personal Information", icon: UserRound, desc: "Name, email, phone", path: "/personal-information" },
-      { key: "wallets", label: "Wallet Addresses", icon: Wallet, desc: "Manage saved addresses", path: "/wallet-addresses" },
+      { key: "kyc", label: "KYC Verification", icon: BadgeCheck, desc: "Identity verification", path: "/kyc-verification" },
     ],
   },
   {
@@ -53,6 +54,7 @@ export default function ProfileDrawer({ isOpen, onClose }) {
   const [copied, setCopied] = useState(false);
   const [profile, setProfile] = useState(null);
   const [authEmail, setAuthEmail] = useState("");
+  const [kycStatus, setKycStatus] = useState(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -76,6 +78,11 @@ export default function ProfileDrawer({ isOpen, onClose }) {
 
       if (!error && isMounted) {
         setProfile(data);
+      }
+
+      const kyc = await getMyKycStatus(user.id);
+      if (isMounted) {
+        setKycStatus(kyc?.status || null);
       }
     }
 
@@ -239,19 +246,19 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       textOverflow: "ellipsis",
       whiteSpace: "nowrap",
     },
-    verifiedPill: {
+    verifiedPill: (color) => ({
       display: "inline-flex",
       alignItems: "center",
       gap: "4px",
       borderRadius: "999px",
-      background: "rgba(59,130,246,0.15)",
-      border: "1px solid rgba(96,165,250,0.3)",
+      background: color.bg,
+      border: `1px solid ${color.border}`,
       padding: "2px 8px",
       fontSize: "10px",
       fontWeight: 600,
-      color: "#93c5fd",
+      color: color.text,
       marginTop: "4px",
-    },
+    }),
     uidRow: {
       marginTop: "6px",
       display: "flex",
@@ -392,6 +399,16 @@ export default function ProfileDrawer({ isOpen, onClose }) {
     },
   };
 
+  const kycPillStyles = {
+    approved: { bg: "rgba(59,130,246,0.15)", border: "rgba(96,165,250,0.3)", text: "#93c5fd" },
+    pending: { bg: "rgba(245,158,11,0.15)", border: "rgba(251,191,36,0.3)", text: "#fbbf24" },
+    denied: { bg: "rgba(239,68,68,0.15)", border: "rgba(248,113,113,0.3)", text: "#f87171" },
+    none: { bg: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.25)", text: "#94a3b8" },
+  };
+
+  const kycLabel = { approved: "Verified", pending: "Pending", denied: "Denied" }[kycStatus] || "Not Verified";
+  const kycColor = kycPillStyles[kycStatus] || kycPillStyles.none;
+
   return (
     <>
       <div style={styles.overlay} onClick={onClose} />
@@ -414,15 +431,19 @@ export default function ProfileDrawer({ isOpen, onClose }) {
                 </div>
               </div>
               <div style={styles.badgeDot}>
-                <BadgeCheck size={16} color="#60a5fa" />
+                {kycStatus === "approved" ? (
+                  <BadgeCheck size={16} color="#60a5fa" />
+                ) : (
+                  <ShieldQuestion size={16} color="#64748b" />
+                )}
               </div>
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <p style={styles.username}>{displayName}</p>
               <p style={styles.email}>{displayEmail}</p>
-              <span style={styles.verifiedPill}>
+              <span style={styles.verifiedPill(kycColor)}>
                 <ShieldCheck size={11} />
-                Verified
+                {kycLabel}
               </span>
               <button style={styles.uidRow} onClick={handleCopyUid}>
                 <span>Account ID {accountId}</span>
