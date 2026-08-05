@@ -7,7 +7,6 @@ import {
   CoinLogo,
   getCoin,
   getAccount,
-  getMockBalance,
   formatAmount,
   useTransfer,
   AccountBadge,
@@ -67,10 +66,8 @@ export default function TransferForm() {
   const toAccount = getAccount(draft.toAccount);
   const numericAmount = parseFloat(draft.amount) || 0;
 
-  const availableBalance = useMemo(
-    () => getMockBalance(draft.fromAccount, draft.coinSymbol),
-    [draft.fromAccount, draft.coinSymbol]
-  );
+  // Balances are not yet wired to a backend.
+  const availableBalance = 0;
 
   const sameAccount = draft.fromAccount === draft.toAccount;
   const isValid = !sameAccount && numericAmount > 0 && numericAmount <= availableBalance;
