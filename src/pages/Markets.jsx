@@ -1,61 +1,52 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Star, StarOff } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 import BottomNavigation from '../components/layout/BottomNavigation';
 
-// TradingView symbols mapping
 const COINS = [
-  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', tvSymbol: 'BINANCE:BTCUSDT', logo: 'https://assets.coincap.io/assets/icons/btc@2x.png' },
-  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', tvSymbol: 'BINANCE:ETHUSDT', logo: 'https://assets.coincap.io/assets/icons/eth@2x.png' },
-  { id: 'binancecoin', symbol: 'BNB', name: 'BNB', tvSymbol: 'BINANCE:BNBUSDT', logo: 'https://assets.coincap.io/assets/icons/bnb@2x.png' },
-  { id: 'solana', symbol: 'SOL', name: 'Solana', tvSymbol: 'BINANCE:SOLUSDT', logo: 'https://assets.coincap.io/assets/icons/sol@2x.png' },
-  { id: 'ripple', symbol: 'XRP', name: 'XRP', tvSymbol: 'BINANCE:XRPUSDT', logo: 'https://assets.coincap.io/assets/icons/xrp@2x.png' },
-  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', tvSymbol: 'BINANCE:DOGEUSDT', logo: 'https://assets.coincap.io/assets/icons/doge@2x.png' },
-  { id: 'cardano', symbol: 'ADA', name: 'Cardano', tvSymbol: 'BINANCE:ADAUSDT', logo: 'https://assets.coincap.io/assets/icons/ada@2x.png' },
-  { id: 'tron', symbol: 'TRX', name: 'TRON', tvSymbol: 'BINANCE:TRXUSDT', logo: 'https://assets.coincap.io/assets/icons/trx@2x.png' },
-  { id: 'avalanche-2', symbol: 'AVAX', name: 'Avalanche', tvSymbol: 'BINANCE:AVAXUSDT', logo: 'https://assets.coincap.io/assets/icons/avax@2x.png' },
-  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', tvSymbol: 'BINANCE:LINKUSDT', logo: 'https://assets.coincap.io/assets/icons/link@2x.png' },
-  { id: 'polkadot', symbol: 'DOT', name: 'Polkadot', tvSymbol: 'BINANCE:DOTUSDT', logo: 'https://assets.coincap.io/assets/icons/dot@2x.png' },
-  { id: 'matic-network', symbol: 'MATIC', name: 'Polygon', tvSymbol: 'BINANCE:MATICUSDT', logo: 'https://assets.coincap.io/assets/icons/matic@2x.png' },
-  { id: 'litecoin', symbol: 'LTC', name: 'Litecoin', tvSymbol: 'BINANCE:LTCUSDT', logo: 'https://assets.coincap.io/assets/icons/ltc@2x.png' },
-  { id: 'shiba-inu', symbol: 'SHIB', name: 'Shiba Inu', tvSymbol: 'BINANCE:SHIBUSDT', logo: 'https://assets.coincap.io/assets/icons/shib@2x.png' },
-  { id: 'uniswap', symbol: 'UNI', name: 'Uniswap', tvSymbol: 'BINANCE:UNIUSDT', logo: 'https://assets.coincap.io/assets/icons/uni@2x.png' },
-  { id: 'cosmos', symbol: 'ATOM', name: 'Cosmos', tvSymbol: 'BINANCE:ATOMUSDT', logo: 'https://assets.coincap.io/assets/icons/atom@2x.png' },
-  { id: 'near', symbol: 'NEAR', name: 'NEAR Protocol', tvSymbol: 'BINANCE:NEARUSDT', logo: 'https://assets.coincap.io/assets/icons/near@2x.png' },
-  { id: 'aptos', symbol: 'APT', name: 'Aptos', tvSymbol: 'BINANCE:APTUSDT', logo: 'https://assets.coincap.io/assets/icons/apt@2x.png' },
-  { id: 'arbitrum', symbol: 'ARB', name: 'Arbitrum', tvSymbol: 'BINANCE:ARBUSDT', logo: 'https://assets.coincap.io/assets/icons/arb@2x.png' },
-  { id: 'optimism', symbol: 'OP', name: 'Optimism', tvSymbol: 'BINANCE:OPUSDT', logo: 'https://assets.coincap.io/assets/icons/op@2x.png' },
-  { id: 'filecoin', symbol: 'FIL', name: 'Filecoin', tvSymbol: 'BINANCE:FILUSDT', logo: 'https://assets.coincap.io/assets/icons/fil@2x.png' },
-  { id: 'internet-computer', symbol: 'ICP', name: 'Internet Computer', tvSymbol: 'BINANCE:ICPUSDT', logo: 'https://assets.coincap.io/assets/icons/icp@2x.png' },
-  { id: 'ethereum-classic', symbol: 'ETC', name: 'Ethereum Classic', tvSymbol: 'BINANCE:ETCUSDT', logo: 'https://assets.coincap.io/assets/icons/etc@2x.png' },
-  { id: 'bitcoin-cash', symbol: 'BCH', name: 'Bitcoin Cash', tvSymbol: 'BINANCE:BCHUSDT', logo: 'https://assets.coincap.io/assets/icons/bch@2x.png' },
-  { id: 'algorand', symbol: 'ALGO', name: 'Algorand', tvSymbol: 'BINANCE:ALGOUSDT', logo: 'https://assets.coincap.io/assets/icons/algo@2x.png' },
-  { id: 'vechain', symbol: 'VET', name: 'VeChain', tvSymbol: 'BINANCE:VETUSDT', logo: 'https://assets.coincap.io/assets/icons/vet@2x.png' },
-  { id: 'the-sandbox', symbol: 'SAND', name: 'The Sandbox', tvSymbol: 'BINANCE:SANDUSDT', logo: 'https://assets.coincap.io/assets/icons/sand@2x.png' },
-  { id: 'decentraland', symbol: 'MANA', name: 'Decentraland', tvSymbol: 'BINANCE:MANAUSDT', logo: 'https://assets.coincap.io/assets/icons/mana@2x.png' },
+  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' },
+  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
+  { id: 'binancecoin', symbol: 'BNB', name: 'BNB' },
+  { id: 'solana', symbol: 'SOL', name: 'Solana' },
+  { id: 'ripple', symbol: 'XRP', name: 'XRP' },
+  { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin' },
+  { id: 'cardano', symbol: 'ADA', name: 'Cardano' },
+  { id: 'tron', symbol: 'TRX', name: 'TRON' },
+  { id: 'avalanche-2', symbol: 'AVAX', name: 'Avalanche' },
+  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink' },
+  { id: 'polkadot', symbol: 'DOT', name: 'Polkadot' },
+  { id: 'matic-network', symbol: 'MATIC', name: 'Polygon' },
+  { id: 'litecoin', symbol: 'LTC', name: 'Litecoin' },
+  { id: 'shiba-inu', symbol: 'SHIB', name: 'Shiba Inu' },
+  { id: 'uniswap', symbol: 'UNI', name: 'Uniswap' },
+  { id: 'cosmos', symbol: 'ATOM', name: 'Cosmos' },
+  { id: 'near', symbol: 'NEAR', name: 'NEAR Protocol' },
+  { id: 'aptos', symbol: 'APT', name: 'Aptos' },
+  { id: 'arbitrum', symbol: 'ARB', name: 'Arbitrum' },
+  { id: 'optimism', symbol: 'OP', name: 'Optimism' },
+  { id: 'filecoin', symbol: 'FIL', name: 'Filecoin' },
+  { id: 'internet-computer', symbol: 'ICP', name: 'Internet Computer' },
+  { id: 'ethereum-classic', symbol: 'ETC', name: 'Ethereum Classic' },
+  { id: 'bitcoin-cash', symbol: 'BCH', name: 'Bitcoin Cash' },
+  { id: 'algorand', symbol: 'ALGO', name: 'Algorand' },
+  { id: 'vechain', symbol: 'VET', name: 'VeChain' },
+  { id: 'the-sandbox', symbol: 'SAND', name: 'The Sandbox' },
+  { id: 'decentraland', symbol: 'MANA', name: 'Decentraland' },
 ];
 
-// Fetch price from TradingView
-async function fetchTradingViewPrice(symbol) {
+// Fetch price from CoinGecko
+async function fetchPrice(coinId) {
   try {
     const response = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol.replace(':', '').toLowerCase()}`
+      `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`
     );
     
     if (!response.ok) throw new Error('Failed to fetch price');
     
     const data = await response.json();
-    const result = data.chart?.result?.[0];
-    
-    if (!result) return null;
-    
-    const meta = result.meta;
-    const price = meta.regularMarketPrice || meta.previousClose || 0;
-    const change = meta.regularMarketChangePercent || 0;
-    
-    return { price, change };
+    return data[coinId];
   } catch (error) {
-    console.error(`Error fetching ${symbol} price:`, error);
+    console.error(`Error fetching ${coinId} price:`, error);
     return null;
   }
 }
@@ -65,21 +56,20 @@ export default function Markets() {
   const [search, setSearch] = useState('');
   const [coins, setCoins] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [favorites, setFavorites] = useState(['BTC', 'ETH', 'BNB', 'SOL', 'XRP']);
 
   useEffect(() => {
     async function fetchAllPrices() {
       setLoading(true);
       try {
-        const pricePromises = COINS.map(coin => fetchTradingViewPrice(coin.tvSymbol));
+        const pricePromises = COINS.map(coin => fetchPrice(coin.id));
         const results = await Promise.all(pricePromises);
         
         const updatedCoins = COINS.map((coin, index) => {
           const data = results[index] || null;
           return {
             ...coin,
-            price: data?.price || 0,
-            change: data?.change || 0,
+            price: data?.usd || 0,
+            change: data?.usd_24h_change || 0,
           };
         });
         
@@ -106,27 +96,10 @@ export default function Markets() {
     return `$${price.toFixed(0)}`;
   };
 
-  const toggleFavorite = (symbol) => {
-    setFavorites(prev => 
-      prev.includes(symbol) 
-        ? prev.filter(s => s !== symbol)
-        : [...prev, symbol]
-    );
-  };
-
   const filteredCoins = coins.filter(coin => {
     const searchLower = search.toLowerCase();
     return coin.name.toLowerCase().includes(searchLower) ||
            coin.symbol.toLowerCase().includes(searchLower);
-  });
-
-  // Sort: Favorites first, then by name
-  const sortedCoins = [...filteredCoins].sort((a, b) => {
-    const aFav = favorites.includes(a.symbol);
-    const bFav = favorites.includes(b.symbol);
-    if (aFav && !bFav) return -1;
-    if (!aFav && bFav) return 1;
-    return a.name.localeCompare(b.name);
   });
 
   return (
@@ -204,9 +177,8 @@ export default function Markets() {
         )}
 
         {/* Market List */}
-        {!loading && sortedCoins.map((coin) => {
+        {!loading && filteredCoins.map((coin) => {
           const isPositive = coin.change >= 0;
-          const isFavorite = favorites.includes(coin.symbol);
 
           return (
             <div
@@ -232,7 +204,8 @@ export default function Markets() {
                   fontSize: '16px',
                   fontWeight: 'bold',
                   background: `linear-gradient(135deg, ${getColor(coin.symbol)}33, ${getColor(coin.symbol)}11)`,
-                  border: `1px solid ${getColor(coin.symbol)}44`
+                  border: `1px solid ${getColor(coin.symbol)}44`,
+                  color: '#fff'
                 }}>
                   {coin.symbol.charAt(0)}
                 </div>
@@ -241,31 +214,8 @@ export default function Markets() {
                     color: '#FFFFFF',
                     fontSize: '16px',
                     fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
                   }}>
                     {coin.name}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(coin.symbol);
-                      }}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: 0,
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}
-                    >
-                      {isFavorite ? (
-                        <Star size={16} fill="#F59E0B" color="#F59E0B" />
-                      ) : (
-                        <StarOff size={16} color="rgba(255,255,255,0.3)" />
-                      )}
-                    </button>
                   </div>
                   <div style={{
                     color: 'rgba(255,255,255,0.4)',
