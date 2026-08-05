@@ -1,33 +1,79 @@
+import logo from "../../assets/logo/safetrade-logo.png";
 import { useNavigate } from "react-router-dom";
 import safetradeLogo from "../../assets/safetrade-logo.png";
 
 export default function Logo() {
   const navigate = useNavigate();
 
+export default function Logo({
+  size = 56,
+  showText = true,
+}) {
   return (
     <div
       onClick={() => navigate("/home")}
       style={{
         display: "flex",
         alignItems: "center",
+        gap: "16px",
         gap: 12,
         cursor: "pointer",
       }}
     >
       {/* SafeTrade Logo */}
       <img
+        src={logo}
+        alt="SafeTrade Logo"
         src={safetradeLogo}
         alt="SafeTrade"
         style={{
+          width: size,
+          height: size,
           width: 44,
           height: 44,
           objectFit: "contain",
+          display: "block",
+          background: "transparent",
+          border: "none",
+          borderRadius: 0,
+          boxShadow: "none",
         }}
         onError={(e) => {
           // Fallback if image doesn't load
           e.target.style.display = "none";
         }}
       />
+
+      {showText && (
+        <div>
+          <div
+            style={{
+              fontSize: "20px",
+              fontWeight: 800,
+              lineHeight: 1.1,
+              color: "#ffffff",
+            }}
+          >
+            Safe
+            <span
+              style={{
+                color: "#6D5DFF",
+              }}
+            >
+              Trade
+            </span>
+          </div>
+
+          <div
+            style={{
+              marginTop: "4px",
+              fontSize: "12px",
+              color: "#94A3B8",
+              letterSpacing: ".4px",
+            }}
+          >
+            Secure Crypto Exchange
+          </div>
       
       {/* Brand Name */}
       <div>
@@ -52,7 +98,9 @@ export default function Logo() {
         >
           Secure Crypto Exchange
         </div>
+      )}
       </div>
     </div>
   );
+}
 }
