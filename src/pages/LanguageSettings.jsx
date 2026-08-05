@@ -1,14 +1,15 @@
-import { useState } from "react";
 import { Check } from "lucide-react";
 import ProfilePageShell from "../components/profile/ProfilePageShell";
-
-const languages = ["English (US)", "Español", "Português", "Français", "Tiếng Việt", "中文"];
+import { useLanguage } from "../contexts/LanguageContext";
 
 export default function LanguageSettings() {
-  const [selected, setSelected] = useState("English (US)");
+  const { language, setLanguage, languages, t } = useLanguage();
 
   return (
-    <ProfilePageShell title="Language" subtitle="Choose your display language">
+    <ProfilePageShell
+      title={t("profile.language.title")}
+      subtitle={t("profile.language.subtitle")}
+    >
       <div
         style={{
           borderRadius: 20,
@@ -19,8 +20,8 @@ export default function LanguageSettings() {
       >
         {languages.map((lang, idx) => (
           <button
-            key={lang}
-            onClick={() => setSelected(lang)}
+            key={lang.code}
+            onClick={() => setLanguage(lang.code)}
             style={{
               width: "100%",
               display: "flex",
@@ -36,8 +37,8 @@ export default function LanguageSettings() {
               textAlign: "left",
             }}
           >
-            {lang}
-            {selected === lang && <Check size={16} color="#34d399" />}
+            {lang.label}
+            {language === lang.code && <Check size={16} color="#34d399" />}
           </button>
         ))}
       </div>
