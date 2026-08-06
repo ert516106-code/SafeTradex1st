@@ -1,70 +1,80 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
-import { supabase } from "../../lib/supabase";
 import * as chatService from "../../services/chatService";
+
+const SESSION_KEY = "safetradex_support_chat";
 
 export default function CustomerServiceWidget() {
   const [open, setOpen] = useState(false);
-  const [profile, setProfile] = useState(null);
-  const [chat, setChat] = useState(null);
+  const [uidInput, setUidInput] = useState("");
+  const [chat, setChat] = useState(null); // { chatId, accessToken, uid }
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [starting, setStarting] = useState(false);
+  const [error, setError] = useState("");
   const scrollRef = useRef(null);
-  const unsubscribeRef = useRef(null);
+  const pollRef = useRef(null);
 
+  // Restore an existing chat session from this browser tab, if any
   useEffect(() => {
-    async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("uid")
-        .eq("id", user.id)
-        .single();
-      setProfile({ id: user.id, uid: data?.uid || "" });
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    if (saved) {
+      try {
+        setChat(JSON.parse(saved));
+      } catch {
+        sessionStorage.removeItem(SESSION_KEY);
+      }
     }
-    loadProfile();
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (chat) chatService.setChatOnlineStatus(chat.id, false);
-      unsubscribeRef.current?.();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const handleUnload = () => {
-      if (chat) navigator.sendBeacon && chatService.setChatOnlineStatus(chat.id, false);
-    };
-    window.addEventListener("beforeunload", handleUnload);
-    return () => window.removeEventListener("beforeunload", handleUnload);
+  const loadMessages = useCallback(async () => {
+    if (!chat) return;
+    try {
+      const msgs = await chatService.getMessages(chat.chatId, chat.accessToken);
+      setMessages(msgs);
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+    }
   }, [chat]);
+
+  useEffect(() => {
+    if (!chat) return;
+    loadMessages();
+    pollRef.current = setInterval(loadMessages, 3000);
+    return () => clearInterval(pollRef.current);
+  }, [chat, loadMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const handleStartChat = useCallback(async () => {
-    if (!profile) return;
+  useEffect(() => {
+    const handleUnload = () => {
+      if (chat) chatService.setOffline(chat.chatId, chat.accessToken);
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [chat]);
+
+  async function handleStartChat(e) {
+    e.preventDefault();
+    if (!uidInput.trim()) {
+      setError("Enter your account UID.");
+      return;
+    }
     setStarting(true);
+    setError("");
     try {
-      const chatRow = await chatService.getOrCreateChat(profile.id, profile.uid);
-      setChat(chatRow);
-      const existingMessages = await chatService.getMessages(chatRow.id);
-      setMessages(existingMessages);
-      unsubscribeRef.current = chatService.subscribeToChat(chatRow.id, (msg) => {
-        setMessages((prev) => [...prev, msg]);
-      });
-      await chatService.setChatOnlineStatus(chatRow.id, true);
+      const { chatId, accessToken } = await chatService.startChat(uidInput.trim());
+      const session = { chatId, accessToken, uid: uidInput.trim() };
+      setChat(session);
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
     } catch (err) {
-      console.error("Failed to start chat:", err);
+      setError(err.message || "Could not start chat. Check the UID and try again.");
     } finally {
       setStarting(false);
     }
-  }, [profile]);
+  }
 
   async function handleSend(e) {
     e.preventDefault();
@@ -72,14 +82,11 @@ export default function CustomerServiceWidget() {
     const text = input.trim();
     setInput("");
     try {
-      await chatService.sendMessage(chat.id, profile.id, text);
+      await chatService.sendMessage(chat.chatId, chat.accessToken, text);
+      loadMessages();
     } catch (err) {
       console.error("Failed to send message:", err);
     }
-  }
-
-  function handleClose() {
-    setOpen(false);
   }
 
   return (
@@ -136,21 +143,22 @@ export default function CustomerServiceWidget() {
             }}
           >
             <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Online Chat</span>
-            <button onClick={handleClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
+            <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
               <X size={18} color="#fff" />
             </button>
           </div>
 
           {!chat ? (
-            <div style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+            <form onSubmit={handleStartChat} style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
               <p style={{ color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "center", marginTop: 20 }}>
                 Welcome to Online Support!
               </p>
               <div>
                 <label style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>Your UID</label>
                 <input
-                  value={profile?.uid || ""}
-                  readOnly
+                  value={uidInput}
+                  onChange={(e) => setUidInput(e.target.value)}
+                  placeholder="Enter your account UID"
                   style={{
                     width: "100%",
                     marginTop: 6,
@@ -164,9 +172,10 @@ export default function CustomerServiceWidget() {
                   }}
                 />
               </div>
+              {error && <p style={{ color: "#f87171", fontSize: 12.5 }}>{error}</p>}
               <button
-                onClick={handleStartChat}
-                disabled={starting || !profile}
+                type="submit"
+                disabled={starting}
                 style={{
                   background: "linear-gradient(90deg, #3b82f6, #2563eb)",
                   border: "none",
@@ -180,7 +189,7 @@ export default function CustomerServiceWidget() {
               >
                 {starting ? "Starting..." : "Start Chat"}
               </button>
-            </div>
+            </form>
           ) : (
             <>
               <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
