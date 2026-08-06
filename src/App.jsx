@@ -26,7 +26,7 @@ import HelpCenter from "./pages/HelpCenter";
 import TermsPrivacy from "./pages/TermsPrivacy";
 import AboutSafeTrade from "./pages/AboutSafeTrade";
 import RewardsCenter from "./pages/RewardsCenter";
-import KycVerification from "./pages/KycVerification"; // ← ADDED
+import KycVerification from "./pages/KycVerification";
 
 import OptionsTrading from "./pages/OptionsTrading";
 
@@ -72,7 +72,6 @@ export default function App() {
               <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
 
-              {/* Trade tab — also accept /trade/:coinSymbol in case your nav links to a specific coin */}
               <Route path="/trade" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
               <Route path="/trade/:coinSymbol" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
 
@@ -85,10 +84,13 @@ export default function App() {
               <Route path="/terms-privacy" element={<ProtectedRoute><TermsPrivacy /></ProtectedRoute>} />
               <Route path="/about-safetrade" element={<ProtectedRoute><AboutSafeTrade /></ProtectedRoute>} />
               <Route path="/rewards-center" element={<ProtectedRoute><RewardsCenter /></ProtectedRoute>} />
-              <Route path="/kyc-verification" element={<ProtectedRoute><KycVerification /></ProtectedRoute>} /> {/* ← ADDED */}
+              <Route path="/kyc-verification" element={<ProtectedRoute><KycVerification /></ProtectedRoute>} />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+
+            {/* ✅ Customer Service Widget – now rendered on every page */}
+            <CustomerServiceWidget />
           </MaintenanceGate>
         </MarketProvider>
       </SystemSettingsProvider>
