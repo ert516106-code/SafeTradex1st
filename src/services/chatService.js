@@ -1,65 +1,34 @@
 import { supabase } from "../lib/supabase";
 
-export async function getOrCreateChat(userId, uid) {
-  const { data: existing, error: findError } = await supabase
-    .from("support_chats")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("status", "open")
-    .maybeSingle();
-
-  if (findError) throw new Error(findError.message);
-  if (existing) return existing;
-
-  const { data, error } = await supabase
-    .from("support_chats")
-    .insert({ user_id: userId, uid, user_online: true })
-    .select()
-    .single();
-
+export async function startChat(uid) {
+  const { data, error } = await supabase.rpc("start_or_get_guest_chat", { p_uid: uid });
   if (error) throw new Error(error.message);
-  return data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return { chatId: row.chat_id, accessToken: row.access_token };
 }
 
-export async function setChatOnlineStatus(chatId, online) {
-  const { error } = await supabase
-    .from("support_chats")
-    .update({ user_online: online })
-    .eq("id", chatId);
-  if (error) console.error("Failed to update online status:", error.message);
-}
-
-export async function getMessages(chatId) {
-  const { data, error } = await supabase
-    .from("support_messages")
-    .select("*")
-    .eq("chat_id", chatId)
-    .order("created_at", { ascending: true });
+export async function getMessages(chatId, accessToken) {
+  const { data, error } = await supabase.rpc("get_guest_messages", {
+    p_chat_id: chatId,
+    p_access_token: accessToken,
+  });
   if (error) throw new Error(error.message);
   return data || [];
 }
 
-export async function sendMessage(chatId, userId, message) {
-  const { error: msgError } = await supabase
-    .from("support_messages")
-    .insert({ chat_id: chatId, sender_type: "user", sender_id: userId, message });
-  if (msgError) throw new Error(msgError.message);
-
-  await supabase
-    .from("support_chats")
-    .update({ last_message_at: new Date().toISOString() })
-    .eq("id", chatId);
+export async function sendMessage(chatId, accessToken, message) {
+  const { error } = await supabase.rpc("send_guest_message", {
+    p_chat_id: chatId,
+    p_access_token: accessToken,
+    p_message: message,
+  });
+  if (error) throw new Error(error.message);
 }
 
-export function subscribeToChat(chatId, onMessage) {
-  const channel = supabase
-    .channel(`support-chat-${chatId}`)
-    .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "support_messages", filter: `chat_id=eq.${chatId}` },
-      (payload) => onMessage(payload.new)
-    )
-    .subscribe();
-
-  return () => supabase.removeChannel(channel);
+export async function setOffline(chatId, accessToken) {
+  try {
+    await supabase.rpc("set_guest_chat_offline", { p_chat_id: chatId, p_access_token: accessToken });
+  } catch (err) {
+    console.warn("Failed to set chat offline:", err);
+  }
 }
