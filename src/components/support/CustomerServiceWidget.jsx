@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MessageCircle, X, Send, Headphones } from "lucide-react";
+import { MessageCircle, X, Send } from "lucide-react";
 import * as chatService from "../../services/chatService";
 
 const SESSION_KEY = "safetradex_support_chat";
@@ -91,128 +91,67 @@ export default function CustomerServiceWidget() {
 
   return (
     <>
-      {/* ----- FLOATING TOGGLE BUTTON – HIGHLY VISIBLE ----- */}
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Customer Service"
         style={{
           position: "fixed",
-          bottom: "100px", // sits above bottom navigation (adjust as needed)
-          right: "20px",
-          width: "64px",
-          height: "64px",
+          bottom: 120,          // ⬆️ raised from 96px
+          right: 20,
+          width: 52,
+          height: 52,
           borderRadius: "50%",
-          background: "linear-gradient(135deg, #3b82f6, #7c3aed)",
+          background: "linear-gradient(135deg, #3b82f6, #2563eb)",
           border: "none",
-          boxShadow: "0 8px 32px rgba(37, 99, 235, 0.6), 0 0 0 4px rgba(37, 99, 235, 0.15)",
+          boxShadow: "0 10px 24px rgba(37,99,235,0.5)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
-          zIndex: 9999,
-          transition: "transform 0.2s, box-shadow 0.2s",
-          animation: "pulse-glow 2.5s infinite ease-in-out",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "scale(1.08)";
-          e.currentTarget.style.boxShadow = "0 8px 40px rgba(37, 99, 235, 0.8)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "scale(1)";
-          e.currentTarget.style.boxShadow = "0 8px 32px rgba(37, 99, 235, 0.6)";
+          zIndex: 900,
         }}
       >
-        {open ? (
-          <X size={30} strokeWidth={2.5} color="#fff" />
-        ) : (
-          <Headphones size={30} strokeWidth={2.5} color="#fff" />
-        )}
-        {/* Small notification badge */}
-        <span
-          style={{
-            position: "absolute",
-            top: "-4px",
-            right: "-4px",
-            background: "#ef4444",
-            color: "#fff",
-            fontSize: "11px",
-            fontWeight: 700,
-            width: "24px",
-            height: "24px",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "2px solid #0c1226",
-          }}
-        >
-          1
-        </span>
+        <MessageCircle size={24} color="#fff" />
       </button>
 
-      {/* ----- CHAT WINDOW ----- */}
       {open && (
         <div
           style={{
             position: "fixed",
-            bottom: "180px",
-            right: "20px",
-            width: "360px",
+            bottom: 180,         // ⬆️ raised from 156px (120 + 60)
+            right: 20,
+            width: 320,
             maxWidth: "calc(100vw - 40px)",
-            height: "480px",
-            maxHeight: "calc(100vh - 220px)",
+            height: 420,
             background: "#0c1226",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "24px",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 20,
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03)",
-            zIndex: 9998,
-            backdropFilter: "blur(8px)",
-            animation: "slideUp 0.2s ease-out",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+            zIndex: 900,
           }}
         >
-          {/* Header – brighter gradient */}
           <div
             style={{
-              background: "linear-gradient(135deg, #1e3a8a, #2563eb)",
-              padding: "16px 20px",
+              background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+              padding: "14px 16px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              borderBottom: "1px solid rgba(255,255,255,0.05)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Headphones size={20} color="#fff" />
-              <span style={{ color: "#fff", fontWeight: 700, fontSize: 16, letterSpacing: "0.3px" }}>
-                Support Chat
-              </span>
-            </div>
-            <button
-              onClick={() => setOpen(false)}
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "none",
-                borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: "#fff",
-              }}
-            >
-              <X size={18} />
+            <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Online Chat</span>
+            <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+              <X size={18} color="#fff" />
             </button>
           </div>
 
           {!chat ? (
-            <form onSubmit={handleStartChat} style={{ flex: 1, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-              <p style={{ color: "#f0f4fa", fontWeight: 600, fontSize: 16, textAlign: "center", marginTop: 16 }}>
-                👋 Welcome to SafeTrade Support
+            <form onSubmit={handleStartChat} style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+              <p style={{ color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "center", marginTop: 20 }}>
+                Welcome to Online Support!
               </p>
               <div>
                 <label style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>Your UID</label>
@@ -225,16 +164,15 @@ export default function CustomerServiceWidget() {
                     marginTop: 6,
                     background: "rgba(255,255,255,0.05)",
                     border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 12,
-                    padding: "12px 14px",
+                    borderRadius: 10,
+                    padding: "10px 12px",
                     color: "#fff",
-                    fontSize: 14,
+                    fontSize: 13,
                     boxSizing: "border-box",
-                    outline: "none",
                   }}
                 />
               </div>
-              {error && <p style={{ color: "#f87171", fontSize: 13 }}>{error}</p>}
+              {error && <p style={{ color: "#f87171", fontSize: 12.5 }}>{error}</p>}
               <button
                 type="submit"
                 disabled={starting}
@@ -242,12 +180,11 @@ export default function CustomerServiceWidget() {
                   background: "linear-gradient(90deg, #3b82f6, #2563eb)",
                   border: "none",
                   borderRadius: 12,
-                  padding: "14px 0",
+                  padding: "12px 0",
                   color: "#fff",
                   fontWeight: 700,
-                  fontSize: 15,
+                  fontSize: 14,
                   cursor: starting ? "not-allowed" : "pointer",
-                  boxShadow: "0 4px 16px rgba(37,99,235,0.3)",
                 }}
               >
                 {starting ? "Starting..." : "Start Chat"}
@@ -255,9 +192,9 @@ export default function CustomerServiceWidget() {
             </form>
           ) : (
             <>
-              <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
                 {messages.length === 0 && (
-                  <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", marginTop: 24 }}>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12.5, textAlign: "center", marginTop: 20 }}>
                     Send a message to get started.
                   </p>
                 )}
@@ -266,21 +203,19 @@ export default function CustomerServiceWidget() {
                     key={m.id}
                     style={{
                       alignSelf: m.sender_type === "user" ? "flex-end" : "flex-start",
-                      background: m.sender_type === "user" ? "#2563eb" : "rgba(255,255,255,0.07)",
+                      background: m.sender_type === "user" ? "#2563eb" : "rgba(255,255,255,0.08)",
                       color: "#fff",
-                      borderRadius: m.sender_type === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                      padding: "10px 14px",
-                      fontSize: 13.5,
-                      maxWidth: "85%",
-                      lineHeight: 1.4,
-                      wordBreak: "break-word",
+                      borderRadius: 14,
+                      padding: "8px 12px",
+                      fontSize: 13,
+                      maxWidth: "80%",
                     }}
                   >
                     {m.message}
                   </div>
                 ))}
               </div>
-              <form onSubmit={handleSend} style={{ display: "flex", gap: 10, padding: 14, borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.15)" }}>
+              <form onSubmit={handleSend} style={{ display: "flex", gap: 8, padding: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -288,64 +223,34 @@ export default function CustomerServiceWidget() {
                   style={{
                     flex: 1,
                     background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 12,
-                    padding: "12px 14px",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 10,
+                    padding: "10px 12px",
                     color: "#fff",
-                    fontSize: 14,
+                    fontSize: 13,
                     outline: "none",
-                    transition: "border-color 0.2s",
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#3b82f6")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
                 />
                 <button
                   type="submit"
                   style={{
                     background: "#2563eb",
                     border: "none",
-                    borderRadius: 12,
-                    width: 46,
+                    borderRadius: 10,
+                    width: 38,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     cursor: "pointer",
-                    transition: "background 0.2s",
-                    boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#3b82f6")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#2563eb")}
                 >
-                  <Send size={20} color="#fff" />
+                  <Send size={16} color="#fff" />
                 </button>
               </form>
             </>
           )}
         </div>
       )}
-
-      {/* Global animations injected via style tag */}
-      <style>{`
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 8px 32px rgba(37, 99, 235, 0.5), 0 0 0 0 rgba(37, 99, 235, 0.2); }
-          50% { box-shadow: 0 8px 48px rgba(37, 99, 235, 0.8), 0 0 0 8px rgba(37, 99, 235, 0); }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(16px) scale(0.96); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        /* Scrollbar styling */
-        div[style*="overflow-y: auto"]::-webkit-scrollbar {
-          width: 4px;
-        }
-        div[style*="overflow-y: auto"]::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        div[style*="overflow-y: auto"]::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.15);
-          border-radius: 10px;
-        }
-      `}</style>
     </>
   );
 }
