@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
 import { supabase } from "../../lib/supabase";
