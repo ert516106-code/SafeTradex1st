@@ -1,19 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Menu, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TradingViewWidget from "../components/trading/TradingViewWidget";
 import TradingModal from "../components/trading/TradingModal";
 import OpenOrders from "../components/trading/Openorders";
 import OrderHistory from "../components/trading/Orderhistory";
-import { useMarket } from "../contexts/MarketContext";
 
 const pairs = [
-  { symbol: 'BTC/USDT', tv: 'BINANCE:BTCUSDT', coinId: 'bitcoin', ticker: 'BTC' },
-  { symbol: 'ETH/USDT', tv: 'BINANCE:ETHUSDT', coinId: 'ethereum', ticker: 'ETH' },
-  { symbol: 'XRP/USDT', tv: 'BINANCE:XRPUSDT', coinId: 'ripple', ticker: 'XRP' },
-  { symbol: 'SOL/USDT', tv: 'BINANCE:SOLUSDT', coinId: 'solana', ticker: 'SOL' },
-  { symbol: 'BNB/USDT', tv: 'BINANCE:BNBUSDT', coinId: 'binancecoin', ticker: 'BNB' },
-  { symbol: 'DOGE/USDT', tv: 'BINANCE:DOGEUSDT', coinId: 'dogecoin', ticker: 'DOGE' },
+  { symbol: 'BTC/USDT', tv: 'BINANCE:BTCUSDT', binance: 'BTCUSDT', ticker: 'BTC' },
+  { symbol: 'ETH/USDT', tv: 'BINANCE:ETHUSDT', binance: 'ETHUSDT', ticker: 'ETH' },
+  { symbol: 'XRP/USDT', tv: 'BINANCE:XRPUSDT', binance: 'XRPUSDT', ticker: 'XRP' },
+  { symbol: 'SOL/USDT', tv: 'BINANCE:SOLUSDT', binance: 'SOLUSDT', ticker: 'SOL' },
+  { symbol: 'BNB/USDT', tv: 'BINANCE:BNBUSDT', binance: 'BNBUSDT', ticker: 'BNB' },
+  { symbol: 'DOGE/USDT', tv: 'BINANCE:DOGEUSDT', binance: 'DOGEUSDT', ticker: 'DOGE' },
 ];
 
 const timeframes = ['1m', '5m', '15m', '30m', '1h', '2h', '6h', '12h', '1D'];
@@ -65,9 +64,62 @@ function CoinLogo({ ticker, size = 30 }) {
   );
 }
 
+// Live 24hr ticker straight from Binance — the same exchange TradingView is
+// already charting, so price/high/low/vol here will match the chart exactly.
+function useBinanceTicker(binanceSymbol) {
+  const [data, setData] = useState({
+    price: 0,
+    change24h: 0,
+    high24h: 0,
+    low24h: 0,
+    volume24h: 0,
+    loading: true,
+  });
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchTicker() {
+      try {
+        const res = await fetch(
+          `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`
+        );
+        if (!res.ok) throw new Error(`Binance ${res.status}`);
+        const json = await res.json();
+        if (cancelled) return;
+        setData({
+          price: parseFloat(json.lastPrice) || 0,
+          change24h: parseFloat(json.priceChangePercent) || 0,
+          high24h: parseFloat(json.highPrice) || 0,
+          low24h: parseFloat(json.lowPrice) || 0,
+          volume24h: parseFloat(json.quoteVolume) || 0,
+          loading: false,
+        });
+      } catch (err) {
+        console.warn('Binance ticker fetch failed:', err);
+        if (!cancelled) {
+          setData((prev) => ({ ...prev, loading: false }));
+        }
+      }
+    }
+
+    setData((prev) => ({ ...prev, loading: true }));
+    fetchTicker();
+
+    intervalRef.current = setInterval(fetchTicker, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalRef.current);
+    };
+  }, [binanceSymbol]);
+
+  return data;
+}
+
 export default function OptionsTrading() {
   const navigate = useNavigate();
-  const { coins, loading: marketLoading } = useMarket();
   const [selected, setSelected] = useState(pairs[0]);
   const [modal, setModal] = useState({ open: false, type: 'long' });
   const [showPairs, setShowPairs] = useState(false);
@@ -76,18 +128,7 @@ export default function OptionsTrading() {
   const [activeIndicator, setActiveIndicator] = useState('MA');
   const [balance, setBalance] = useState(10000);
 
-  // Pull live data for the selected pair from the shared, cached market feed
-  const marketData = useMemo(() => {
-    const live = coins.find((c) => c.id === selected.coinId);
-    return {
-      price: live?.price ?? 0,
-      change24h: live?.change ?? 0,
-      high24h: live?.high24h ?? 0,
-      low24h: live?.low24h ?? 0,
-      volume24h: live?.volume24h ?? 0,
-      loading: marketLoading || !live,
-    };
-  }, [coins, marketLoading, selected.coinId]);
+  const marketData = useBinanceTicker(selected.binance);
 
   const handleSelectPair = (pair) => {
     setSelected(pair);
