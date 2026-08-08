@@ -15,7 +15,6 @@ export default function CustomerServiceWidget() {
   const scrollRef = useRef(null);
   const pollRef = useRef(null);
 
-  // Restore an existing chat session from this browser tab, if any
   useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY);
     if (saved) {
@@ -50,7 +49,7 @@ export default function CustomerServiceWidget() {
 
   useEffect(() => {
     const handleUnload = () => {
-      if (chat) chatService.setOffline(chat.chatId, chat.accessToken);
+      if (chat) chatService.markLeft(chat.chatId, chat.accessToken);
     };
     window.addEventListener("beforeunload", handleUnload);
     return () => window.removeEventListener("beforeunload", handleUnload);
@@ -89,14 +88,34 @@ export default function CustomerServiceWidget() {
     }
   }
 
+  function handleClose() {
+    if (chat) chatService.markLeft(chat.chatId, chat.accessToken);
+    setOpen(false);
+  }
+
+  async function handleOpen() {
+    // Reopening an existing chat cancels the 5-minute deletion countdown
+    if (chat && !open) {
+      try {
+        const { chatId, accessToken } = await chatService.resumeChat(chat.uid);
+        const session = { chatId, accessToken, uid: chat.uid };
+        setChat(session);
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      } catch (err) {
+        console.error("Failed to resume chat:", err);
+      }
+    }
+    setOpen((o) => !o);
+  }
+
   return (
     <>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleOpen}
         aria-label="Customer Service"
         style={{
           position: "fixed",
-          bottom: 120,          // ⬆️ raised from 96px
+          bottom: 96,
           right: 20,
           width: 52,
           height: 52,
@@ -118,7 +137,7 @@ export default function CustomerServiceWidget() {
         <div
           style={{
             position: "fixed",
-            bottom: 180,         // ⬆️ raised from 156px (120 + 60)
+            bottom: 156,
             right: 20,
             width: 320,
             maxWidth: "calc(100vw - 40px)",
@@ -143,7 +162,7 @@ export default function CustomerServiceWidget() {
             }}
           >
             <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>Online Chat</span>
-            <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+            <button onClick={handleClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
               <X size={18} color="#fff" />
             </button>
           </div>
