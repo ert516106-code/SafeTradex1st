@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MessageCircle, X, Send, Headphones } from "lucide-react";
+import { MessageCircle, X, Send } from "lucide-react";
 import * as chatService from "../../services/chatService";
 
 const SESSION_KEY = "safetradex_support_chat";
@@ -142,7 +142,7 @@ export default function CustomerServiceWidget() {
         {open ? (
           <X size={28} strokeWidth={2.5} color="#fff" />
         ) : (
-          <Headphones size={28} strokeWidth={2.5} color="#fff" />
+          <MessageCircle size={28} strokeWidth={2.5} color="#fff" />
         )}
       </button>
 
@@ -179,7 +179,7 @@ export default function CustomerServiceWidget() {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Headphones size={20} color="#fff" />
+              <MessageCircle size={20} color="#fff" />
               <span style={{ color: "#fff", fontWeight: 700, fontSize: 16, letterSpacing: "0.3px" }}>
                 Support Chat
               </span>
