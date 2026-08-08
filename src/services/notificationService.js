@@ -1,48 +1,62 @@
-import { MOCK_NOTIFICATIONS } from "../components/notifications/MockNotifications";
-
-// This service is the single integration point between the UI and the
-// data source. Today it reads from local mock data. Later, each function
-// below can be swapped to call the SafeTrade backend / Admin Dashboard
-// API without requiring any changes to components or pages.
-
-let localStore = MOCK_NOTIFICATIONS.map((n) => ({ ...n }));
+import { supabase } from "../lib/supabase";
 
 export async function getNotifications() {
-  // Future: return fetch(`${API_BASE}/notifications`).then(r => r.json());
-  return Promise.resolve(
-    [...localStore].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+
+  return (data || []).map((n) => ({
+    id: n.id,
+    category: n.category,
+    type: n.type,
+    title: n.title,
+    description: n.description,
+    message: n.description,
+    amount: n.amount,
+    status: n.status,
+    read: n.read,
+    createdAt: n.created_at,
+  }));
 }
 
 export async function markAsRead(id) {
-  // Future: return fetch(`${API_BASE}/notifications/${id}/read`, { method: "POST" });
-  localStore = localStore.map((n) =>
-    n.id === id ? { ...n, read: true } : n
-  );
-  return Promise.resolve(localStore.find((n) => n.id === id));
+  const { data, error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return {
+    id: data.id,
+    category: data.category,
+    type: data.type,
+    title: data.title,
+    description: data.description,
+    message: data.description,
+    amount: data.amount,
+    status: data.status,
+    read: data.read,
+    createdAt: data.created_at,
+  };
 }
 
 export async function markAllAsRead() {
-  // Future: return fetch(`${API_BASE}/notifications/read-all`, { method: "POST" });
-  localStore = localStore.map((n) => ({ ...n, read: true }));
-  return Promise.resolve([...localStore]);
-}
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
 
-// Future ready: the Admin Dashboard can push new notifications through
-// this same shape without any UI changes.
-export async function pushNotification(notification) {
-  const newNotification = {
-    id: notification.id || `n-${Date.now()}`,
-    category: notification.category,
-    type: notification.type,
-    title: notification.title,
-    description: notification.description,
-    message: notification.message,
-    createdAt: notification.createdAt || new Date().toISOString(),
-    read: false,
-  };
-  localStore = [newNotification, ...localStore];
-  return Promise.resolve(newNotification);
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", user.id)
+    .eq("read", false);
+  if (error) throw new Error(error.message);
+
+  return getNotifications();
 }
