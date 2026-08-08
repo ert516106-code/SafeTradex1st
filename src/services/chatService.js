@@ -25,10 +25,16 @@ export async function sendMessage(chatId, accessToken, message) {
   if (error) throw new Error(error.message);
 }
 
-export async function setOffline(chatId, accessToken) {
+// Called when the user clicks X or the tab closes — starts the 5-minute countdown
+export async function markLeft(chatId, accessToken) {
   try {
-    await supabase.rpc("set_guest_chat_offline", { p_chat_id: chatId, p_access_token: accessToken });
+    await supabase.rpc("mark_chat_left", { p_chat_id: chatId, p_access_token: accessToken });
   } catch (err) {
-    console.warn("Failed to set chat offline:", err);
+    console.warn("Failed to mark chat left:", err);
   }
+}
+
+// Called when reopening an existing chat — cancels the countdown if still within 5 minutes
+export async function resumeChat(uid) {
+  return startChat(uid);
 }
