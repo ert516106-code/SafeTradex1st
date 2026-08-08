@@ -342,6 +342,17 @@ export default function Convert() {
 
       console.log('Update successful!');
 
+      // Write a notification so the user sees this conversion in their activity feed
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        category: 'transactions',
+        type: 'convert',
+        title: 'Conversion completed',
+        description: `${numAmt} ${fromCoin} was converted to ${netReceive.toFixed(6)} ${toCoin}.`,
+        amount: netReceive,
+        status: 'completed',
+      });
+
       // Update local state
       const newBalances = { ...userBalances };
       newBalances[fromCoin] = newFromBalance;
