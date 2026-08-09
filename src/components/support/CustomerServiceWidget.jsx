@@ -12,6 +12,7 @@ export default function CustomerServiceWidget() {
   const [input, setInput] = useState("");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
+  const [sendingOption, setSendingOption] = useState(null);
   const scrollRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -85,6 +86,19 @@ export default function CustomerServiceWidget() {
       loadMessages();
     } catch (err) {
       console.error("Failed to send message:", err);
+    }
+  }
+
+  async function handleSelectOption(messageId, optionText) {
+    if (!chat) return;
+    setSendingOption(messageId);
+    try {
+      await chatService.sendMessage(chat.chatId, chat.accessToken, optionText);
+      loadMessages();
+    } catch (err) {
+      console.error("Failed to send selected option:", err);
+    } finally {
+      setSendingOption(null);
     }
   }
 
@@ -254,24 +268,66 @@ export default function CustomerServiceWidget() {
                     Send a message to get started.
                   </p>
                 )}
-                {messages.map((m) => (
-                  <div
-                    key={m.id}
-                    style={{
-                      alignSelf: m.sender_type === "user" ? "flex-end" : "flex-start",
-                      background: m.sender_type === "user" ? "#2563eb" : "rgba(255,255,255,0.07)",
-                      color: "#fff",
-                      borderRadius: m.sender_type === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                      padding: "10px 14px",
-                      fontSize: 13.5,
-                      maxWidth: "85%",
-                      lineHeight: 1.4,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {m.message}
-                  </div>
-                ))}
+                {messages.map((m) =>
+                  m.message_type === "options" ? (
+                    <div
+                      key={m.id}
+                      style={{
+                        alignSelf: m.sender_type === "user" ? "flex-end" : "flex-start",
+                        background: m.sender_type === "user" ? "#2563eb" : "rgba(255,255,255,0.07)",
+                        color: "#fff",
+                        borderRadius: m.sender_type === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                        padding: "12px 14px",
+                        fontSize: 13.5,
+                        maxWidth: "85%",
+                        lineHeight: 1.4,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      <p style={{ margin: "0 0 10px" }}>{m.message}</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {(m.options || []).map((opt, i) => (
+                          <button
+                            key={i}
+                            onClick={() => handleSelectOption(m.id, opt)}
+                            disabled={sendingOption === m.id}
+                            style={{
+                              background: "rgba(255,255,255,0.12)",
+                              border: "1px solid rgba(255,255,255,0.18)",
+                              borderRadius: 10,
+                              padding: "8px 12px",
+                              color: "#fff",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor: sendingOption === m.id ? "not-allowed" : "pointer",
+                              opacity: sendingOption === m.id ? 0.5 : 1,
+                            }}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      key={m.id}
+                      style={{
+                        alignSelf: m.sender_type === "user" ? "flex-end" : "flex-start",
+                        background: m.sender_type === "user" ? "#2563eb" : "rgba(255,255,255,0.07)",
+                        color: "#fff",
+                        borderRadius: m.sender_type === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                        padding: "10px 14px",
+                        fontSize: 13.5,
+                        maxWidth: "85%",
+                        lineHeight: 1.4,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {m.message}
+                    </div>
+                  )
+                )}
               </div>
               <form onSubmit={handleSend} style={{ display: "flex", gap: 10, padding: 14, borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.15)" }}>
                 <input
