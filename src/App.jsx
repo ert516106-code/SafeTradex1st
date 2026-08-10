@@ -51,14 +51,17 @@ function MaintenanceGate({ children }) {
 }
 
 // Routes where the floating customer service bubble should be hidden
-// (it overlaps the trade panel buttons / bottom nav on these screens).
+// (splash screen, and screens where it overlaps trade/asset UI).
 const HIDE_SUPPORT_WIDGET_PREFIXES = ["/trade", "/assets"];
+const HIDE_SUPPORT_WIDGET_EXACT = ["/"];
 
 function SupportWidgetGate() {
   const location = useLocation();
-  const shouldHide = HIDE_SUPPORT_WIDGET_PREFIXES.some((prefix) =>
-    location.pathname.startsWith(prefix)
-  );
+  const shouldHide =
+    HIDE_SUPPORT_WIDGET_EXACT.includes(location.pathname) ||
+    HIDE_SUPPORT_WIDGET_PREFIXES.some((prefix) =>
+      location.pathname.startsWith(prefix)
+    );
   if (shouldHide) return null;
   return <CustomerServiceWidget />;
 }
@@ -104,7 +107,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
 
-            {/* ✅ Customer Service Widget – hidden on Trade (OptionsTrading) and Assets pages */}
+            {/* ✅ Customer Service Widget – hidden on Splash, Trade (OptionsTrading), and Assets pages */}
             <SupportWidgetGate />
           </MaintenanceGate>
         </MarketProvider>
