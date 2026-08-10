@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useNavigate, Link } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 import Card from "../components/ui/Card";
 import Logo from "../components/ui/Logo";
 import Input from "../components/ui/Input";
@@ -24,13 +24,12 @@ const fieldErrorStyle = {
 };
 
 export default function ForgotPassword() {
-  const { resetPassword } = useAuth();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
   const isEmailValid = EMAIL_REGEX.test(email);
 
@@ -46,8 +45,12 @@ export default function ForgotPassword() {
     setSubmitting(true);
 
     try {
-      await resetPassword(email.trim());
-      setSubmitted(true);
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: false },
+      });
+      if (error) throw error;
+      navigate("/reset-password-code", { state: { email: email.trim() } });
     } catch (err) {
       setFormError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -76,120 +79,64 @@ export default function ForgotPassword() {
 
       <div style={{ width: "100%", maxWidth: 420 }}>
         <Card>
-          {!submitted ? (
-            <>
-              <h1
+          <h1
+            style={{
+              color: "#FFFFFF",
+              fontSize: 24,
+              fontWeight: 700,
+              margin: 0,
+              marginBottom: 4,
+              textAlign: "center",
+            }}
+          >
+            Forgot Password
+          </h1>
+          <p
+            style={{
+              color: "#8A93B8",
+              fontSize: 14,
+              textAlign: "center",
+              margin: 0,
+              marginBottom: 24,
+              lineHeight: 1.5,
+            }}
+          >
+            Enter the email associated with your account and we'll send you a
+            verification code.
+          </p>
+
+          <form onSubmit={handleSubmit} noValidate>
+            <label style={fieldLabelStyle}>Email Address</label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setTouched(true);
+              }}
+              placeholder="you@example.com"
+            />
+            {touched && !isEmailValid && (
+              <p style={fieldErrorStyle}>Please enter a valid email</p>
+            )}
+
+            {formError && (
+              <p
                 style={{
-                  color: "#FFFFFF",
-                  fontSize: 24,
-                  fontWeight: 700,
-                  margin: 0,
-                  marginBottom: 4,
+                  color: "#FF5C6C",
+                  fontSize: 13,
+                  marginBottom: 16,
                   textAlign: "center",
                 }}
               >
-                Forgot Password
-              </h1>
-              <p
-                style={{
-                  color: "#8A93B8",
-                  fontSize: 14,
-                  textAlign: "center",
-                  margin: 0,
-                  marginBottom: 24,
-                  lineHeight: 1.5,
-                }}
-              >
-                Enter the email associated with your account and we'll send
-                you a link to reset your password.
+                {formError}
               </p>
+            )}
 
-              <form onSubmit={handleSubmit} noValidate>
-                <label style={fieldLabelStyle}>Email Address</label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setTouched(true);
-                  }}
-                  placeholder="you@example.com"
-                />
-                {touched && !isEmailValid && (
-                  <p style={fieldErrorStyle}>Please enter a valid email</p>
-                )}
-
-                {formError && (
-                  <p
-                    style={{
-                      color: "#FF5C6C",
-                      fontSize: 13,
-                      marginBottom: 16,
-                      textAlign: "center",
-                    }}
-                  >
-                    {formError}
-                  </p>
-                )}
-
-                <Button
-                  type="submit"
-                  disabled={!isEmailValid}
-                  loading={submitting}
-                  fullWidth
-                >
-                  Send Reset Link
-                </Button>
-              </form>
-            </>
-          ) : (
-            <div style={{ textAlign: "center" }}>
-              <h1
-                style={{
-                  color: "#FFFFFF",
-                  fontSize: 22,
-                  fontWeight: 700,
-                  margin: 0,
-                  marginBottom: 12,
-                }}
-              >
-                Check Your Email
-              </h1>
-              <p
-                style={{
-                  color: "#8A93B8",
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                  margin: 0,
-                  marginBottom: 8,
-                }}
-              >
-                We've sent a password reset link to:
-              </p>
-              <p
-                style={{
-                  color: "#8C7CFF",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  margin: 0,
-                  marginBottom: 24,
-                }}
-              >
-                {email}
-              </p>
-              <Button
-                type="button"
-                onClick={() => {
-                  setSubmitted(false);
-                  setEmail("");
-                  setTouched(false);
-                }}
-                fullWidth
-              >
-                Send Another Link
-              </Button>
-            </div>
-          )}
+            <Button type="submit" disabled={!isEmailValid} loading={submitting} fullWidth>
+              Send Code
+            </Button>
+          </form>
 
           <p
             style={{
