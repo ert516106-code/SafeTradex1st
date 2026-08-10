@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 
 import CustomerServiceWidget from "./components/support/CustomerServiceWidget";
 import Splash from "./pages/Splash";
@@ -50,6 +50,19 @@ function MaintenanceGate({ children }) {
   return children;
 }
 
+// Routes where the floating customer service bubble should be hidden
+// (it overlaps the trade panel buttons / bottom nav on these screens).
+const HIDE_SUPPORT_WIDGET_PREFIXES = ["/trade", "/assets"];
+
+function SupportWidgetGate() {
+  const location = useLocation();
+  const shouldHide = HIDE_SUPPORT_WIDGET_PREFIXES.some((prefix) =>
+    location.pathname.startsWith(prefix)
+  );
+  if (shouldHide) return null;
+  return <CustomerServiceWidget />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -91,8 +104,8 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
 
-            {/* ✅ Customer Service Widget – now rendered on every page */}
-            <CustomerServiceWidget />
+            {/* ✅ Customer Service Widget – hidden on Trade (OptionsTrading) and Assets pages */}
+            <SupportWidgetGate />
           </MaintenanceGate>
         </MarketProvider>
       </SystemSettingsProvider>
