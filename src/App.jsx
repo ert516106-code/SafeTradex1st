@@ -5,6 +5,7 @@ import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPasswordWithCode from "./pages/ResetPasswordWithCode";
 
 import Home from "./pages/Home";
 import Markets from "./pages/Markets";
@@ -35,7 +36,7 @@ import { MarketProvider } from "./contexts/MarketContext";
 import { SystemSettingsProvider, useSystemSettings } from "./contexts/SystemSettingsContext";
 import MaintenanceScreen from "./components/MaintenanceScreen";
 
-// OptionsTrading expects an onBack callback rather than being route-aware,
+// OptionsTrading expects an onBack callback rather than being router-aware,
 // so this thin wrapper hooks it up to the router.
 function TradeRoute() {
   const navigate = useNavigate();
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password-code" element={<ResetPasswordWithCode />} />
 
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/markets" element={<ProtectedRoute><Markets /></ProtectedRoute>} />
