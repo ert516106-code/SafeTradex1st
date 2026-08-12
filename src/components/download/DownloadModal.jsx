@@ -1,4 +1,4 @@
-import { X, Share, MoreVertical, Plus, Chrome } from 'lucide-react';
+import { X, Share, MoreVertical, Plus, Globe } from 'lucide-react';
 
 export default function DownloadModal({ open, onClose }) {
   if (!open) return null;
@@ -71,7 +71,7 @@ export default function DownloadModal({ open, onClose }) {
           <div>
             <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 16, color: '#fff' }}>Install on your browser</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Step num={1} icon={<Chrome style={{ width: 18, height: 18, color: '#60a5fa' }} />}
+              <Step num={1} icon={<Globe style={{ width: 18, height: 18, color: '#60a5fa' }} />}
                 text='Click the install icon (⬇) in the address bar, or go to browser menu' />
               <Step num={2} icon={<Plus style={{ width: 18, height: 18, color: '#60a5fa' }} />}
                 text='Click "Install SafeTrade" or "Add to Home Screen"' />
