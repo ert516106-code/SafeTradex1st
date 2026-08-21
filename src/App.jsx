@@ -32,6 +32,7 @@ import KycVerification from "./pages/KycVerification";
 import OptionsTrading from "./pages/OptionsTrading";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import { MarketProvider } from "./contexts/MarketContext";
 import { SystemSettingsProvider, useSystemSettings } from "./contexts/SystemSettingsContext";
 import MaintenanceScreen from "./components/MaintenanceScreen";
@@ -68,50 +69,52 @@ function SupportWidgetGate() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <SystemSettingsProvider>
-        <MarketProvider>
-          <MaintenanceGate>
-            <Routes>
-              <Route path="/" element={<Splash />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password-code" element={<ResetPasswordWithCode />} />
+    <LanguageProvider>
+      <BrowserRouter>
+        <SystemSettingsProvider>
+          <MarketProvider>
+            <MaintenanceGate>
+              <Routes>
+                <Route path="/" element={<Splash />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password-code" element={<ResetPasswordWithCode />} />
 
-              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-              <Route path="/markets" element={<ProtectedRoute><Markets /></ProtectedRoute>} />
-              <Route path="/coin/:id" element={<ProtectedRoute><CoinDetails /></ProtectedRoute>} />
-              <Route path="/deposit/*" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
-              <Route path="/withdraw/*" element={<ProtectedRoute><Withdraw /></ProtectedRoute>} />
-              <Route path="/transfer/*" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
-              <Route path="/convert/*" element={<ProtectedRoute><Convert /></ProtectedRoute>} />
-              <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
-              <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/markets" element={<ProtectedRoute><Markets /></ProtectedRoute>} />
+                <Route path="/coin/:id" element={<ProtectedRoute><CoinDetails /></ProtectedRoute>} />
+                <Route path="/deposit/*" element={<ProtectedRoute><Deposit /></ProtectedRoute>} />
+                <Route path="/withdraw/*" element={<ProtectedRoute><Withdraw /></ProtectedRoute>} />
+                <Route path="/transfer/*" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
+                <Route path="/convert/*" element={<ProtectedRoute><Convert /></ProtectedRoute>} />
+                <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
+                <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
 
-              <Route path="/trade" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
-              <Route path="/trade/:coinSymbol" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
+                <Route path="/trade" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
+                <Route path="/trade/:coinSymbol" element={<ProtectedRoute><TradeRoute /></ProtectedRoute>} />
 
-              <Route path="/security-center" element={<ProtectedRoute><SecurityCenter /></ProtectedRoute>} />
-              <Route path="/personal-information" element={<ProtectedRoute><PersonalInformation /></ProtectedRoute>} />
-              <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
-              <Route path="/language-settings" element={<ProtectedRoute><LanguageSettings /></ProtectedRoute>} />
-              <Route path="/appearance-settings" element={<ProtectedRoute><AppearanceSettings /></ProtectedRoute>} />
-              <Route path="/help-center" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
-              <Route path="/terms-privacy" element={<ProtectedRoute><TermsPrivacy /></ProtectedRoute>} />
-              <Route path="/about-safetrade" element={<ProtectedRoute><AboutSafeTrade /></ProtectedRoute>} />
-              <Route path="/rewards-center" element={<ProtectedRoute><RewardsCenter /></ProtectedRoute>} />
-              <Route path="/kyc-verification" element={<ProtectedRoute><KycVerification /></ProtectedRoute>} />
+                <Route path="/security-center" element={<ProtectedRoute><SecurityCenter /></ProtectedRoute>} />
+                <Route path="/personal-information" element={<ProtectedRoute><PersonalInformation /></ProtectedRoute>} />
+                <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
+                <Route path="/language-settings" element={<ProtectedRoute><LanguageSettings /></ProtectedRoute>} />
+                <Route path="/appearance-settings" element={<ProtectedRoute><AppearanceSettings /></ProtectedRoute>} />
+                <Route path="/help-center" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
+                <Route path="/terms-privacy" element={<ProtectedRoute><TermsPrivacy /></ProtectedRoute>} />
+                <Route path="/about-safetrade" element={<ProtectedRoute><AboutSafeTrade /></ProtectedRoute>} />
+                <Route path="/rewards-center" element={<ProtectedRoute><RewardsCenter /></ProtectedRoute>} />
+                <Route path="/kyc-verification" element={<ProtectedRoute><KycVerification /></ProtectedRoute>} />
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
 
-            {/* ✅ Customer Service Widget – hidden on Splash, Trade (OptionsTrading), and Assets pages */}
-            <SupportWidgetGate />
-          </MaintenanceGate>
-        </MarketProvider>
-      </SystemSettingsProvider>
-    </BrowserRouter>
+              {/* ✅ Customer Service Widget – hidden on Splash, Trade (OptionsTrading), and Assets pages */}
+              <SupportWidgetGate />
+            </MaintenanceGate>
+          </MarketProvider>
+        </SystemSettingsProvider>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
