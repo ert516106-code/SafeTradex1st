@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MessageCircle, X, Send } from "lucide-react";
+import { MessageCircle, X, Send, ImagePlus } from "lucide-react";
 import * as chatService from "../../services/chatService";
 
 const SESSION_KEY = "safetradex_support_chat";
@@ -13,8 +13,10 @@ export default function CustomerServiceWidget() {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
   const [sendingOption, setSendingOption] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef(null);
   const pollRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY);
@@ -86,6 +88,26 @@ export default function CustomerServiceWidget() {
       loadMessages();
     } catch (err) {
       console.error("Failed to send message:", err);
+    }
+  }
+
+  function handleImageButtonClick() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleImageSelected(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !chat) return;
+    setUploading(true);
+    try {
+      const url = await chatService.uploadChatImage(file);
+      await chatService.sendImageMessage(chat.chatId, chat.accessToken, url);
+      loadMessages();
+    } catch (err) {
+      console.error("Failed to send image:", err);
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -282,6 +304,7 @@ export default function CustomerServiceWidget() {
                         maxWidth: "85%",
                         lineHeight: 1.4,
                         wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
                       }}
                     >
                       <p style={{ margin: "0 0 10px" }}>{m.message}</p>
@@ -309,6 +332,20 @@ export default function CustomerServiceWidget() {
                         ))}
                       </div>
                     </div>
+                  ) : m.message_type === "image" ? (
+                    
+                      key={m.id}
+                      href={m.message}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ alignSelf: m.sender_type === "user" ? "flex-end" : "flex-start", maxWidth: "85%" }}
+                    >
+                      <img
+                        src={m.message}
+                        alt="Sent attachment"
+                        style={{ maxWidth: "100%", borderRadius: 14, display: "block" }}
+                      />
+                    </a>
                   ) : (
                     <div
                       key={m.id}
@@ -322,6 +359,7 @@ export default function CustomerServiceWidget() {
                         maxWidth: "85%",
                         lineHeight: 1.4,
                         wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
                       }}
                     >
                       {m.message}
@@ -329,7 +367,34 @@ export default function CustomerServiceWidget() {
                   )
                 )}
               </div>
-              <form onSubmit={handleSend} style={{ display: "flex", gap: 10, padding: 14, borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.15)" }}>
+              <form onSubmit={handleSend} style={{ display: "flex", gap: 8, padding: 14, borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.15)" }}>
+                <button
+                  type="button"
+                  onClick={handleImageButtonClick}
+                  disabled={uploading}
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 12,
+                    width: 44,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: uploading ? "not-allowed" : "pointer",
+                    opacity: uploading ? 0.5 : 1,
+                    flexShrink: 0,
+                  }}
+                  title="Send image"
+                >
+                  <ImagePlus size={18} color="#fff" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelected}
+                  style={{ display: "none" }}
+                />
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -344,6 +409,7 @@ export default function CustomerServiceWidget() {
                     fontSize: 14,
                     outline: "none",
                     transition: "border-color 0.2s",
+                    minWidth: 0,
                   }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "#3b82f6")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
@@ -361,6 +427,7 @@ export default function CustomerServiceWidget() {
                     cursor: "pointer",
                     transition: "background 0.2s",
                     boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
+                    flexShrink: 0,
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#3b82f6")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "#2563eb")}
