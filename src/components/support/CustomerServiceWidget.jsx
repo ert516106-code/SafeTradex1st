@@ -333,7 +333,7 @@ export default function CustomerServiceWidget() {
                       </div>
                     </div>
                   ) : m.message_type === "image" ? (
-                    
+                    <a
                       key={m.id}
                       href={m.message}
                       target="_blank"
