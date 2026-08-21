@@ -111,11 +111,13 @@ export default function CustomerServiceWidget() {
     }
   }
 
+  // Tapping a poll/options button sends the pick as a tagged poll answer,
+  // so the admin side can visually highlight it as a poll response.
   async function handleSelectOption(messageId, optionText) {
     if (!chat) return;
     setSendingOption(messageId);
     try {
-      await chatService.sendMessage(chat.chatId, chat.accessToken, optionText);
+      await chatService.sendPollAnswer(chat.chatId, chat.accessToken, optionText);
       loadMessages();
     } catch (err) {
       console.error("Failed to send selected option:", err);
@@ -347,22 +349,37 @@ export default function CustomerServiceWidget() {
                       />
                     </a>
                   ) : (
-                    <div
-                      key={m.id}
-                      style={{
-                        alignSelf: m.sender_type === "user" ? "flex-end" : "flex-start",
-                        background: m.sender_type === "user" ? "#2563eb" : "rgba(255,255,255,0.07)",
-                        color: "#fff",
-                        borderRadius: m.sender_type === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                        padding: "10px 14px",
-                        fontSize: 13.5,
-                        maxWidth: "85%",
-                        lineHeight: 1.4,
-                        wordBreak: "break-word",
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
-                      {m.message}
+                    <div key={m.id} style={{ alignSelf: m.sender_type === "user" ? "flex-end" : "flex-start", maxWidth: "85%" }}>
+                      {m.is_poll_answer && (
+                        <p
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#93c5fd",
+                            margin: "0 0 4px",
+                            textAlign: m.sender_type === "user" ? "right" : "left",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.4px",
+                          }}
+                        >
+                          Poll Answer
+                        </p>
+                      )}
+                      <div
+                        style={{
+                          background: m.sender_type === "user" ? "#2563eb" : "rgba(255,255,255,0.07)",
+                          color: "#fff",
+                          borderRadius: m.sender_type === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                          padding: "10px 14px",
+                          fontSize: 13.5,
+                          lineHeight: 1.4,
+                          wordBreak: "break-word",
+                          whiteSpace: "pre-wrap",
+                          border: m.is_poll_answer ? "1px solid #3b82f6" : "none",
+                        }}
+                      >
+                        {m.message}
+                      </div>
                     </div>
                   )
                 )}
