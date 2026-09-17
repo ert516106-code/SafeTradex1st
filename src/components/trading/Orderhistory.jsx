@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { TrendingUp, TrendingDown, FileText, Search } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { getUserTrades } from "../../services/tradeService";
@@ -17,6 +18,7 @@ function timeAgo(isoString) {
 export default function OrderHistory() {
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
@@ -79,7 +81,11 @@ export default function OrderHistory() {
         return (
           <div
             key={trade.id}
-            className="group flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 hover:bg-white/[0.06] transition-all duration-200"
+            onClick={() => navigate(`/trade-details/${trade.id}`)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && navigate(`/trade-details/${trade.id}`)}
+            className="group flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 hover:bg-white/[0.06] transition-all duration-200 cursor-pointer"
           >
             <div
               className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
