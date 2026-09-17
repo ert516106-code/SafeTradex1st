@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { TrendingUp, TrendingDown, FileText, Search } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { getUserTrades } from "../../services/tradeService";
+import TradeDetailsModal from "./TradeDetailsModal";
 
 function timeAgo(isoString) {
   const diffMs = Date.now() - new Date(isoString).getTime();
@@ -18,7 +18,8 @@ function timeAgo(isoString) {
 export default function OrderHistory() {
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [accountCountry, setAccountCountry] = useState(null);
+  const [selectedTrade, setSelectedTrade] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -31,8 +32,14 @@ export default function OrderHistory() {
       }
 
       try {
-        const data = await getUserTrades(user.id);
-        if (active) setTrades(data);
+        const [data, { data: profileRow }] = await Promise.all([
+          getUserTrades(user.id),
+          supabase.from("profiles").select("country").eq("id", user.id).single(),
+        ]);
+        if (active) {
+          setTrades(data);
+          setAccountCountry(profileRow?.country || null);
+        }
       } catch (err) {
         console.error("Failed to load trade history:", err);
       } finally {
@@ -81,10 +88,10 @@ export default function OrderHistory() {
         return (
           <div
             key={trade.id}
-            onClick={() => navigate(`/trade-details/${trade.id}`)}
+            onClick={() => setSelectedTrade(trade)}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && navigate(`/trade-details/${trade.id}`)}
+            onKeyDown={(e) => e.key === "Enter" && setSelectedTrade(trade)}
             className="group flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 hover:bg-white/[0.06] transition-all duration-200 cursor-pointer"
           >
             <div
@@ -142,6 +149,12 @@ export default function OrderHistory() {
           </div>
         );
       })}
+
+      <TradeDetailsModal
+        trade={selectedTrade}
+        accountCountry={accountCountry}
+        onClose={() => setSelectedTrade(null)}
+      />
     </div>
   );
 }
