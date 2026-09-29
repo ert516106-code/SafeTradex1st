@@ -1,41 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from "../lib/supabase";
+import { usePrices, balancesFromProfile } from "../lib/prices";
 import BalanceCard from "../components/assets/BalanceCard";
 import AssetActions from "../components/assets/AssetActions";
 import AssetList from "../components/assets/AssetList";
 import BottomNavigation from "../components/layout/BottomNavigation";
 
 export default function Assets() {
-  const [assets, setAssets] = useState([]);
+  const [balances, setBalances] = useState({});
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
+  const { prices } = usePrices();
 
-  // --- FUNCTION TO FETCH ASSETS DIRECTLY FROM SUPABASE ---
+  // --- FETCH BALANCES DIRECTLY FROM SUPABASE (all coins) ---
   const fetchLiveAssets = async (uid) => {
     if (!uid) return;
-    
+
     const { data: profile } = await supabase
       .from('profiles')
-      .select('btc, eth, sol, xrp, bnb, usdt, usdc')
+      .select('*')
       .eq('id', uid)
       .single();
-    
+
     if (profile) {
-      const assetList = [
-        { id: 'BTC', balance: profile.btc || 0, symbol: 'BTC' },
-        { id: 'ETH', balance: profile.eth || 0, symbol: 'ETH' },
-        { id: 'SOL', balance: profile.sol || 0, symbol: 'SOL' },
-        { id: 'XRP', balance: profile.xrp || 0, symbol: 'XRP' },
-        { id: 'BNB', balance: profile.bnb || 0, symbol: 'BNB' },
-        { id: 'USDT', balance: profile.usdt || 0, symbol: 'USDT' },
-        { id: 'USDC', balance: profile.usdc || 0, symbol: 'USDC' },
-      ];
-      setAssets(assetList);
+      setBalances(balancesFromProfile(profile));
       setLoading(false);
     }
   };
 
-  // --- SETUP REAL-TIME SUBSCRIPTION ---
+  // --- REAL-TIME SUBSCRIPTION ---
   useEffect(() => {
     let subscription = null;
 
@@ -45,21 +38,18 @@ export default function Assets() {
         setUserId(user.id);
         await fetchLiveAssets(user.id);
 
-        // --- REAL-TIME MAGIC STARTS HERE ---
-        // Listen for changes on the 'profiles' table for this specific user
         subscription = supabase
           .channel(`profile-changes-${user.id}`)
           .on(
             'postgres_changes',
             {
-              event: 'UPDATE', // Only trigger when an UPDATE happens
+              event: 'UPDATE',
               schema: 'public',
               table: 'profiles',
-              filter: `id=eq.${user.id}`, // Only listen to THIS user's updates
+              filter: `id=eq.${user.id}`,
             },
-            (payload) => {
-              console.log("Real-time update received:", payload);
-              // The Admin Panel just updated the DB. Fetch the new numbers instantly.
+            () => {
+              // Admin panel or a conversion updated the DB: refetch balances
               fetchLiveAssets(user.id);
             }
           )
@@ -69,13 +59,27 @@ export default function Assets() {
 
     init();
 
-    // CLEANUP: Disconnect the listener when the user leaves the Assets page
     return () => {
-      if (subscription) {
-        supabase.removeChannel(subscription);
-      }
+      if (subscription) supabase.removeChannel(subscription);
     };
   }, []);
+
+  // --- BUILD ASSET LIST WITH LIVE PRICE + USD VALUE ---
+  // Recomputes whenever balances OR prices change.
+  const assets = useMemo(
+    () =>
+      Object.entries(balances).map(([symbol, balance]) => {
+        const price = prices[symbol] > 0 ? prices[symbol] : 0;
+        return {
+          id: symbol,
+          symbol,
+          balance,
+          price,            // USD price of 1 coin
+          usd: balance * price, // USD value of the balance
+        };
+      }),
+    [balances, prices]
+  );
 
   return (
     <div
@@ -93,11 +97,11 @@ export default function Assets() {
           <div style={{ color: "#94A3B8", marginTop: 4 }}>Manage your crypto portfolio</div>
         </div>
       </div>
-      
+
       <BalanceCard assets={assets} loading={loading} />
       <AssetActions />
       <AssetList assets={assets} loading={loading} />
-      
+
       <BottomNavigation />
     </div>
   );
