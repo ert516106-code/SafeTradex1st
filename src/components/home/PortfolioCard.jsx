@@ -1,50 +1,30 @@
 import { Eye, EyeOff, TrendingUp } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { getMarketPrices } from '../../services/marketService';
-
-// Stablecoins pegged to $1
-const STABLECOINS = ['USDT', 'USDC'];
+import { useState } from 'react';
+import { usePrices } from '../../lib/prices'; // adjust path if your folder differs
 
 export default function PortfolioCard({
   assets = [],
   loading = false,
 }) {
   const [showBalance, setShowBalance] = useState(true);
-  const [livePrices, setLivePrices] = useState({});
-  const [priceLoading, setPriceLoading] = useState(true);
+  const { prices, loading: priceLoading, stale } = usePrices();
 
-  // --- FETCH LIVE CRYPTO PRICES ---
-  useEffect(() => {
-    async function fetchLivePrices() {
-      try {
-        const marketData = await getMarketPrices();
-        const priceMap = {};
-        marketData.forEach(coin => {
-          priceMap[coin.symbol] = coin.price;
-        });
-        setLivePrices(priceMap);
-        setPriceLoading(false);
-      } catch (err) {
-        console.error("Failed to fetch live prices for Portfolio:", err);
-      }
-    }
-    fetchLivePrices();
-    const interval = setInterval(fetchLivePrices, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
-  function getPrice(id) {
-    if (livePrices[id] != null) return livePrices[id];
-    if (STABLECOINS.includes(id)) return 1;
-    return 0;
+  // Price for one asset. 0 or missing = "no live price".
+  function getPrice(asset) {
+    const symbol = String(asset.symbol || asset.id || '').toUpperCase();
+    return prices[symbol] > 0 ? prices[symbol] : 0;
   }
 
-  // --- CALCULATE TOTAL PORTFOLIO VALUE (USD) ---
+  // --- TOTAL PORTFOLIO VALUE (USD), ALL COINS ---
   let totalUsdValue = 0;
+  let missingPrice = false;
+
   if (assets && assets.length > 0 && !loading) {
     totalUsdValue = assets.reduce((sum, asset) => {
-      const price = getPrice(asset.id);
-      return sum + (asset.balance || 0) * price;
+      const balance = Number(asset.balance) || 0;
+      const price = getPrice(asset);
+      if (balance > 0 && price === 0) missingPrice = true;
+      return sum + balance * price;
     }, 0);
   }
 
@@ -148,6 +128,12 @@ export default function PortfolioCard({
             </div>
           )}
         </div>
+
+        {!isLoading && (missingPrice || stale) && (
+          <div style={{ marginTop: 8, fontSize: 12, color: "#fde68a" }}>
+            Some prices are unavailable right now. Total may be incomplete.
+          </div>
+        )}
 
         <div
           style={{
