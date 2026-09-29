@@ -30,34 +30,38 @@ function CoinPill({ coin, onClick }) {
 
 export default function ConvertForm() {
   const navigate = useNavigate();
-  const { 
-    draft, 
-    updateDraft, 
+  const {
+    draft,
+    updateDraft,
     getBalanceForCoin,
     prices,
+    pricesStale,
     loadingBalances,
-    loadingPrices
+    loadingPrices,
   } = useConvert();
   const [spinning, setSpinning] = useState(false);
 
   const fromData = getCoin(draft.fromCoin);
   const toData = getCoin(draft.toCoin);
   const numericAmount = parseFloat(draft.amount) || 0;
-  
-  // Get REAL balances from Supabase
+
   const fromBalance = getBalanceForCoin(draft.fromCoin);
   const toBalance = getBalanceForCoin(draft.toCoin);
-  
-  // Get REAL prices
+
   const fromPrice = prices[draft.fromCoin] || 0;
   const toPrice = prices[draft.toCoin] || 0;
+  const hasLivePrices = !pricesStale && fromPrice > 0 && toPrice > 0;
 
   const quote = useMemo(
     () => computeQuote(draft.fromCoin, draft.toCoin, draft.amount, prices),
     [draft.fromCoin, draft.toCoin, draft.amount, prices]
   );
-  
-  const isValid = draft.fromCoin !== draft.toCoin && numericAmount > 0 && numericAmount <= fromBalance;
+
+  const isValid =
+    hasLivePrices &&
+    draft.fromCoin !== draft.toCoin &&
+    numericAmount > 0 &&
+    numericAmount <= fromBalance;
 
   const handleSwap = () => {
     setSpinning(true);
@@ -70,12 +74,20 @@ export default function ConvertForm() {
     navigate("/convert/review");
   };
 
+  const buttonLabel = !hasLivePrices
+    ? "Waiting for live prices"
+    : numericAmount === 0
+    ? "Enter an amount"
+    : numericAmount > fromBalance
+    ? "Insufficient balance"
+    : "Convert";
+
   if (loadingBalances || loadingPrices) {
     return (
       <div className="mx-auto flex min-h-full max-w-lg flex-col items-center justify-center py-20">
         <div className="text-center">
           <div className="text-4xl mb-4">⏳</div>
-          <p className="text-white/60">Loading your balances...</p>
+          <p className="text-white/60">Loading your balances and live prices...</p>
         </div>
       </div>
     );
@@ -102,7 +114,9 @@ export default function ConvertForm() {
           />
 
           <div className="flex w-full items-center justify-between">
-            <span className="text-[12px] text-white/40">1 {draft.fromCoin}: ${formatAmount(fromPrice, 2)}</span>
+            <span className="text-[12px] text-white/40">
+              1 {draft.fromCoin}: {fromPrice > 0 ? `$${formatAmount(fromPrice, 2)}` : "—"}
+            </span>
             <span className="flex items-center gap-2 text-[12px] text-white/40">
               Balance: {formatAmount(fromBalance)}
               <button
@@ -143,11 +157,13 @@ export default function ConvertForm() {
           </div>
 
           <div className="w-full py-2 text-center text-[52px] font-extrabold leading-none text-[#A78BFA]">
-            {numericAmount > 0 ? formatAmount(quote.netReceive, 6) : "0"}
+            {numericAmount > 0 && hasLivePrices ? formatAmount(quote.netReceive, 6) : "0"}
           </div>
 
           <div className="flex w-full items-center justify-between">
-            <span className="text-[12px] text-white/40">1 {draft.toCoin}: ${formatAmount(toPrice, 2)}</span>
+            <span className="text-[12px] text-white/40">
+              1 {draft.toCoin}: {toPrice > 0 ? `$${formatAmount(toPrice, 2)}` : "—"}
+            </span>
             <span className="text-[12px] text-white/40">Balance: {formatAmount(toBalance)}</span>
           </div>
         </GlassCard>
@@ -156,11 +172,7 @@ export default function ConvertForm() {
 
         <div className="mt-auto pt-2">
           <PrimaryButton onClick={handleContinue} disabled={!isValid}>
-            {numericAmount === 0
-              ? "Enter an amount"
-              : numericAmount > fromBalance
-              ? "Insufficient balance"
-              : "Convert"}
+            {buttonLabel}
           </PrimaryButton>
         </div>
       </div>
