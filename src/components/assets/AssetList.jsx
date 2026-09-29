@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { getMarketPrices } from '../../services/marketService';
+import { useState } from 'react';
+import { usePrices } from '../../lib/prices'; // adjust path if your folder differs
 
 // --- COIN LOGOS (hosted, real icons) ---
+const ICON_ID_OVERRIDES = { MATIC: 'polygon' };
 const COIN_ICON_URL = (symbol) =>
-  `https://assets.coincap.io/assets/icons/${symbol.toLowerCase()}@2x.png`;
+  `https://assets.coincap.io/assets/icons/${ICON_ID_OVERRIDES[symbol] || symbol.toLowerCase()}@2x.png`;
 
 const COIN_COLORS = {
   BTC: '#F7931A',
@@ -13,10 +14,15 @@ const COIN_COLORS = {
   BNB: '#F3BA2F',
   USDT: '#26A17B',
   USDC: '#2775CA',
+  DOGE: '#C2A633',
+  ADA: '#0033AD',
+  TRX: '#EF0027',
+  AVAX: '#E84142',
+  LINK: '#2A5ADA',
+  DOT: '#E6007A',
+  MATIC: '#8247E5',
+  LTC: '#345D9D',
 };
-
-// Stablecoins pegged to $1 — used when the market feed doesn't return a price for them
-const STABLECOINS = ['USDT', 'USDC'];
 
 function CoinIcon({ id }) {
   const [failed, setFailed] = useState(false);
@@ -55,31 +61,8 @@ function CoinIcon({ id }) {
 }
 
 export default function AssetList({ assets = [], loading = false }) {
-  const [livePrices, setLivePrices] = useState({});
-  const [priceLoading, setPriceLoading] = useState(true);
-
-  // --- FETCH LIVE MARKET PRICES EVERY 15 SECONDS ---
-  useEffect(() => {
-    async function fetchLivePrices() {
-      try {
-        const marketData = await getMarketPrices();
-        // Convert array into object: { BTC: 63437, ETH: 1882... }
-        const priceMap = {};
-        marketData.forEach(coin => {
-          priceMap[coin.symbol] = coin.price;
-        });
-        setLivePrices(priceMap);
-        setPriceLoading(false);
-      } catch (err) {
-        console.error("Failed to fetch live prices:", err);
-      }
-    }
-
-    fetchLivePrices(); // Run immediately
-    const interval = setInterval(fetchLivePrices, 15000); // Refresh every 15 seconds
-
-    return () => clearInterval(interval);
-  }, []);
+  // Shared live prices (CoinGecko, Binance backup), refreshed every 30s
+  const { prices, loading: priceLoading } = usePrices();
 
   if (loading || priceLoading) {
     return (
@@ -91,20 +74,19 @@ export default function AssetList({ assets = [], loading = false }) {
     );
   }
 
-  // Helper: stablecoins default to $1 if the market feed has no price for them
-  function getPrice(id) {
-    if (livePrices[id] != null) return livePrices[id];
-    if (STABLECOINS.includes(id)) return 1;
-    return 0;
-  }
-
-  // 1. CALCULATE LIVE USD VALUE
+  // 1. LIVE USD VALUE (0 or missing price = unavailable, never shown as a real $0.00)
   const enrichedAssets = assets.map((asset) => {
-    const price = getPrice(asset.id);
+    const symbol = String(asset.symbol || asset.id || '').toUpperCase();
+    const balance = Number(asset.balance) || 0;
+    const price = prices[symbol] > 0 ? prices[symbol] : 0;
     return {
       ...asset,
+      id: symbol,
+      symbol,
+      balance,
       price,
-      usdValue: (asset.balance || 0) * price,
+      hasPrice: price > 0,
+      usdValue: balance * price,
     };
   });
 
@@ -125,7 +107,7 @@ export default function AssetList({ assets = [], loading = false }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>My Assets</div>
-      
+
       {visibleAssets.map((asset) => (
         <div
           key={asset.id}
@@ -140,7 +122,6 @@ export default function AssetList({ assets = [], loading = false }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* REAL LOGO */}
             <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <CoinIcon id={asset.id} />
             </div>
@@ -153,11 +134,16 @@ export default function AssetList({ assets = [], loading = false }) {
           <div style={{ textAlign: 'right' }}>
             {/* LIVE USD VALUE */}
             <div style={{ fontWeight: 600, fontSize: 16 }}>
-              ${asset.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {asset.hasPrice
+                ? `$${asset.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : '—'}
             </div>
             <div style={{ color: '#94a3b8', fontSize: 13 }}>
-              {asset.balance} {asset.symbol}
+              {asset.balance.toLocaleString('en-US', { maximumFractionDigits: 6 })} {asset.symbol}
             </div>
+            {!asset.hasPrice && (
+              <div style={{ color: '#fbbf24', fontSize: 11, marginTop: 2 }}>Price unavailable</div>
+            )}
           </div>
         </div>
       ))}
