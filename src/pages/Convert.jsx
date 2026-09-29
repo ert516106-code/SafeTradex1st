@@ -48,30 +48,57 @@ export const COINS = [
   { symbol: "MANA", name: "Decentraland", color: "#FF2D55", coingeckoId: "decentraland" },
 ];
 
+// Binance uses different tickers for some coins (MATIC was renamed to POL)
+const BINANCE_SYMBOL_OVERRIDES = {
+  MATIC: "POL",
+};
+
+const BALANCE_FIELDS = COINS.map((c) => c.symbol.toLowerCase());
+const PRICE_REFRESH_MS = 30_000;
+const STALE_AFTER_MS = 90_000;
+
 export function getCoin(symbol) {
   return COINS.find((c) => c.symbol === symbol) || COINS[0];
 }
 
-// ─── FETCH PRICES FROM COINGECKO ───
+// ─── FETCH LIVE PRICES (CoinGecko primary, Binance backup) ───
 export async function fetchCoinPrices() {
+  // Primary: CoinGecko
   try {
-    const ids = COINS.map(c => c.coingeckoId).join(',');
-    const response = await fetch(
+    const ids = COINS.map((c) => c.coingeckoId).join(",");
+    const res = await fetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`
     );
-    
-    if (!response.ok) throw new Error('Failed to fetch prices');
-    
-    const data = await response.json();
-    
+    if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
+    const data = await res.json();
+
     const prices = {};
-    COINS.forEach(coin => {
-      prices[coin.symbol] = data[coin.coingeckoId]?.usd || 0;
+    COINS.forEach((c) => {
+      const p = data[c.coingeckoId]?.usd;
+      if (p) prices[c.symbol] = p;
     });
-    
+    if (Object.keys(prices).length > 0) return prices;
+  } catch (e) {
+    console.warn("CoinGecko failed, trying Binance:", e);
+  }
+
+  // Backup: Binance
+  try {
+    const res = await fetch("https://api.binance.com/api/v3/ticker/price");
+    if (!res.ok) throw new Error(`Binance ${res.status}`);
+    const list = await res.json();
+    const map = Object.fromEntries(list.map((t) => [t.symbol, parseFloat(t.price)]));
+
+    const prices = { USDT: 1, USDC: 1 };
+    COINS.forEach((c) => {
+      if (c.symbol === "USDT" || c.symbol === "USDC") return;
+      const ticker = BINANCE_SYMBOL_OVERRIDES[c.symbol] || c.symbol;
+      const p = map[`${ticker}USDT`];
+      if (p) prices[c.symbol] = p;
+    });
     return prices;
-  } catch (error) {
-    console.error('Error fetching prices:', error);
+  } catch (e) {
+    console.error("All price sources failed:", e);
     return null;
   }
 }
@@ -83,7 +110,7 @@ export function computeQuote(fromSymbol, toSymbol, amountInput, prices) {
   const from = getCoin(fromSymbol);
   const to = getCoin(toSymbol);
   const amount = parseFloat(amountInput) || 0;
-  
+
   const fromPrice = prices[fromSymbol] || 0;
   const toPrice = prices[toSymbol] || 0;
 
@@ -125,6 +152,14 @@ export function useConvert() {
   return ctx;
 }
 
+function profileToBalances(profile) {
+  const balances = {};
+  BALANCE_FIELDS.forEach((field) => {
+    balances[field.toUpperCase()] = Number(profile[field]) || 0;
+  });
+  return balances;
+}
+
 export default function Convert() {
   const navigate = useNavigate();
   const [draft, setDraft] = useState(initialDraft);
@@ -134,25 +169,25 @@ export default function Convert() {
   const [prices, setPrices] = useState({});
   const [loadingBalances, setLoadingBalances] = useState(true);
   const [loadingPrices, setLoadingPrices] = useState(true);
+  const [pricesStale, setPricesStale] = useState(false);
+  const [pricesUpdatedAt, setPricesUpdatedAt] = useState(null);
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState(null);
 
-  // ─── FETCH USER BALANCES AND PRICES ───
+  // ─── FETCH USER BALANCES ───
   useEffect(() => {
     async function fetchUserData() {
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
+
         if (userError || !user) {
           console.error('No authenticated user found');
           setLoadingBalances(false);
-          setLoadingPrices(false);
           setError('Please log in to convert coins');
           return;
         }
-        
+
         setUserId(user.id);
-        console.log('User ID:', user.id);
 
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -163,62 +198,57 @@ export default function Convert() {
         if (profileError) {
           console.error('Error fetching profile:', profileError);
           setLoadingBalances(false);
-          setLoadingPrices(false);
           setError('Failed to load your balances. Please refresh.');
           return;
         }
 
-        console.log('Profile data:', profile);
-
-        if (profile) {
-          const balances = {};
-          const balanceFields = [
-            'btc', 'eth', 'sol', 'xrp', 'bnb', 'usdt', 'usdc',
-            'ada', 'doge', 'trx', 'avax', 'link', 'dot', 'matic',
-            'ltc', 'shib', 'uni', 'atom', 'near', 'apt', 'arb',
-            'op', 'fil', 'icp', 'etc', 'bch', 'algo', 'vet', 'sand', 'mana'
-          ];
-          
-          balanceFields.forEach((field) => {
-            const symbol = field.toUpperCase();
-            balances[symbol] = profile[field] || 0;
-          });
-          
-          setUserBalances(balances);
-          console.log('User balances:', balances);
-        }
+        if (profile) setUserBalances(profileToBalances(profile));
         setLoadingBalances(false);
-
-        const priceData = await fetchCoinPrices();
-        if (priceData) {
-          setPrices(priceData);
-          console.log('Prices loaded:', priceData);
-        } else {
-          // Fallback prices
-          const fallbackPrices = {
-            BTC: 63200, ETH: 1880, SOL: 73.5, BNB: 587.67,
-            USDT: 1, USDC: 1, XRP: 1.09, DOGE: 0.35,
-            ADA: 0.85, TRX: 0.28, AVAX: 42, LINK: 24,
-            DOT: 8.5, MATIC: 0.75, LTC: 115, SHIB: 0.000025,
-            UNI: 9.5, ATOM: 7.8, NEAR: 5.2, APT: 9.8,
-            ARB: 0.85, OP: 2.1, FIL: 5.4, ICP: 10.2,
-            ETC: 26, BCH: 480, ALGO: 0.18, VET: 0.045,
-            SAND: 0.42, MANA: 0.38
-          };
-          setPrices(fallbackPrices);
-        }
-        setLoadingPrices(false);
-
       } catch (err) {
         console.error('Error in fetchUserData:', err);
         setLoadingBalances(false);
-        setLoadingPrices(false);
         setError('Failed to load data');
       }
     }
 
     fetchUserData();
   }, []);
+
+  // ─── LIVE PRICES: load now, then refresh every 30s ───
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPrices() {
+      const p = await fetchCoinPrices();
+      if (cancelled) return;
+      if (p) {
+        setPrices((prev) => ({ ...prev, ...p }));
+        setPricesUpdatedAt(Date.now());
+        setPricesStale(false);
+      } else {
+        // Keep the last real prices, but flag them so conversions are blocked
+        setPricesStale(true);
+      }
+      setLoadingPrices(false);
+    }
+
+    loadPrices();
+    const id = setInterval(loadPrices, PRICE_REFRESH_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  // Mark prices stale if updates stop arriving (e.g. tab throttled, network down)
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (pricesUpdatedAt && Date.now() - pricesUpdatedAt > STALE_AFTER_MS) {
+        setPricesStale(true);
+      }
+    }, 10_000);
+    return () => clearInterval(id);
+  }, [pricesUpdatedAt]);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 20);
@@ -241,22 +271,7 @@ export default function Convert() {
         .eq('id', userId)
         .single();
 
-      if (profile) {
-        const balances = {};
-        const balanceFields = [
-          'btc', 'eth', 'sol', 'xrp', 'bnb', 'usdt', 'usdc',
-          'ada', 'doge', 'trx', 'avax', 'link', 'dot', 'matic',
-          'ltc', 'shib', 'uni', 'atom', 'near', 'apt', 'arb',
-          'op', 'fil', 'icp', 'etc', 'bch', 'algo', 'vet', 'sand', 'mana'
-        ];
-        
-        balanceFields.forEach((field) => {
-          const symbol = field.toUpperCase();
-          balances[symbol] = profile[field] || 0;
-        });
-        
-        setUserBalances(balances);
-      }
+      if (profile) setUserBalances(profileToBalances(profile));
     } catch (err) {
       console.error('Error refreshing balances:', err);
     }
@@ -266,40 +281,49 @@ export default function Convert() {
   const convert = useCallback(async () => {
     const { fromCoin, toCoin, amount } = draft;
     const numAmt = parseFloat(amount) || 0;
-    
-    console.log('Starting conversion:', { fromCoin, toCoin, amount: numAmt, userId });
-    
+
     if (numAmt <= 0) {
       toast.error("Enter an amount");
       return false;
     }
 
+    // Block conversions without a live price
+    if (pricesStale || !prices[fromCoin] || !prices[toCoin]) {
+      toast.error("Live prices unavailable. Please try again in a moment.");
+      return false;
+    }
+
     const available = getBalanceForCoin(fromCoin);
-    console.log(`Available ${fromCoin}:`, available);
-    
     if (numAmt > available) {
       toast.error(`Insufficient ${fromCoin} balance. Available: ${available.toFixed(8)} ${fromCoin}`);
       return false;
     }
 
-    const quote = computeQuote(fromCoin, toCoin, amount, prices);
+    // Re-fetch a fresh price right before executing so the quote is current
+    const fresh = await fetchCoinPrices();
+    const execPrices = fresh ? { ...prices, ...fresh } : null;
+    if (!execPrices || !execPrices[fromCoin] || !execPrices[toCoin]) {
+      toast.error("Could not get a live price. Please try again.");
+      return false;
+    }
+    setPrices(execPrices);
+    setPricesUpdatedAt(Date.now());
+    setPricesStale(false);
+
+    const quote = computeQuote(fromCoin, toCoin, amount, execPrices);
     const netReceive = quote.netReceive;
-    console.log('Quote:', quote);
-    
+
     if (netReceive <= 0) {
       toast.error("Conversion amount too low");
       return false;
     }
 
     setConversionLoading(true);
-    
+
     try {
       const fromField = fromCoin.toLowerCase();
       const toField = toCoin.toLowerCase();
-      
-      console.log('Updating fields:', { fromField, toField });
-      
-      // Get current profile
+
       const { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
@@ -307,40 +331,27 @@ export default function Convert() {
         .single();
 
       if (fetchError) {
-        console.error('Fetch error:', fetchError);
         throw new Error(`Failed to fetch profile: ${fetchError.message}`);
       }
 
-      console.log('Current profile:', profile);
+      const currentFromBalance = Number(profile[fromField]) || 0;
+      const currentToBalance = Number(profile[toField]) || 0;
 
-      // Calculate new balances
-      const currentFromBalance = profile[fromField] || 0;
-      const currentToBalance = profile[toField] || 0;
-      
+      if (numAmt > currentFromBalance) {
+        throw new Error(`Insufficient ${fromCoin} balance.`);
+      }
+
       const newFromBalance = Math.max(0, currentFromBalance - numAmt);
       const newToBalance = currentToBalance + netReceive;
 
-      console.log('New balances:', { newFromBalance, newToBalance });
-
-      // Update profile in Supabase - REMOVED updated_at column
-      const updates = {
-        [fromField]: newFromBalance,
-        [toField]: newToBalance,
-      };
-
-      console.log('Updates to send:', updates);
-
       const { error: updateError } = await supabase
         .from('profiles')
-        .update(updates)
+        .update({ [fromField]: newFromBalance, [toField]: newToBalance })
         .eq('id', userId);
 
       if (updateError) {
-        console.error('Update error:', updateError);
         throw new Error(`Failed to update balances: ${updateError.message}`);
       }
-
-      console.log('Update successful!');
 
       // Write a notification so the user sees this conversion in their activity feed
       await supabase.from('notifications').insert({
@@ -353,18 +364,16 @@ export default function Convert() {
         status: 'completed',
       });
 
-      // Update local state
-      const newBalances = { ...userBalances };
-      newBalances[fromCoin] = newFromBalance;
-      newBalances[toCoin] = newToBalance;
-      setUserBalances(newBalances);
+      setUserBalances((prev) => ({
+        ...prev,
+        [fromCoin]: newFromBalance,
+        [toCoin]: newToBalance,
+      }));
 
       toast.success(`✅ Successfully converted ${numAmt} ${fromCoin} → ${netReceive.toFixed(8)} ${toCoin}`);
       resetDraft();
-      
-      // Navigate to success page
       navigate('/convert/success');
-      
+
       return true;
     } catch (err) {
       console.error('Conversion error:', err);
@@ -373,7 +382,7 @@ export default function Convert() {
     } finally {
       setConversionLoading(false);
     }
-  }, [draft, userId, userBalances, prices, getBalanceForCoin, navigate]);
+  }, [draft, userId, prices, pricesStale, getBalanceForCoin, navigate]);
 
   const contextValue = {
     draft,
@@ -388,14 +397,16 @@ export default function Convert() {
     loadingBalances,
     loadingPrices,
     prices,
+    pricesStale,
+    pricesUpdatedAt,
     refreshBalances,
     userId,
   };
 
   if (error) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
+      <div style={{
+        minHeight: '100vh',
         background: 'radial-gradient(circle at top, #18254b 0%, #050816 70%)',
         display: 'flex',
         alignItems: 'center',
@@ -453,6 +464,11 @@ export default function Convert() {
         />
 
         <div className="relative z-10 mx-auto w-full max-w-[520px]" style={{ marginLeft: "auto", marginRight: "auto", maxWidth: "520px", width: "100%" }}>
+          {pricesStale && !loadingPrices && (
+            <div className="mx-4 mt-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-center text-[13px] text-amber-200">
+              Prices may be outdated. Reconnecting…
+            </div>
+          )}
           <Routes>
             <Route index element={<ConvertForm />} />
             <Route path="select-from" element={<SelectCoin field="from" />} />
