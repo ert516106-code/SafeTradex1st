@@ -96,7 +96,7 @@ export default function TradingModal({
   const [exitPrice, setExitPrice] = useState(currentPrice);
 
   const entryPriceRef = useRef(currentPrice);
-  const livePriceRef = useRef(currentPrice); 
+  const finalMarketPriceRef = useRef(currentPrice);
 
   const [currentUser, setCurrentUser] = useState(null);
   const [realUsdtBalance, setRealUsdtBalance] = useState(0);
@@ -122,13 +122,17 @@ export default function TradingModal({
     loadUserAndBalance();
   }, [open, onBalanceChange]);
 
+  // *** THE FIX: Always keep the real market price ref up to date ***
+  // This is the "TradingView" price fed from your chart's data feed.
   useEffect(() => {
+    if (currentPrice > 0) {
+      finalMarketPriceRef.current = currentPrice;
+    }
     if (open && currentPrice > 0 && phase === 'idle') {
       setLivePrice(currentPrice);
       setEntryPrice(currentPrice);
       setExitPrice(currentPrice);
       entryPriceRef.current = currentPrice;
-      livePriceRef.current = currentPrice;
     }
   }, [open, currentPrice, phase]);
 
@@ -155,7 +159,7 @@ export default function TradingModal({
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
   const potentialWin = useMemo(() => +(numAmount * period.rate).toFixed(2), [numAmount, period]);
 
-  // Live price animation - allows small realistic market movements
+  // Purely cosmetic animation during countdown - does not affect real entry/exit
   useEffect(() => {
     if (phase !== 'countdown') {
       clearInterval(priceRef.current);
@@ -163,11 +167,8 @@ export default function TradingModal({
     }
     priceRef.current = setInterval(() => {
       setLivePrice(prev => {
-        // +/- 0.02% movement every 800ms
         const pct = (Math.random() - 0.5) * 0.0004; 
-        const nextPrice = +(prev * (1 + pct)).toFixed(2);
-        livePriceRef.current = nextPrice; 
-        return nextPrice;
+        return +(prev * (1 + pct)).toFixed(2);
       });
     }, 800);
     return () => clearInterval(priceRef.current);
@@ -186,7 +187,6 @@ export default function TradingModal({
     };
   }, []);
 
-  // MODIFIED: Now takes the final calculated values from the UI
   const persistTrade = useCallback(async ({ transaction, balanceBefore, balanceAfter, userId }) => {
     if (!userId) return;
     try {
@@ -198,7 +198,7 @@ export default function TradingModal({
         amount: transaction.amount,
         payoutPercent: +(period.rate * 100).toFixed(2),
         entryPrice: transaction.entryPrice,
-        exitPrice: transaction.exitPrice, // <--- Sending the REAL exit price
+        exitPrice: transaction.exitPrice, 
         profit: transaction.profit,
         result: transaction.win ? 'win' : 'lose',
         balanceBefore,
@@ -224,7 +224,6 @@ export default function TradingModal({
     setAmount('');
     setPeriod(periods[0]);
     setLivePrice(currentPrice);
-    livePriceRef.current = currentPrice;
   }, [currentPrice]);
 
   const handleClose = useCallback(() => {
@@ -236,7 +235,8 @@ export default function TradingModal({
     if (!tradingEnabled) return;
     if (numAmount < period.minAmount || numAmount > effectiveBalance) return;
 
-    const snapEntryPrice = livePrice;
+    // === THE FIX: USE REAL MARKET PRICE (TradingView) FOR ENTRY ===
+    const snapEntryPrice = currentPrice;  // <-- Real TradingView price, not animated
     entryPriceRef.current = snapEntryPrice;
     setEntryPrice(snapEntryPrice);
 
@@ -290,17 +290,16 @@ export default function TradingModal({
         console.error("Error checking admin mode:", err);
       }
 
-      // 1. Get the REAL FINAL market price from the Ref
-      const finalExitPrice = livePriceRef.current; 
+      // === THE FIX: USE REAL MARKET PRICE (TradingView) FOR EXIT ===
+      const finalExitPrice = finalMarketPriceRef.current;  // <-- Real TradingView price
       setExitPrice(finalExitPrice);
 
-      // 2. Determine Win/Loss based on Admin Mode
       let win = false;
       if (adminMode === 'win') win = true;
       else if (adminMode === 'lose') win = false;
       else win = Math.random() > 0.5;
 
-      // 3. Calculate Profit based on the REAL prices
+      // Calculate profit based on REAL market prices
       let profit = 0;
       const qty = numAmount / entryPriceRef.current;
       
@@ -310,13 +309,12 @@ export default function TradingModal({
         profit = (entryPriceRef.current - finalExitPrice) * qty;
       }
 
-      // If Admin forced a result, we override the real market math to ensure the correct win/loss amount
+      // Override based on admin mode
       if (adminMode === 'win') {
         profit = potentialWin; 
       } else if (adminMode === 'lose') {
         profit = -numAmount;
       } else {
-        // Neutral: Use the real market math
         profit = +profit.toFixed(2);
       }
 
@@ -328,9 +326,9 @@ export default function TradingModal({
         period: period.label,
         amount: numAmount,
         entryPrice: entryPriceRef.current, 
-        exitPrice: finalExitPrice, // <--- The real final price
+        exitPrice: finalExitPrice, // <-- Real TradingView exit price
         win,
-        profit: Math.abs(profit), // Always send positive, result field handles win/loss
+        profit: Math.abs(profit), 
         timestamp: Date.now(),
       };
 
@@ -356,7 +354,7 @@ export default function TradingModal({
     };
 
     settleTimeoutRef.current = setTimeout(checkAndSettle, period.seconds * 1000);
-  }, [tradingEnabled, numAmount, period, effectiveBalance, livePrice, coin, isLong, potentialWin, systemSettings, currentUser, onBalanceChange, onTradeComplete, onOrderComplete, persistTrade]);
+  }, [tradingEnabled, numAmount, period, effectiveBalance, currentPrice, coin, isLong, potentialWin, systemSettings, currentUser, onBalanceChange, onTradeComplete, onOrderComplete, persistTrade]);
 
   if (!open) return null;
 
