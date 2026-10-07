@@ -95,9 +95,8 @@ export default function TradingModal({
   const [entryPrice, setEntryPrice] = useState(currentPrice);
   const [exitPrice, setExitPrice] = useState(currentPrice);
 
-  // REFS: These hold the real values during the async countdown
   const entryPriceRef = useRef(currentPrice);
-  const livePriceRef = useRef(currentPrice); // <-- THE FIX FOR EXIT PRICE
+  const livePriceRef = useRef(currentPrice); 
 
   const [currentUser, setCurrentUser] = useState(null);
   const [realUsdtBalance, setRealUsdtBalance] = useState(0);
@@ -123,7 +122,6 @@ export default function TradingModal({
     loadUserAndBalance();
   }, [open, onBalanceChange]);
 
-  // Only overwrite prices if we are in the 'idle' phase.
   useEffect(() => {
     if (open && currentPrice > 0 && phase === 'idle') {
       setLivePrice(currentPrice);
@@ -157,7 +155,7 @@ export default function TradingModal({
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
   const potentialWin = useMemo(() => +(numAmount * period.rate).toFixed(2), [numAmount, period]);
 
-  // Live price animation - only runs during countdown
+  // Live price animation - allows small realistic market movements
   useEffect(() => {
     if (phase !== 'countdown') {
       clearInterval(priceRef.current);
@@ -165,10 +163,10 @@ export default function TradingModal({
     }
     priceRef.current = setInterval(() => {
       setLivePrice(prev => {
-        // Small realistic movement: +/- 0.02%
+        // +/- 0.02% movement every 800ms
         const pct = (Math.random() - 0.5) * 0.0004; 
         const nextPrice = +(prev * (1 + pct)).toFixed(2);
-        livePriceRef.current = nextPrice; // Keep the ref updated!
+        livePriceRef.current = nextPrice; 
         return nextPrice;
       });
     }, 800);
@@ -188,7 +186,8 @@ export default function TradingModal({
     };
   }, []);
 
-  const persistTrade = useCallback(async ({ transaction, balanceBefore, balanceAfter, userId, adminResult }) => {
+  // MODIFIED: Now takes the final calculated values from the UI
+  const persistTrade = useCallback(async ({ transaction, balanceBefore, balanceAfter, userId }) => {
     if (!userId) return;
     try {
       await tradeService.createTrade({
@@ -199,8 +198,11 @@ export default function TradingModal({
         amount: transaction.amount,
         payoutPercent: +(period.rate * 100).toFixed(2),
         entryPrice: transaction.entryPrice,
-        adminResult: adminResult, 
+        exitPrice: transaction.exitPrice, // <--- Sending the REAL exit price
+        profit: transaction.profit,
+        result: transaction.win ? 'win' : 'lose',
         balanceBefore,
+        balanceAfter,
       });
 
       const { error: balanceError } = await supabase
@@ -234,7 +236,6 @@ export default function TradingModal({
     if (!tradingEnabled) return;
     if (numAmount < period.minAmount || numAmount > effectiveBalance) return;
 
-    // 1. LOCK THE ENTRY PRICE
     const snapEntryPrice = livePrice;
     entryPriceRef.current = snapEntryPrice;
     setEntryPrice(snapEntryPrice);
@@ -289,19 +290,37 @@ export default function TradingModal({
         console.error("Error checking admin mode:", err);
       }
 
-      // 2. CAPTURE THE FINAL LIVE PRICE using the Ref (not the stale state)
+      // 1. Get the REAL FINAL market price from the Ref
       const finalExitPrice = livePriceRef.current; 
       setExitPrice(finalExitPrice);
 
+      // 2. Determine Win/Loss based on Admin Mode
       let win = false;
       if (adminMode === 'win') win = true;
       else if (adminMode === 'lose') win = false;
       else win = Math.random() > 0.5;
 
-      const profit = win ? potentialWin : numAmount;
-      const updatedBalance = win
-        ? +(balanceAfterDeduction + numAmount + potentialWin).toFixed(2)
-        : balanceAfterDeduction;
+      // 3. Calculate Profit based on the REAL prices
+      let profit = 0;
+      const qty = numAmount / entryPriceRef.current;
+      
+      if (isLong) {
+        profit = (finalExitPrice - entryPriceRef.current) * qty;
+      } else {
+        profit = (entryPriceRef.current - finalExitPrice) * qty;
+      }
+
+      // If Admin forced a result, we override the real market math to ensure the correct win/loss amount
+      if (adminMode === 'win') {
+        profit = potentialWin; 
+      } else if (adminMode === 'lose') {
+        profit = -numAmount;
+      } else {
+        // Neutral: Use the real market math
+        profit = +profit.toFixed(2);
+      }
+
+      const updatedBalance = +(balanceAfterDeduction + profit + numAmount).toFixed(2);
 
       const transaction = {
         coin,
@@ -309,9 +328,9 @@ export default function TradingModal({
         period: period.label,
         amount: numAmount,
         entryPrice: entryPriceRef.current, 
-        exitPrice: finalExitPrice, // <-- Now uses the correct final live price
+        exitPrice: finalExitPrice, // <--- The real final price
         win,
-        profit,
+        profit: Math.abs(profit), // Always send positive, result field handles win/loss
         timestamp: Date.now(),
       };
 
@@ -325,13 +344,12 @@ export default function TradingModal({
           balanceBefore: balanceBeforeTrade,
           balanceAfter: updatedBalance,
           userId: activeUserId,
-          adminResult: adminMode 
         });
       }
 
       if (mountedRef.current) {
         clearInterval(priceRef.current);
-        setResult({ win, profit });
+        setResult({ win, profit: Math.abs(profit) });
         setPhase('result');
         setCountdown(0);
       }
