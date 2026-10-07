@@ -91,12 +91,13 @@ export default function TradingModal({
   const [countdown, setCountdown] = useState(0);
   const [result, setResult] = useState(null);
   
-  // This is the live moving price shown during countdown
   const [livePrice, setLivePrice] = useState(currentPrice);
-  // This is the locked price when the user clicks Confirm
   const [entryPrice, setEntryPrice] = useState(currentPrice);
-  // This is the final price when timer hits 0
   const [exitPrice, setExitPrice] = useState(currentPrice);
+
+  // REFS: These hold the real values during the async countdown
+  const entryPriceRef = useRef(currentPrice);
+  const livePriceRef = useRef(currentPrice); // <-- THE FIX FOR EXIT PRICE
 
   const [currentUser, setCurrentUser] = useState(null);
   const [realUsdtBalance, setRealUsdtBalance] = useState(0);
@@ -122,13 +123,16 @@ export default function TradingModal({
     loadUserAndBalance();
   }, [open, onBalanceChange]);
 
+  // Only overwrite prices if we are in the 'idle' phase.
   useEffect(() => {
-    if (open && currentPrice > 0) {
+    if (open && currentPrice > 0 && phase === 'idle') {
       setLivePrice(currentPrice);
       setEntryPrice(currentPrice);
       setExitPrice(currentPrice);
+      entryPriceRef.current = currentPrice;
+      livePriceRef.current = currentPrice;
     }
-  }, [open, currentPrice]);
+  }, [open, currentPrice, phase]);
 
   const [systemSettings, setSystemSettings] = useState(null);
   useEffect(() => {
@@ -153,8 +157,7 @@ export default function TradingModal({
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
   const potentialWin = useMemo(() => +(numAmount * period.rate).toFixed(2), [numAmount, period]);
 
-  // --- FIXED ANIMATION LOGIC ---
-  // We removed the "bias" that forced a win/loss. Now it just moves randomly.
+  // Live price animation - only runs during countdown
   useEffect(() => {
     if (phase !== 'countdown') {
       clearInterval(priceRef.current);
@@ -162,9 +165,11 @@ export default function TradingModal({
     }
     priceRef.current = setInterval(() => {
       setLivePrice(prev => {
-        // Random movement +/- 0.05%
-        const pct = (Math.random() - 0.5) * 0.001; 
-        return +(prev * (1 + pct)).toFixed(2);
+        // Small realistic movement: +/- 0.02%
+        const pct = (Math.random() - 0.5) * 0.0004; 
+        const nextPrice = +(prev * (1 + pct)).toFixed(2);
+        livePriceRef.current = nextPrice; // Keep the ref updated!
+        return nextPrice;
       });
     }, 800);
     return () => clearInterval(priceRef.current);
@@ -217,6 +222,7 @@ export default function TradingModal({
     setAmount('');
     setPeriod(periods[0]);
     setLivePrice(currentPrice);
+    livePriceRef.current = currentPrice;
   }, [currentPrice]);
 
   const handleClose = useCallback(() => {
@@ -228,8 +234,9 @@ export default function TradingModal({
     if (!tradingEnabled) return;
     if (numAmount < period.minAmount || numAmount > effectiveBalance) return;
 
-    // 1. LOCK THE ENTRY PRICE HERE
+    // 1. LOCK THE ENTRY PRICE
     const snapEntryPrice = livePrice;
+    entryPriceRef.current = snapEntryPrice;
     setEntryPrice(snapEntryPrice);
 
     const balanceBeforeTrade = effectiveBalance;
@@ -282,10 +289,8 @@ export default function TradingModal({
         console.error("Error checking admin mode:", err);
       }
 
-      // 2. CAPTURE THE EXIT PRICE HERE (The final live price)
-      // Note: Your tradeService will override this mathematically based on adminMode, 
-      // but this is the price shown in the UI at the moment of expiry.
-      const finalExitPrice = livePrice; 
+      // 2. CAPTURE THE FINAL LIVE PRICE using the Ref (not the stale state)
+      const finalExitPrice = livePriceRef.current; 
       setExitPrice(finalExitPrice);
 
       let win = false;
@@ -303,8 +308,8 @@ export default function TradingModal({
         isLong,
         period: period.label,
         amount: numAmount,
-        entryPrice: snapEntryPrice,
-        exitPrice: finalExitPrice,
+        entryPrice: entryPriceRef.current, 
+        exitPrice: finalExitPrice, // <-- Now uses the correct final live price
         win,
         profit,
         timestamp: Date.now(),
@@ -415,12 +420,10 @@ export default function TradingModal({
             <CircleTimer total={period.seconds} remaining={countdown} />
 
             <div style={{ width: '100%', marginTop: 24, borderTop: '1px solid #1e293b', paddingTop: 18, display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
-              {/* LIVE PRICE UPDATES HERE */}
               <InfoRow label="Current price" value={livePrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} />
               <InfoRow label="Cycle" value={period.label} />
               <InfoRow label="Direction" value={isLong ? 'Buy Long' : 'Sell Short'} valueColor={isLong ? '#10b981' : '#ef4444'} />
               <InfoRow label="Quantity" value={`${numAmount.toFixed(2)} USDT`} />
-              {/* LOCKED ENTRY PRICE HERE */}
               <InfoRow label="Price" value={`${entryPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDT`} />
               <InfoRow label="Expected profit" value={`+${potentialWin} USDT`} valueColor="#10b981" bold />
             </div>
