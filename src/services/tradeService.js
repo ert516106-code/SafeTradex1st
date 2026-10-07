@@ -1,5 +1,33 @@
 import { supabase } from "../lib/supabase";
 
+// Calculate a realistic exit price based on the entry, direction, and admin result
+function calculateExitPrice(entryPrice, direction, adminResult, payoutPercent) {
+  const entry = Number(entryPrice);
+  
+  // Small realistic movement: roughly 0.5% to 0.8% depending on payout
+  // (a 45% payout implies ~0.65% movement)
+  const pct = Math.min(0.008, Math.max(0.003, Number(payoutPercent) / 100 * 0.015));
+
+  if (adminResult === "win") {
+    if (direction === "long") {
+      return +(entry * (1 + pct)).toFixed(2);   // Long win → price UP
+    } else {
+      return +(entry * (1 - pct)).toFixed(2);   // Short win → price DOWN
+    }
+  }
+
+  if (adminResult === "lose") {
+    if (direction === "long") {
+      return +(entry * (1 - pct)).toFixed(2);   // Long lose → price DOWN
+    } else {
+      return +(entry * (1 + pct)).toFixed(2);   // Short lose → price UP
+    }
+  }
+
+  // Neutral → tiny variation, still near entry
+  return +(entry * (1 + (Math.random() - 0.5) * 0.0005)).toFixed(2);
+}
+
 export async function createTrade({
   userId,
   coin,
@@ -8,12 +36,31 @@ export async function createTrade({
   amount,
   payoutPercent,
   entryPrice,
-  exitPrice,      // <--- We now accept the REAL live exit price
-  profit,
-  result,
+  adminResult = "neutral",
   balanceBefore,
-  balanceAfter,
+  adminProfitAmount = null, // optional: force a specific profit number
 }) {
+  // 1. Calculate the exit price from the entry price (deterministic, realistic)
+  const exitPrice = calculateExitPrice(entryPrice, direction, adminResult, payoutPercent);
+
+  // 2. Calculate the profit based on that exit price
+  const entry = Number(entryPrice);
+  const qty = Number(amount) / entry;
+  let profit;
+
+  if (adminProfitAmount !== null) {
+    profit = Number(adminProfitAmount);
+  } else if (direction === "long") {
+    profit = (exitPrice - entry) * qty;
+  } else {
+    profit = (entry - exitPrice) * qty;
+  }
+
+  profit = +profit.toFixed(2);
+
+  const result = profit > 0 ? "win" : profit < 0 ? "lose" : "neutral";
+  const balanceAfter = +(Number(balanceBefore) + profit).toFixed(2);
+
   const { data, error } = await supabase
     .from("trade_history")
     .insert({
@@ -23,8 +70,8 @@ export async function createTrade({
       timeframe,
       amount,
       payout_percent: payoutPercent,
-      entry_price: entryPrice,
-      exit_price: exitPrice, // <--- Saved exactly as the UI shows it
+      entry_price: entry,
+      exit_price: exitPrice,
       profit,
       result,
       balance_before: balanceBefore,
@@ -34,9 +81,7 @@ export async function createTrade({
     .select()
     .single();
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -46,10 +91,7 @@ export async function getUserTrades(userId) {
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
   return data || [];
 }
 
@@ -59,9 +101,6 @@ export async function getRecentTrades(limit = 50) {
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
-
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
   return data || [];
 }
