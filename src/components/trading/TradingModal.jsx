@@ -57,17 +57,20 @@ const InfoRow = ({ label, value, valueColor, bold }) => (
   </div>
 );
 
-// Local, deterministic exit price — must match the logic in tradeService.js
+// Local, deterministic exit price — MUST match the logic in tradeService.js
+// Small 0.08% movement keeps the exit price within ~$67 of the entry on BTC.
 function computeLocalExitPrice(entryPrice, direction, adminResult, payoutPercent) {
   const entry = Number(entryPrice);
-  const pct = Math.min(0.008, Math.max(0.003, Number(payoutPercent) / 100 * 0.015));
+  const pct = 0.0008; // 0.08%
+
   if (adminResult === 'win') {
     return +(entry * (direction === 'long' ? 1 + pct : 1 - pct)).toFixed(2);
   }
   if (adminResult === 'lose') {
     return +(entry * (direction === 'long' ? 1 - pct : 1 + pct)).toFixed(2);
   }
-  return +(entry * (1 + (Math.random() - 0.5) * 0.0005)).toFixed(2);
+  // Neutral — almost no change
+  return +(entry * (1 + (Math.random() - 0.5) * 0.0002)).toFixed(2);
 }
 
 export default function TradingModal({
@@ -149,20 +152,17 @@ export default function TradingModal({
   const totalDeduct = useMemo(() => +(numAmount + fee).toFixed(4), [numAmount, fee]);
   const potentialWin = useMemo(() => +(numAmount * period.rate).toFixed(2), [numAmount, period]);
 
-  // Live animation now starts from the LOCKED entry price and drifts realistically.
-  // We don't chase the market anymore — the entry is the anchor.
+  // Live animation — drift from locked entry price, clamp so it never diverges much
   useEffect(() => {
     if (phase !== 'countdown') {
       clearInterval(priceRef.current);
       return;
     }
-    // Slight drift so it "feels" alive without ever diverging from entry
     priceRef.current = setInterval(() => {
       setLivePrice(prev => {
         const anchor = entryPriceRef.current;
         const pct = (Math.random() - 0.5) * 0.0003;
         const next = +(prev * (1 + pct)).toFixed(2);
-        // Clamp so we never drift more than 1% away from entry
         const min = anchor * 0.99;
         const max = anchor * 1.01;
         return Math.max(min, Math.min(max, next));
@@ -195,7 +195,7 @@ export default function TradingModal({
         amount: transaction.amount,
         payoutPercent: +(period.rate * 100).toFixed(2),
         entryPrice: transaction.entryPrice,
-        adminResult: transaction.adminResult, // <-- pass admin's decision
+        adminResult: transaction.adminResult,
         balanceBefore,
       });
 
@@ -297,7 +297,6 @@ export default function TradingModal({
 
       let win = profit > 0;
 
-      // If admin forced, override the profit display
       if (adminMode === 'win') {
         win = true;
         profit = potentialWin;
@@ -308,7 +307,6 @@ export default function TradingModal({
         profit = +profit.toFixed(2);
       }
 
-      // Balance update
       const updatedBalance = +(balanceAfterDeduction + numAmount + profit).toFixed(2);
 
       const transaction = {
@@ -320,7 +318,7 @@ export default function TradingModal({
         exitPrice: finalExitPrice,
         win,
         profit: Math.abs(profit),
-        adminResult: adminMode, // pass to service
+        adminResult: adminMode,
         timestamp: Date.now(),
       };
 
