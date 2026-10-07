@@ -21,6 +21,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { getMyKycStatus } from "../services/kycService";
 import DownloadModal from "./download/DownloadModal.jsx";
 
 const menuGroups = [
@@ -51,12 +52,45 @@ const menuGroups = [
   },
 ];
 
+// status: "approved" | "pending" | "denied" | "none"
+const KYC_BADGE = {
+  approved: {
+    label: "Verified",
+    color: "#93c5fd",
+    bg: "rgba(59,130,246,0.15)",
+    border: "rgba(96,165,250,0.3)",
+    desc: "Identity verified",
+  },
+  pending: {
+    label: "Pending",
+    color: "#fbbf24",
+    bg: "rgba(245,158,11,0.15)",
+    border: "rgba(245,158,11,0.3)",
+    desc: "Under review",
+  },
+  denied: {
+    label: "Denied",
+    color: "#f87171",
+    bg: "rgba(239,68,68,0.15)",
+    border: "rgba(239,68,68,0.3)",
+    desc: "Verification denied. Submit again",
+  },
+  none: {
+    label: "Not Verified",
+    color: "#94a3b8",
+    bg: "rgba(148,163,184,0.12)",
+    border: "rgba(148,163,184,0.25)",
+    desc: "Verify your identity",
+  },
+};
+
 export default function ProfileDrawer({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [profile, setProfile] = useState(null);
   const [authEmail, setAuthEmail] = useState("");
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const [kycStatus, setKycStatus] = useState("none");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -81,6 +115,13 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       if (!error && isMounted) {
         setProfile(data);
       }
+
+      try {
+        const kyc = await getMyKycStatus(user.id);
+        if (isMounted) setKycStatus(kyc?.status || "none");
+      } catch {
+        if (isMounted) setKycStatus("none");
+      }
     }
 
     loadProfile();
@@ -89,6 +130,8 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       isMounted = false;
     };
   }, [isOpen]);
+
+  const badge = KYC_BADGE[kycStatus] || KYC_BADGE.none;
 
   const displayName =
     profile?.full_name ||
@@ -256,12 +299,12 @@ export default function ProfileDrawer({ isOpen, onClose }) {
       alignItems: "center",
       gap: "4px",
       borderRadius: "999px",
-      background: "rgba(59,130,246,0.15)",
-      border: "1px solid rgba(96,165,250,0.3)",
+      background: badge.bg,
+      border: `1px solid ${badge.border}`,
       padding: "2px 8px",
       fontSize: "10px",
       fontWeight: 600,
-      color: "#93c5fd",
+      color: badge.color,
       marginTop: "4px",
     },
     uidRow: {
@@ -425,16 +468,18 @@ export default function ProfileDrawer({ isOpen, onClose }) {
                   <UserRound size={30} color="#cbd5e1" />
                 </div>
               </div>
-              <div style={styles.badgeDot}>
-                <BadgeCheck size={16} color="#60a5fa" />
-              </div>
+              {kycStatus === "approved" && (
+                <div style={styles.badgeDot}>
+                  <BadgeCheck size={16} color="#60a5fa" />
+                </div>
+              )}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <p style={styles.username}>{displayName}</p>
               <p style={styles.email}>{displayEmail}</p>
               <span style={styles.verifiedPill}>
                 <ShieldCheck size={11} />
-                Verified
+                {badge.label}
               </span>
               <button style={styles.uidRow} onClick={handleCopyUid}>
                 <span>Account ID {accountId}</span>
@@ -486,6 +531,7 @@ export default function ProfileDrawer({ isOpen, onClose }) {
                 {group.items.map((item, idx) => {
                   const Icon = item.icon;
                   const isLast = idx === group.items.length - 1;
+                  const desc = item.key === "kyc" ? badge.desc : item.desc;
                   return (
                     <button
                       key={item.key}
@@ -498,7 +544,7 @@ export default function ProfileDrawer({ isOpen, onClose }) {
                         </div>
                         <div style={{ textAlign: "left" }}>
                           <p style={styles.menuLabel}>{item.label}</p>
-                          <p style={styles.menuDesc}>{item.desc}</p>
+                          <p style={styles.menuDesc}>{desc}</p>
                         </div>
                       </div>
                       <ChevronRight size={16} color="#475569" />
