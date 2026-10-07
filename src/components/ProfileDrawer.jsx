@@ -28,7 +28,7 @@ const menuGroups = [
     title: "Account",
     items: [
       { key: "security", label: "Security Center", icon: ShieldCheck, desc: "2FA, password, devices", path: "/security-center" },
-      { key: "kyc", label: "KYC Verification", icon: UserCheck, desc: "Verify your identity", path: "/kyc" },
+      { key: "kyc", label: "KYC Verification", icon: UserCheck, desc: "Verify your identity", path: "/kyc-verification" },
       { key: "personal", label: "Personal Information", icon: UserRound, desc: "Name, email, phone", path: "/personal-information" },
       { key: "wallets", label: "Wallet Addresses", icon: Wallet, desc: "Manage saved addresses", path: "/wallet-addresses" },
     ],
